@@ -53,7 +53,7 @@ def build_yaml(payload: dict) -> str:
                 entry["highlights"] = [h for h in exp["highlights"] if h.strip()]
             experience_list.append(entry)
         if experience_list:
-            sections["experience"] = experience_list
+            sections["Experiencia"] = experience_list
 
     # Mapear educacion
     if "educacion" in raw_sections:
@@ -69,13 +69,13 @@ def build_yaml(payload: dict) -> str:
                 entry["location"] = edu["location"]
             education_list.append(entry)
         if education_list:
-            sections["education"] = education_list
+            sections["Educacion"] = education_list
 
     # Mapear habilidades
     if "skills" in raw_sections and raw_sections["skills"]:
         skills = raw_sections["skills"]
         if isinstance(skills, list):
-            sections["skills"] = [{"label": "Technical Skills", "details": ", ".join(skills)}]
+            sections["Habilidades"] = [{"label": "Habilidades Tecnicas", "details": ", ".join(skills)}]
 
     # Construir estructura YAML
     cv_data = {
@@ -104,5 +104,25 @@ def build_yaml(payload: dict) -> str:
 
     # Configuracion de diseno
     cv_data["design"] = {"theme": payload.get("theme", "classic")}
+
+    # Configurar idioma espanol
+    cv_data["locale"] = {
+        "language": "es",
+        "date_style": "MONTH_ABBREVIATION YEAR",
+        "abbreviations_for_months": [
+            "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+        ],
+        "full_names_of_months": [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ],
+        "month": "mes",
+        "months": "meses",
+        "year": "año",
+        "years": "años",
+        "present": "presente",
+        "to": "–"
+    }
 
     return yaml.safe_dump(cv_data, sort_keys=False, allow_unicode=True, default_flow_style=False)

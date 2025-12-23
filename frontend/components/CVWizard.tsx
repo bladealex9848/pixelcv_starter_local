@@ -384,7 +384,9 @@ export default function CVWizard() {
                   <div className="bg-green-500/20 border border-green-500/30 p-8 rounded-lg">
                     <p className="text-green-300 text-4xl mb-4">CV generado exitosamente!</p>
                     <p className="text-green-200 text-xl">
-                      {useAI ? `Tu CV ha sido optimizado con IA (${selectedModel}) y esta listo para descargar` : 'Tu CV esta listo para descargar'}
+                      {useAI && selectedModel
+                        ? `Tu CV ha sido optimizado con IA (${selectedModel}) y esta listo para descargar`
+                        : 'Tu CV esta listo para descargar'}
                     </p>
                   </div>
                   <div className="space-y-3">
