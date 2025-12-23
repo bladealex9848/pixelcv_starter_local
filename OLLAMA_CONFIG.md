@@ -2,7 +2,7 @@
 
 ## 📋 Información de tu Servidor Ollama
 
-**URL del Servidor**: https://ollama.alexanderoviedofadul.dev  
+**URL del Servidor**: http://localhost:11434  
 **Estado**: ✅ Conectado y funcionando  
 **Modelo Disponible**: phi3.5:latest
 
@@ -12,7 +12,7 @@
 
 ### 1. Verificar Modelos Disponibles
 ```bash
-curl https://ollama.alexanderoviedofadul.dev/api/tags | python3 -m json.tool
+curl http://localhost:11434/api/tags | python3 -m json.tool
 ```
 
 **Resultado Esperado**:
@@ -62,7 +62,7 @@ curl -s -X POST http://localhost:8000/ollama/test \
 
 ```bash
 # Ollama AI Configuration
-OLLAMA_BASE_URL=https://ollama.alexanderoviedofadul.dev/api
+OLLAMA_BASE_URL=http://localhost:11434/api
 OLLAMA_DEFAULT_MODEL=phi3.5:latest
 OLLAMA_TIMEOUT=60
 ```
@@ -71,7 +71,7 @@ OLLAMA_TIMEOUT=60
 
 | Variable | Valor | Descripción |
 |---------|--------|-------------|
-| `OLLAMA_BASE_URL` | `https://ollama.alexanderoviedofadul.dev/api` | URL base de la API de Ollama |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/api` | URL base de la API de Ollama |
 | `OLLAMA_DEFAULT_MODEL` | `phi3.5:latest` | Modelo por defecto para generar texto |
 | `OLLAMA_TIMEOUT` | `60` | Timeout en segundos para peticiones a Ollama |
 
@@ -167,7 +167,7 @@ curl -X POST http://localhost:8000/ollama/improve-bullets \
 
 ### Test 1: Conexión con Servidor Ollama
 ```bash
-curl -s https://ollama.alexanderoviedofadul.dev/api/tags | python3 -m json.tool
+curl -s http://localhost:11434/api/tags | python3 -m json.tool
 ```
 
 **Resultado**: ✅ Conexión exitosa
@@ -227,14 +227,14 @@ const improvedBullets = await improveBullets([
 **Solución**:
 ```bash
 # 1. Verificar que el servidor está online
-curl https://ollama.alexanderoviedofadul.dev/api/tags
+curl http://localhost:11434/api/tags
 
 # 2. Verificar configuración en backend/.env
 cat backend/.
 .env | grep OLLAMA
 
 # 3. Verificar firewall/VPN
-# Asegurarse que se pueda conectar a https://ollama.alexanderoviedofadul.dev
+# Asegurarse que se pueda conectar a http://localhost:11434
 ```
 
 ### Error: Timeout
@@ -256,7 +256,7 @@ cd backend && PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000
 **Solución**:
 ```bash
 # Verificar modelos disponibles
-curl https://ollama.alexanderoviedofadul.dev/api/tags
+curl http://localhost:11434/api/tags
 
 # Actualizar modelo en backend/.env
 echo "OLLAMA_DEFAULT_MODEL=nuevo-modelo" >> backend/.env
@@ -366,7 +366,7 @@ curl http://localhost:8000/ollama/models
 **Configuración**: ✅ Completa  
 **Conexión**: ✅ Funcionando  
 **Modelo**: phi3.5:latest  
-**Endpoint API**: https://ollama.alexanderoviedofadul.dev/api  
+**Endpoint API**: http://localhost:11434/api  
 **API Local**: http://localhost:8000/ollama  
 
 ### Verificación Final

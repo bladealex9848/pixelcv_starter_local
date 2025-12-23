@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 
 from app.models.database import get_db, User
@@ -20,10 +20,28 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
 
+    @field_validator('password')
+    @classmethod
+    def truncate_password(cls, v: str) -> str:
+        """Truncar contraseña a 72 bytes (límite de bcrypt)"""
+        password_bytes = v.encode('utf-8')
+        if len(password_bytes) > 72:
+            return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator('password')
+    @classmethod
+    def truncate_password(cls, v: str) -> str:
+        """Truncar contraseña a 72 bytes (límite de bcrypt)"""
+        password_bytes = v.encode('utf-8')
+        if len(password_bytes) > 72:
+            return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
 
 
 class UpdateProfileRequest(BaseModel):
@@ -35,6 +53,15 @@ class UpdateProfileRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+    @field_validator('current_password', 'new_password')
+    @classmethod
+    def truncate_password(cls, v: str) -> str:
+        """Truncar contraseña a 72 bytes (límite de bcrypt)"""
+        password_bytes = v.encode('utf-8')
+        if len(password_bytes) > 72:
+            return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
 
 
 # Dependencia para obtener el usuario actual

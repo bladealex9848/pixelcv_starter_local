@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Servicio de Autenticación - Registro, Login y JWT"""
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,19 +13,30 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 días
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 class AuthService:
     """Servicio para manejar autenticación de usuarios"""
     
     @staticmethod
     def hash_password(password: str) -> str:
-        return pwd_context.hash(password)
-    
+        """Hashear contraseña usando bcrypt con truncado a 72 bytes"""
+        password_bytes = password.encode('utf-8')
+        # Truncar a 72 bytes (límite de bcrypt)
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
+
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        return pwd_context.verify(plain_password, hashed_password)
+        """Verificar contraseña usando bcrypt"""
+        password_bytes = plain_password.encode('utf-8')
+        # Truncar a 72 bytes (límite de bcrypt)
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        hashed_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
     
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

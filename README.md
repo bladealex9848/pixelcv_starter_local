@@ -20,7 +20,7 @@
 
 ```bash
 # Instalación
-git clone https://github.com/tu-usuario/pixelcv_starter_local.git
+git clone https://github.com/bladealex9848/pixelcv_starter_local.git
 cd pixelcv_starter_local
 ./INSTALL.sh
 
@@ -156,7 +156,7 @@ MIT License - Ver [LICENSE](LICENSE) para más detalles.
 
 ## 📞 Contacto
 
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/pixelcv_starter_local/issues)
+- **Issues**: [GitHub Issues](https://github.com/bladealex9848/pixelcv_starter_local/issues)
 - **Discord**: [Únete a la comunidad](https://discord.gg/pixelcv)
 
 ---

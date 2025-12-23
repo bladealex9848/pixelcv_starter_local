@@ -3,8 +3,7 @@
 ## 📋 Estado Final
 
 **Proyecto**: PixelCV v2.0  
-**Estado**: ✅ COMPLETADO Y FUNCIONANDO  
-**Repositorio**: https://github.com/bladealex9848/pixelcv_starter_local
+**Estado**: ✅ COMPLETADO Y FUNCIONANDO
 
 ---
 
@@ -12,7 +11,7 @@
 
 ### Servidor Configurado
 
-**URL**: https://ollama.alexanderoviedofadul.dev  
+**URL**: http://localhost:11434  
 **Estado**: ✅ Conectado y funcionando  
 **Modelo**: phi3.5:latest  
 **Tiempo de respuesta**: 2-5 segundos
@@ -20,7 +19,7 @@
 ### Modelos Disponibles
 
 ```bash
-curl https://ollama.alexanderoviedofadul.dev/api/tags
+curl http://localhost:11434/api/tags
 ```
 
 **Resultado**:
@@ -43,7 +42,7 @@ curl https://ollama.alexanderoviedofadul.dev/api/tags
 
 ```bash
 # Ollama AI Configuration
-OLLAMA_BASE_URL=https://ollama.alexanderoviedofadul.dev/api
+OLLAMA_BASE_URL=http://localhost:11434/api
 OLLAMA_DEFAULT_MODEL=phi3.5:latest
 OLLAMA_TIMEOUT=60
 ```
@@ -52,7 +51,7 @@ OLLAMA_TIMEOUT=60
 
 | Variable | Valor | Descripción |
 |---------|--------|-------------|
-| `OLLAMA_BASE_URL` | `https://ollama.alexanderoviedofadul.dev/api` | URL base de la API |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/api` | URL base de la API |
 | `OLLAMA_DEFAULT_MODEL` | `phi3.5:latest` | Modelo por defecto |
 | `OLLAMA_TIMEOUT` | `60` | Timeout en segundos |
 
@@ -224,7 +223,7 @@ curl -s -X POST http://localhost:8000/ollama/improve-bullets \
 |----------|------|------|--------|
 | **Backend** | http://localhost:8000 | 10691 | ✅ Corriendo |
 | **Frontend** | http://localhost:3000 | 9108 | ✅ Corriendo |
-| **Ollama** | https://ollama.alexanderoviedofadul.dev/api | - | ✅ Conectado |
+| **Ollama** | http://localhost:11434/api | - | ✅ Conectado |
 
 ---
 
@@ -425,7 +424,7 @@ El sistema **PixelCV v2.0** está completamente configurado y funcionando con:
 
 ✅ **Backend** corriendo en http://localhost:8000  
 ✅ **Frontend** corriendo en http://localhost:3000  
-✅ **Ollama** conectado en https://ollama.alexanderoviedofadul.dev/api  
+✅ **Ollama** conectado en http://localhost:11434/api  
 ✅ **Modelo** phi3.5:latest configurado y funcionando  
 ✅ **Endpoints** de Ollama disponibles y verificados  
 

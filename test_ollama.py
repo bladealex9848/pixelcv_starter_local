@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = "https://ollama.alexanderoviedofadul.dev/api/chat"
+url = "http://localhost:11434/api/chat"
 payload = {
     "model": "phi3.5:latest",
     "messages": [

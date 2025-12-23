@@ -42,3 +42,4 @@ backend/app/static/artefactos/*
 
 # Logs
 *.log
+.DS_Store

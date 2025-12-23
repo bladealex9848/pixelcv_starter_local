@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelCV - Test Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #7c3aed 50%, #0f172a 100%); min-height: 100vh; color: #ffffff; }
+        .glass-card { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 8px 32px rgba(124, 58, 237, 0.3); }
+        .gradient-text { background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #a855f7 100%); -webkit-background-clip: text; background-clip: text; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .step-card { opacity: 0; transform: translateY(30px); animation: fadeInUp 0.6s ease forwards; }
+        .step-card.active { border: 2px solid #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+        .step-card.completed { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+        .check-icon { animation: pulse 1.5s ease infinite; }
+        .loading-spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #a855f7; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .progress-bar { transition: width 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="glass-card rounded-2xl p-6 mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold gradient-text text-center mb-4">
+                🎮 Test Interactivo - PixelCV v2.0
+            </h1>
+            <p class="text-purple-200 text-center text-lg">
+                Sigue los pasos para verificar toda la funcionalidad del sistema
+            </p>
+        </header>
+        
+        <div class="glass-card rounded-xl p-4 mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-purple-300">Progreso del Test</span>
+                <span id="progress-text" class="text-white font-bold">0%</span>
+            </div>
+            <div class="w-full bg-purple-900/50 rounded-full h-3">
+                <div id="progress-bar" style="width: 0%" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"></div>
+            </div>
+        </div>
+        
+        <div id="steps-container" class="space-y-4">
+            <div id="step-1" class="step-card glass-card rounded-2xl p-6" data-step="1">
+                <div class="flex items-start gap-4">
+                    <div id="icon-1" class="text-4xl check-icon">1️⃣</div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-white mb-2">Verificar Conexión del Backend</h2>
+                        <p class="text-purple-200 mb-4">
+                            Testea que el servidor backend esté funcionando en el puerto 8000
+                        </p>
+                        <button onclick="testBackend()" id="btn-step-1" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2">
+                            <span>🔍 Verificar Backend</span>
+                        </button>
+                        <div id="result-1" class="mt-4 hidden"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="step-2" class="step-card glass-card rounded-2xl p-6" data-step="2">
+                <div class="flex items-start gap-4">
+                    <div id="icon-2" class="text-4xl check-icon">2️⃣</div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-white mb-2">Verificar Conexión del Frontend</h2>
+                        <p class="text-purple-200 mb-4">
+                            Testea que el servidor frontend esté funcionando en el puerto 3000
+                        </p>
+                        <button onclick="testFrontend()" id="btn-step-2" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2">
+                            <span>🔍 Verificar Frontend</span>
+                        </button>
+                        <div id="result-2" class="mt-4 hidden"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="step-3" class="step-card glass-card rounded-2xl p-6" data-step="3">
+                <div class="flex items-start gap-4">
+                    <div id="icon-3" class="text-4xl check-icon">3️⃣</div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-white mb-2">Probar Ollama

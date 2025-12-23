@@ -11,9 +11,8 @@ export default function Home() {
             Crea CVs profesionales con RenderCV, compártelos con la comunidad y gana puntos mientras subes de nivel
           </p>
         </div>
-
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <a href="/editor" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition transform hover:scale-105 shadow-lg shadow-purple-500/30">
+          <a href="/register" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition transform hover:scale-105 shadow-lg shadow-purple-500/30">
             🚀 Crear mi CV
           </a>
           <a href="/community" className="bg-black/40 backdrop-blur-sm text-purple-300 border border-purple-500/50 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-purple-900/30 transition">
@@ -28,13 +27,11 @@ export default function Home() {
             <h3 className="text-xl font-bold text-white mb-2">CVs Profesionales</h3>
             <p className="text-purple-300">Usa RenderCV para crear CVs con tipografía perfecta y múltiples diseños</p>
           </div>
-
           <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
-            <div className="text-5xl mb-4">🌐</div>
-            <h3 className="text-xl font-bold text-white mb-2">Landing Pages</h3>
-            <p className="text-purple-300">Publica tu CV como landing page y comparte tu link personal</p>
+            <div className="text-5xl mb-4">🤖</div>
+            <h3 className="text-xl font-bold text-white mb-2">Asistente con IA</h3>
+            <p className="text-purple-300">Nuestro asistente inteligente te guía paso a paso y mejora tu contenido automáticamente</p>
           </div>
-
           <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
             <div className="text-5xl mb-4">🎮</div>
             <h3 className="text-xl font-bold text-white mb-2">Gamificación</h3>

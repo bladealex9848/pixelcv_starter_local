@@ -11,121 +11,127 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      const res = await fetch('http://localhost:8000/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          username, 
-          password, 
-          full_name: fullName || undefined 
+        body: JSON.stringify({
+          email,
+          username,
+          password,
+          full_name: fullName || username
         })
       });
 
-      const data = await response.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Error al registrarse');
 
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/dashboard');
-      } else {
-        setError(data.detail || 'Error al registrarse');
-      }
-    } catch (err) {
-      setError('Error de conexión');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Redirigir al dashboard
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-8">
-      <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 w-full max-w-md border border-purple-500/30">
-        <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          PixelCV
-        </h1>
-        <p className="text-purple-300 text-center mb-8">Únete a la comunidad</p>
-
-        {error && (
-          <div className="bg-red-900/50 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-purple-300 mb-2 text-sm">Nombre completo (opcional)</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-black/30 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 transition"
-              placeholder="Tu nombre"
-            />
-          </div>
-
-          <div>
-            <label className="block text-purple-300 mb-2 text-sm">Nombre de usuario</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-black/30 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 transition"
-              placeholder="username"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-purple-300 mb-2 text-sm">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/30 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 transition"
-              placeholder="tu@email.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-purple-300 mb-2 text-sm">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/30 border border-purple-500/50 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 transition"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
-          >
-            {loading ? 'Creando cuenta...' : 'Registrarse'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-purple-300 text-sm">
-          ¿Ya tienes cuenta?{' '}
-          <a href="/login" className="text-purple-400 hover:text-purple-300 underline">
-            Inicia sesión
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4 py-16">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Crear Cuenta</h1>
+          <p className="text-purple-300">Únete a PixelCV y crea CVs profesionales</p>
         </div>
 
-        <div className="mt-4 text-center">
-          <a href="/" className="text-purple-400 hover:text-purple-300 text-sm">
+        <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-purple-300 mb-2">Nombre de usuario *</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="tu_usuario"
+                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-purple-300 mb-2">Nombre completo</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Juan Pérez"
+                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-purple-300 mb-2">Email *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-purple-300 mb-2">Contraseña *</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400"
+                required
+              />
+              <p className="text-purple-400 text-xs mt-1">
+                La contraseña será truncada automáticamente si es muy larga
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
+            >
+              {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-purple-300">
+              ¿Ya tienes cuenta?{' '}
+              <button onClick={() => router.push('/login')} className="text-purple-400 hover:text-purple-300 font-semibold">
+                Inicia sesión
+              </button>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <button onClick={() => router.push('/')} className="text-purple-400 hover:text-purple-300">
             ← Volver al inicio
-          </a>
+          </button>
         </div>
       </div>
     </div>
