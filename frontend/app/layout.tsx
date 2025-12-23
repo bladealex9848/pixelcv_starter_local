@@ -1,4 +1,4 @@
-import './styles/globals.css'
+import '../styles/globals.css'
 export const metadata = { title: 'PixelCV', description: 'Genera CVs con RenderCV' }
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

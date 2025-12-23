@@ -12,10 +12,8 @@ def improve_bullets(model: str, bullets: list[str]) -> list[str]:
             "role": "user",
             "content": (
                 "Reescribe estos 'highlights' de experiencia en español, "
-                "con foco en impacto y métricas, en formato JSON con un array 'bullets':
-"
-                + "
-".join(f"- {b}" for b in bullets)
+                "con foco en impacto y métricas, en formato JSON con un array 'bullets': " +
+                " ".join(f"- {b}" for b in bullets)
             )
         }],
         "format": "json",
@@ -24,10 +22,9 @@ def improve_bullets(model: str, bullets: list[str]) -> list[str]:
     resp = requests.post(url, json=payload, timeout=60)
     resp.raise_for_status()
     data = resp.json()
-    # /api/chat devuelve { message: { content: "...json..." } }
     content = data.get("message", {}).get("content", "")
     try:
         parsed = json.loads(content)
         return parsed.get("bullets", bullets)
-    except Exception:
+    except:
         return bullets
