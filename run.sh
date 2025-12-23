@@ -119,7 +119,13 @@ if ! python3 -c "import fastapi" 2>/dev/null; then
     echo -e "  ${YELLOW}!${NC} Instalando dependencias..."
     pip install -q fastapi uvicorn pydantic pydantic-settings sqlalchemy passlib python-jose python-multipart pyyaml requests email-validator bcrypt 2>/dev/null
 fi
-echo -e "  ${GREEN}✓${NC} Dependencias de Python listas"
+
+# Verificar RenderCV
+if ! command -v rendercv &> /dev/null; then
+    echo -e "  ${YELLOW}!${NC} Instalando RenderCV..."
+    pip3 install -q "rendercv[full]" 2>/dev/null
+fi
+echo -e "  ${GREEN}✓${NC} Dependencias de Python listas (incluye RenderCV)"
 echo ""
 
 # Verificar dependencias del frontend

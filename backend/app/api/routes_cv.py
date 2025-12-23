@@ -31,7 +31,9 @@ def create_cv(payload: dict = Body(...)):
 
 @router.get("/{cv_id}/pdf")
 def get_pdf(cv_id: str):
-    pdf_path = os.path.join(os.getenv("PIXELCV_STORAGE", "./backend/app/static/artefactos"), cv_id, "CV.pdf")
-    if not os.path.exists(pdf_path):
+    import pathlib
+    storage_dir = pathlib.Path(os.getenv("PIXELCV_STORAGE", "./app/static/artefactos")).resolve()
+    pdf_path = storage_dir / cv_id / "CV.pdf"
+    if not pdf_path.exists():
         raise HTTPException(status_code=404, detail="PDF no encontrado")
-    return FileResponse(pdf_path, media_type="application/pdf", filename="CV.pdf")
+    return FileResponse(str(pdf_path), media_type="application/pdf", filename="CV.pdf")
