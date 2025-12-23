@@ -1,6 +1,34 @@
 # -*- coding: utf-8 -*-
 """Construccion y validacion de YAML para RenderCV."""
 import yaml
+import re
+
+def format_phone(phone: str) -> str:
+    """Formatea numero de telefono para RenderCV (requiere formato internacional)"""
+    if not phone:
+        return ""
+
+    # Limpiar el numero (solo digitos y +)
+    cleaned = re.sub(r'[^\d+]', '', phone)
+
+    # Si ya tiene + al inicio, asumir que esta bien formateado
+    if cleaned.startswith('+'):
+        return phone
+
+    # Si es un numero colombiano (10 digitos empezando con 3)
+    if len(cleaned) == 10 and cleaned.startswith('3'):
+        return f"+57 {cleaned[:3]} {cleaned[3:6]} {cleaned[6:]}"
+
+    # Si es un numero de 10 digitos (asumimos formato US/generico)
+    if len(cleaned) == 10:
+        return f"+1 {cleaned[:3]} {cleaned[3:6]} {cleaned[6:]}"
+
+    # Si es un numero de 11+ digitos, asumir que incluye codigo de pais
+    if len(cleaned) >= 11:
+        return f"+{cleaned}"
+
+    # Para otros casos, devolver vacio (RenderCV lo ignorara)
+    return ""
 
 def build_yaml(payload: dict) -> str:
     """Construye YAML compatible con RenderCV v2.5"""
@@ -62,7 +90,9 @@ def build_yaml(payload: dict) -> str:
     if payload.get("email"):
         cv_data["cv"]["email"] = payload["email"]
     if payload.get("phone"):
-        cv_data["cv"]["phone"] = payload["phone"]
+        formatted_phone = format_phone(payload["phone"])
+        if formatted_phone:
+            cv_data["cv"]["phone"] = formatted_phone
     if payload.get("summary"):
         cv_data["cv"]["summary"] = payload["summary"]
     if payload.get("linkedin"):
