@@ -1,18 +1,25 @@
 [project]
 name = "pixelcv-backend"
-version = "1.0.0"
-description = "Backend FastAPI para PixelCV"
-requires-python = ">=3.12"
+version = "2.0.0"
+description = "Backend FastAPI para PixelCV - Sistema de CVs con comunidad y gamificación"
+requires-python = ">=3.10"
 dependencies = [
   "fastapi",
   "uvicorn[standard]",
   "pydantic",
-  "jsonschema",
-  "PyYAML",
+  "pydantic-settings",
+  "sqlalchemy>=2.0",
+  "passlib[bcrypt]",
+  "python-jose[cryptography]",
+  "python-multipart",
+  "pyyaml",
   "requests",
-  "SQLAlchemy",
+  "email-validator",
 ]
 
-[tool.uvicorn]
-host = "0.0.0.0"
-port = 8000
+[tool.uv]
+dev-dependencies = [
+  "pytest",
+  "pytest-asyncio",
+  "httpx",
+]
