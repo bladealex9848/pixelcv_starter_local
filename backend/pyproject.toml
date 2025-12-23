@@ -1,0 +1,18 @@
+[project]
+name = "pixelcv-backend"
+version = "1.0.0"
+description = "Backend FastAPI para PixelCV"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "jsonschema",
+  "PyYAML",
+  "requests",
+  "SQLAlchemy",
+]
+
+[tool.uvicorn]
+host = "0.0.0.0"
+port = 8000

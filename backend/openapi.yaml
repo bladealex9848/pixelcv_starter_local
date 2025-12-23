@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: PixelCV API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /cv:
+    post:
+      summary: Crear proyecto de CV y renderizar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                headline: { type: string }
+                location: { type: string }
+                email: { type: string }
+                phone: { type: string }
+                website: { type: string }
+                social_networks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      network: { type: string }
+                      username: { type: string }
+                sections:
+                  type: object
+                theme:
+                  type: string
+                  default: classic
+                  enum: [classic, moderncv, engineeringclassic, engineeringresumes, sb2nov]
+                locale:
+                  type: string
+                  default: spanish
+                current_date: { type: string }
+                improve: { type: boolean }
+                model: { type: string }
+                formats:
+                  type: array
+                  items:
+                    type: string
+                    enum: [pdf, png, html, md]
+      responses:
+        "200":
+          description: OK
+  /cv/{cv_id}/pdf:
+    get:
+      summary: Descargar PDF
+      parameters:
+        - in: path
+          name: cv_id
+          schema: { type: string }
+          required: true
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary

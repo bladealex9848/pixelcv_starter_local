@@ -1,0 +1,1 @@
+# SQLite se configura desde .env (PIXELCV_DB_URL)
