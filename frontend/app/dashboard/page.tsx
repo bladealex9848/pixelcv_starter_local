@@ -9,6 +9,7 @@ function DashboardContent() {
   const [cvs, setCvs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -21,7 +22,6 @@ function DashboardContent() {
   const loadDashboard = async () => {
     const token = localStorage.getItem('token');
     try {
-      // Cargar estadisticas
       const statsRes = await fetch('http://localhost:8000/gamification/stats/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -29,7 +29,6 @@ function DashboardContent() {
         setStats(await statsRes.json());
       }
 
-      // Cargar CVs del usuario
       const cvsRes = await fetch('http://localhost:8000/cv/my', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -52,7 +51,7 @@ function DashboardContent() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        loadDashboard(); // Recargar datos
+        loadDashboard();
       }
     } catch (error) {
       console.error('Error publicando CV:', error);
@@ -68,7 +67,7 @@ function DashboardContent() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        loadDashboard(); // Recargar datos
+        loadDashboard();
       }
     } catch (error) {
       console.error('Error eliminando CV:', error);
@@ -77,124 +76,245 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-6xl animate-spin">⏳</div>
+      <div className="min-h-screen bg-[#020812] flex items-center justify-center relative overflow-hidden crt-effect">
+        {/* Scanlines */}
+        <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px)',
+          backgroundSize: '100% 2px'
+        }}></div>
+        {/* Grid Background */}
+        <div className="fixed inset-0 pointer-events-none grid-background opacity-[0.02]"></div>
+        {/* Floating Elements */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[15%] left-[10%] w-2 h-2 bg-cyan-500 opacity-60 animate-twinkle"></div>
+          <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-blue-400 opacity-40 animate-twinkle-delayed"></div>
+          <div className="absolute top-[60%] left-[5%] w-1 h-1 bg-teal-400 opacity-50 animate-twinkle"></div>
+          <div className="absolute top-[80%] right-[8%] w-2 h-2 bg-cyan-400 opacity-40 animate-twinkle-delayed"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="text-6xl animate-bounce mb-4">📊</div>
+          <p className="text-cyan-400 font-mono animate-pulse">Loading Player Data...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">👋 Bienvenido, {user?.username || 'Usuario'}!</h1>
-          <p className="text-purple-300">Gestiona tus CVs y tu perfil profesional</p>
+    <div className="min-h-screen bg-[#020812] text-white font-mono pt-16 pb-12 px-4 relative overflow-hidden scanline-effect">
+
+      {/* Scanlines */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px)',
+        backgroundSize: '100% 2px'
+      }}></div>
+
+      {/* Grid Background */}
+      <div className="fixed inset-0 pointer-events-none grid-background opacity-[0.02]"></div>
+
+      {/* Floating Pixel Stars */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[15%] left-[10%] w-2 h-2 bg-cyan-500 opacity-60 animate-twinkle"></div>
+        <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-blue-400 opacity-40 animate-twinkle-delayed"></div>
+        <div className="absolute top-[60%] left-[5%] w-1 h-1 bg-teal-400 opacity-50 animate-twinkle"></div>
+        <div className="absolute top-[80%] right-[8%] w-2 h-2 bg-cyan-400 opacity-40 animate-twinkle-delayed"></div>
+
+        {/* Floating Icons */}
+        <div className="absolute top-[20%] left-[5%] text-3xl opacity-15 animate-float-slow">📊</div>
+        <div className="absolute top-[50%] right-[5%] text-2xl opacity-10 animate-float-medium">🎯</div>
+        <div className="absolute top-[75%] left-[8%] text-2xl opacity-15 animate-float-delayed">⚡</div>
+      </div>
+
+      {/* Background Text */}
+      <div className="fixed inset-0 pointer-events-none flex items-center justify-center">
+        <div className="text-[12vw] font-black opacity-[0.015] tracking-widest text-cyan-500 select-none">
+          PLAYER HUB
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="mb-8 text-center md:text-left">
+          <div className="relative inline-block">
+            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-blue-600 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] uppercase">
+              Player Dashboard
+            </h1>
+            <div className="absolute -top-2 -left-3 w-2 h-2 bg-cyan-400 animate-twinkle hidden md:block"></div>
+            <div className="absolute -top-1 -right-2 w-1 h-1 bg-blue-400 animate-twinkle-delayed hidden md:block"></div>
+          </div>
+          <div className="flex items-center justify-center md:justify-start gap-2 mt-3">
+            <div className="flex items-center gap-2 bg-cyan-900/30 border border-cyan-500/50 px-3 py-1 rounded-sm">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+              <span className="text-cyan-300 text-xs font-bold uppercase">{user?.username || 'Player'}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-blue-900/30 border border-blue-500/50 px-3 py-1 rounded-sm">
+              <span>🎮</span>
+              <span className="text-blue-300 text-xs font-bold uppercase">Level {stats?.level || 1}</span>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/30">
-            <div className="text-4xl mb-2">📄</div>
-            <h3 className="text-2xl font-bold text-white">{stats?.total_cvs || 0}</h3>
-            <p className="text-purple-300">CVs creados</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* CVs Created */}
+          <div
+            className="bg-black border-2 border-cyan-900 p-1 transition-all duration-300 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+            style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+          >
+            <div className="bg-[#0a0a0a] p-5 text-center">
+              <div className="text-3xl mb-2">📄</div>
+              <h3 className="text-3xl font-black text-cyan-400">{stats?.total_cvs || 0}</h3>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mt-1">CVs Creados</p>
+            </div>
           </div>
-          <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/30">
-            <div className="text-4xl mb-2">⭐</div>
-            <h3 className="text-2xl font-bold text-white">{stats?.total_points || 0}</h3>
-            <p className="text-purple-300">Puntos</p>
+
+          {/* Points */}
+          <div
+            className="bg-black border-2 border-blue-900 p-1 transition-all duration-300 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+            style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+          >
+            <div className="bg-[#0a0a0a] p-5 text-center">
+              <div className="text-3xl mb-2">⭐</div>
+              <h3 className="text-3xl font-black text-blue-400">{stats?.total_points || 0}</h3>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mt-1">Puntos XP</p>
+            </div>
           </div>
-          <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/30">
-            <div className="text-4xl mb-2">🏅</div>
-            <h3 className="text-2xl font-bold text-white">{stats?.rank_title || 'Novato'}</h3>
-            <p className="text-purple-300">Nivel</p>
+
+          {/* Rank */}
+          <div
+            className="bg-black border-2 border-teal-900 p-1 transition-all duration-300 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]"
+            style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+          >
+            <div className="bg-[#0a0a0a] p-5 text-center">
+              <div className="text-3xl mb-2">🏅</div>
+              <h3 className="text-xl font-black text-teal-400">{stats?.rank_title || 'Novato'}</h3>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mt-1">Rango</p>
+            </div>
           </div>
         </div>
 
         {/* Create CV Card */}
-        <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30 mb-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-4">✨ Crea tu primer CV</h2>
-            <p className="text-purple-200 mb-6">Usa nuestro asistente inteligente para crear un CV profesional en minutos</p>
+        <div
+          className="bg-black border-2 border-cyan-500/50 p-1 mb-8"
+          style={{ clipPath: 'polygon(0 12px, 12px 12px, 12px 0, calc(100% - 12px) 0, calc(100% - 12px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 12px), 0 calc(100% - 12px))' }}
+        >
+          <div className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 p-8 text-center">
+            <h2 className="text-2xl font-black text-cyan-400 uppercase tracking-wider mb-3">New Quest Available</h2>
+            <p className="text-gray-400 mb-6 text-sm">Usa nuestro asistente IA para crear un CV profesional</p>
             <button
               onClick={() => router.push('/editor')}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition"
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-8 py-3 font-black uppercase tracking-wider hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+              style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
             >
-              🚀 Crear CV con Asistente
+              <span>🚀</span>
+              Start Mission
             </button>
           </div>
         </div>
 
-        {/* Recent CVs */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
-          <h2 className="text-2xl font-bold text-white mb-6">Tus CVs</h2>
-          {cvs.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📄</div>
-              <p className="text-purple-300 text-lg">Aun no has creado ningun CV</p>
-              <p className="text-purple-400 mt-2">Comienza creando tu primer CV con nuestro asistente</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {cvs.map((cv) => (
-                <div key={cv.id} className="p-4 bg-black/20 rounded-lg border border-purple-500/20 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-white font-semibold">{cv.name}</h3>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className={`text-xs px-2 py-1 rounded ${cv.is_published ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
-                        {cv.is_published ? 'Publicado' : 'Borrador'}
-                      </span>
-                      <span className="text-purple-300 text-sm">
-                        {cv.total_visits || 0} visitas | {cv.total_likes || 0} likes
-                      </span>
-                      <span className="text-purple-400 text-sm">
-                        Creado: {new Date(cv.created_at).toLocaleDateString()}
-                      </span>
+        {/* CVs List */}
+        <div
+          className="bg-black border-2 border-cyan-900 p-1"
+          style={{ clipPath: 'polygon(0 12px, 12px 12px, 12px 0, calc(100% - 12px) 0, calc(100% - 12px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 12px), 0 calc(100% - 12px))' }}
+        >
+          <div className="bg-[#0a0a0a] p-6 md:p-8">
+            <h2 className="text-xl font-black text-cyan-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+              <span>📁</span> Inventory (Tus CVs)
+            </h2>
+
+            {cvs.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4 opacity-50">📄</div>
+                <p className="text-gray-500 uppercase tracking-wider">Inventory Empty</p>
+                <p className="text-gray-600 text-sm mt-2">Crea tu primer CV para comenzar</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cvs.map((cv) => (
+                  <div
+                    key={cv.id}
+                    className="bg-black/50 border border-cyan-900/50 p-4 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <h3 className="text-cyan-300 font-bold">{cv.name}</h3>
+                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                          <span className={`text-[10px] px-2 py-1 font-bold uppercase tracking-wider ${
+                            cv.is_published
+                              ? 'bg-green-900/50 text-green-400 border border-green-500/50'
+                              : 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/50'
+                          }`}>
+                            {cv.is_published ? '✓ Published' : '○ Draft'}
+                          </span>
+                          <span className="text-gray-500 text-xs">
+                            👁 {cv.total_visits || 0} | ❤ {cv.total_likes || 0}
+                          </span>
+                          <span className="text-gray-600 text-xs">
+                            {new Date(cv.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => router.push(`/editor/${cv.id}`)}
+                          className="bg-blue-900/50 border border-blue-500/50 text-blue-300 px-3 py-1.5 text-xs font-bold uppercase hover:bg-blue-900/70 transition"
+                        >
+                          Edit
+                        </button>
+                        <a
+                          href={`http://localhost:8000/cv/${cv.id}/pdf`}
+                          target="_blank"
+                          className="bg-teal-900/50 border border-teal-500/50 text-teal-300 px-3 py-1.5 text-xs font-bold uppercase hover:bg-teal-900/70 transition"
+                        >
+                          PDF
+                        </a>
+                        <button
+                          onClick={() => publishCV(cv.id)}
+                          className={`px-3 py-1.5 text-xs font-bold uppercase transition ${
+                            cv.is_published
+                              ? 'bg-yellow-900/50 border border-yellow-500/50 text-yellow-300 hover:bg-yellow-900/70'
+                              : 'bg-green-900/50 border border-green-500/50 text-green-300 hover:bg-green-900/70'
+                          }`}
+                        >
+                          {cv.is_published ? 'Hide' : 'Publish'}
+                        </button>
+                        {cv.is_published && (
+                          <a
+                            href={`/cv/${cv.slug}`}
+                            target="_blank"
+                            className="bg-blue-900/50 border border-blue-500/50 text-blue-300 px-3 py-1.5 text-xs font-bold uppercase hover:bg-blue-900/70 transition"
+                          >
+                            View
+                          </a>
+                        )}
+                        <button
+                          onClick={() => deleteCV(cv.id)}
+                          className="bg-red-900/50 border border-red-500/50 text-red-300 px-3 py-1.5 text-xs font-bold uppercase hover:bg-red-900/70 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => router.push(`/editor/${cv.id}`)}
-                      className="bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-lg text-sm hover:bg-indigo-500/30 transition"
-                    >
-                      Editar
-                    </button>
-                    <a
-                      href={`http://localhost:8000/cv/${cv.id}/pdf`}
-                      target="_blank"
-                      className="bg-purple-600/20 text-purple-300 px-3 py-2 rounded-lg text-sm hover:bg-purple-600/30 transition"
-                    >
-                      Descargar PDF
-                    </a>
-                    <button
-                      onClick={() => publishCV(cv.id)}
-                      className={`px-3 py-2 rounded-lg text-sm transition ${
-                        cv.is_published
-                          ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
-                          : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
-                      }`}
-                    >
-                      {cv.is_published ? 'Despublicar' : 'Publicar'}
-                    </button>
-                    {cv.is_published && (
-                      <a
-                        href={`/cv/${cv.slug}`}
-                        target="_blank"
-                        className="bg-blue-500/20 text-blue-300 px-3 py-2 rounded-lg text-sm hover:bg-blue-500/30 transition"
-                      >
-                        Ver
-                      </a>
-                    )}
-                    <button
-                      onClick={() => deleteCV(cv.id)}
-                      className="bg-red-500/20 text-red-300 px-3 py-2 rounded-lg text-sm hover:bg-red-500/30 transition"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer decoration */}
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex gap-1">
+            <div className="w-1 h-1 bg-cyan-600"></div>
+            <div className="w-1 h-1 bg-cyan-500"></div>
+            <div className="w-1 h-1 bg-cyan-400"></div>
+          </div>
+          <span className="text-gray-600 text-[10px] uppercase tracking-widest">Player Hub</span>
+          <div className="flex gap-1">
+            <div className="w-1 h-1 bg-cyan-400"></div>
+            <div className="w-1 h-1 bg-cyan-500"></div>
+            <div className="w-1 h-1 bg-cyan-600"></div>
+          </div>
         </div>
       </div>
     </div>

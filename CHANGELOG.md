@@ -2,6 +2,60 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.0] - 2024-12-24
+
+### Añadido 🆕
+
+- **Diseño Retro Completo - Dashboard:** Tema azul/cian estilo "Player Stats" con estética gamer única:
+  - **Fondo:** Base oscura #020812 con grid ciano y scanlines CRT
+  - **Animaciones:** Efectos twinkle, float, glow-pulse en elementos flotantes
+  - **Tarjetas de Estadísticas:** Diseño pixel-art con bordes animados y efectos hover
+  - **Iconos flotantes:** 📊🎯⚡ con animaciones suaves
+  - **Texto de fondo:** "PLAYER HUB" gigante en ciano semitransparente
+  - **Gradientes:** De cyan-400 a blue-600 con efectos de brillo
+  - **Botones:** Con clip-path y sombras de neón al hacer hover
+
+### Cambiado 🔄
+
+- **Dashboard (app/dashboard/page.tsx):**
+  - Paleta de colores: Ambar → Cyan/Blue/Teal
+  - Bordes: De amber-900 a cyan-900, blue-900, teal-900
+  - Texto: De amber-400/orange a cyan-400/blue-400/teal-400
+  - Añadida clase scanline-effect para efecto CRT
+  - Añadidas animaciones personalizadas de Tailwind
+
+### Mejorado ✨
+
+- **Sistema de Animaciones Globales (tailwind.config.js):**
+  - Añadidos keyframes: twinkle, float-slow/medium/delayed, glow-pulse, scanline, glitch, pixel-border, slide-in, fade-in, bounce-retro
+  - Añadidos colores: retroGreen, retroCyan, retroPurple, retroPink
+  - Todos los efectos configurados para consistencia
+
+- **Estilos CSS Globales (globals.css):**
+  - Añadida clase .crt-effect para líneas de escaneo
+  - Añadida clase .scanline-effect para escaneo vertical
+  - Añadida clase .pixel-border con gradiente rotativo
+  - Añadidas clases .glow-text y .glow-box para efectos de brillo
+  - Añadida clase .retro-card con efecto de brillo en hover
+  - Añadidas animaciones gradient-rotate y scanline
+  - Añadidos fondos de grid: grid-background, grid-background-purple, grid-background-green
+
+- **Editor de CV (app/editor/[id]/page.tsx):**
+  - Tema morado/rosa estilo "Game Editor" con estética gamer única
+  - Fondo: Base oscura #0f0815 con grid morado y scanlines CRT
+  - Header actualizado con gradiente purple-400 a pink-600
+  - Inputs actualizados con bordes pixel-art y fuentes monoespaciadas
+  - Añadidos efectos de hover con sombras de neón
+  - Barra de progreso con gradiente purple-500 a pink-500
+
+- **CVWizard (components/CVWizard.tsx):**
+  - Tema consistente con el editor (morado/rosa estilo "Game Mode")
+  - Fondo: Base oscura #0f0815 con grid morado y scanlines CRT
+  - Header actualizado con gradiente purple-400 a pink-600
+  - Badge "Game Mode" con animación pulse
+  - Inputs y tarjetas actualizadas con bordes pixel-art
+  - Añadidos efectos de hover y transiciones suaves
+
 ## [2.3.0] - 2024-12-24
 
 ### Añadido 🆕

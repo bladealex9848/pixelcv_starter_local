@@ -6,11 +6,11 @@
 
 > 🚀 Plataforma moderna para crear, compartir y gamificar CVs con RenderCV e Inteligencia Artificial Local (Ollama).
 
-![PixelCV](https://img.shields.io/badge/Version-2.1.0-purple)
+![PixelCV](https://img.shields.io/badge/Version-2.4.0-purple)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Node](https://img.shields.io/badge/Node.js-18+-green)
-![Ollama](https://img.shields.io/badge/AI-Ollama--Phi3.5-cyan)
+![Ollama](https://img.shields.io/badge/AI-Ollama--Configurable-cyan)
 
 ## ✨ Características
 
@@ -20,7 +20,12 @@
   - **Revisión Interactiva**: Compara sugerencias de IA lado a lado antes de aplicarlas.
   - **Instrucciones Personalizadas**: Guía a la IA (ej: "Hazlo más corto", "Usa tono ejecutivo").
   - **Análisis Integral**: Reporte detallado de fortalezas y debilidades de tu perfil.
-- 🎨 **Múltiples Estilos**: Elige entre 5 temas profesionales (`classic`, `moderncv`, `sb2nov`, etc.) con vista previa visual.
+  - **Soporte Múltiples Modelos**: Compatible con modelos de Ollama (phi3.5, llama3, mistral, etc.).
+- 🎨 **Diseño Retro/Gamer Único**: 
+  - **Login**: Tema verde ("Player Login") con efectos CRT y bordes pixel art.
+  - **Dashboard**: Tema cyan/azul ("Player Stats") con animaciones flotantes.
+  - **Editor & Wizard**: Tema morado/rosa ("Game Editor") con estética gamer.
+  - **Home**: Tema morado con glitch text y sección "How it Works".
 - 🌐 **Landing Pages**: Publica tu CV como página web personalizada con slug único.
 - 🎮 **Gamificación**: Gana puntos, sube de nivel y desbloquea badges por tu actividad.
 - 🏆 **Comunidad**: Explora, comenta y dale "like" a CVs de otros profesionales.

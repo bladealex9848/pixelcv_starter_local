@@ -278,10 +278,45 @@ export default function CVWizard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-10 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-white mb-4">Asistente de CV Inteligente</h1>
-        <p className="text-purple-300 text-center mb-8">Crea tu CV profesional paso a paso con ayuda de IA</p>
+    <div className="min-h-screen bg-[#0f0815] py-10 px-4 relative overflow-hidden scanline-effect">
+      {/* Scanlines */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px)',
+        backgroundSize: '100% 2px'
+      }}></div>
+      {/* Grid Background */}
+      <div className="fixed inset-0 pointer-events-none grid-background-purple opacity-[0.02]"></div>
+      {/* Floating Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[15%] left-[10%] w-2 h-2 bg-purple-500 opacity-60 animate-twinkle"></div>
+        <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-pink-400 opacity-40 animate-twinkle-delayed"></div>
+        <div className="absolute top-[60%] left-[5%] w-1 h-1 bg-fuchsia-400 opacity-50 animate-twinkle"></div>
+        <div className="absolute top-[80%] right-[8%] w-2 h-2 bg-purple-400 opacity-40 animate-twinkle-delayed"></div>
+        {/* Floating Icons */}
+        <div className="absolute top-[20%] left-[5%] text-3xl opacity-15 animate-float-slow">🎮</div>
+        <div className="absolute top-[50%] right-[5%] text-2xl opacity-10 animate-float-medium">⚡</div>
+        <div className="absolute top-[75%] left-[8%] text-2xl opacity-15 animate-float-delayed">🎯</div>
+      </div>
+      {/* Background Text */}
+      <div className="fixed inset-0 pointer-events-none flex items-center justify-center">
+        <div className="text-[12vw] font-black opacity-[0.015] tracking-widest text-purple-500 select-none">
+          WIZARD
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto relative z-10">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-pink-600 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] uppercase tracking-tight">
+            Asistente de CV
+          </h1>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/50 px-3 py-1 rounded-sm">
+              <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+              <span className="text-purple-300 text-xs font-bold uppercase">Game Mode</span>
+            </div>
+          </div>
+          <p className="text-gray-400 mt-3 text-sm">Crea tu CV profesional paso a paso con ayuda de IA</p>
+        </div>
 
         <div className="mb-8">
           <div className="w-full bg-black/40 rounded-full h-3 mb-2">
@@ -302,31 +337,31 @@ export default function CVWizard() {
                 placeholder="Nombre completo *"
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
               />
               <input
                 placeholder="Email *"
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
               />
               <input
                 placeholder="Telefono"
                 value={formData.phone}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
               />
               <input
                 placeholder="Ciudad/Pais"
                 value={formData.location}
                 onChange={e => setFormData({...formData, location: e.target.value})}
-                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
               />
               <input
                 placeholder="LinkedIn URL"
                 value={formData.linkedin}
                 onChange={e => setFormData({...formData, linkedin: e.target.value})}
-                className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
               />
             </div>
           )}
@@ -335,7 +370,7 @@ export default function CVWizard() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">Paso 2: Experiencia Laboral</h2>
               {formData.experience.map((exp, idx) => (
-                <div key={idx} className="p-4 rounded-lg bg-black/20 border border-purple-500/20 space-y-3">
+                <div key={idx} className="p-4 bg-black/30 border-2 border-purple-900 space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-white font-semibold">Trabajo #{idx + 1}</h3>
                     <button onClick={() => removeExperience(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
@@ -358,7 +393,7 @@ export default function CVWizard() {
                   </div>
                 </div>
               ))}
-              <button onClick={addExperience} className="w-full p-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30">+ Agregar trabajo</button>
+              <button onClick={addExperience} className="w-full p-3 border-2 border-purple-500/50 text-purple-300 font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/30">+ Agregar trabajo</button>
             </div>
           )}
 
@@ -366,7 +401,7 @@ export default function CVWizard() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">Paso 3: Educacion</h2>
               {formData.education.map((edu, idx) => (
-                <div key={idx} className="p-4 rounded-lg bg-black/20 border border-purple-500/20 space-y-3">
+                <div key={idx} className="p-4 bg-black/30 border-2 border-purple-900 space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-white font-semibold">Educacion #{idx + 1}</h3>
                     <button onClick={() => removeEducation(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
@@ -376,7 +411,7 @@ export default function CVWizard() {
                   <input placeholder="Periodo" value={edu.dates} onChange={e => updateEducation(idx, 'dates', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
                 </div>
               ))}
-              <button onClick={addEducation} className="w-full p-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30">+ Agregar educacion</button>
+              <button onClick={addEducation} className="w-full p-3 border-2 border-purple-500/50 text-purple-300 font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/30">+ Agregar educacion</button>
             </div>
           )}
 
@@ -388,7 +423,7 @@ export default function CVWizard() {
                   placeholder="Habilidades (separadas por comas)"
                   value={formData.skills}
                   onChange={e => setFormData({...formData, skills: e.target.value})}
-                  className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white min-h-[120px]"
+                  className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white min-h-[120px]"
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('skills')} 
@@ -407,7 +442,7 @@ export default function CVWizard() {
                   placeholder="Describe tu perfil profesional..."
                   value={formData.summary}
                   onChange={e => setFormData({...formData, summary: e.target.value})}
-                  className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white min-h-[150px]"
+                  className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white min-h-[150px]"
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('summary')} 
@@ -451,7 +486,7 @@ export default function CVWizard() {
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="flex-1 p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm"
+                      className="flex-1 p-2 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white text-sm"
                     >
                       {models.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>

@@ -322,9 +322,23 @@ function EditorContent() {
 
   if (loadingCV) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl animate-pulse mb-4">📄</div>
+      <div className="min-h-screen bg-[#0f0815] flex items-center justify-center relative overflow-hidden crt-effect">
+        {/* Scanlines */}
+        <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px)',
+          backgroundSize: '100% 2px'
+        }}></div>
+        {/* Grid Background */}
+        <div className="fixed inset-0 pointer-events-none grid-background-purple opacity-[0.02]"></div>
+        {/* Floating Elements */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[15%] left-[10%] w-2 h-2 bg-purple-500 opacity-60 animate-twinkle"></div>
+          <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-pink-400 opacity-40 animate-twinkle-delayed"></div>
+          <div className="absolute top-[60%] left-[5%] w-1 h-1 bg-fuchsia-400 opacity-50 animate-twinkle"></div>
+          <div className="absolute top-[80%] right-[8%] w-2 h-2 bg-purple-400 opacity-40 animate-twinkle-delayed"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="text-6xl animate-bounce mb-4">🎮</div>
           <p className="text-purple-300 text-xl">Cargando CV...</p>
         </div>
       </div>
@@ -332,11 +346,48 @@ function EditorContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-10 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-4xl font-bold text-white">Editar CV</h1>
-          <button onClick={() => router.push('/dashboard')} className="text-purple-300 hover:text-white transition">Volver al Dashboard</button>
+    <div className="min-h-screen bg-[#0f0815] py-10 px-4 relative overflow-hidden scanline-effect">
+      {/* Scanlines */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px)',
+        backgroundSize: '100% 2px'
+      }}></div>
+      {/* Grid Background */}
+      <div className="fixed inset-0 pointer-events-none grid-background-purple opacity-[0.02]"></div>
+      {/* Floating Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[15%] left-[10%] w-2 h-2 bg-purple-500 opacity-60 animate-twinkle"></div>
+        <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-pink-400 opacity-40 animate-twinkle-delayed"></div>
+        <div className="absolute top-[60%] left-[5%] w-1 h-1 bg-fuchsia-400 opacity-50 animate-twinkle"></div>
+        <div className="absolute top-[80%] right-[8%] w-2 h-2 bg-purple-400 opacity-40 animate-twinkle-delayed"></div>
+        {/* Floating Icons */}
+        <div className="absolute top-[20%] left-[5%] text-3xl opacity-15 animate-float-slow">🎮</div>
+        <div className="absolute top-[50%] right-[5%] text-2xl opacity-10 animate-float-medium">⚡</div>
+        <div className="absolute top-[75%] left-[8%] text-2xl opacity-15 animate-float-delayed">🎯</div>
+      </div>
+      {/* Background Text */}
+      <div className="fixed inset-0 pointer-events-none flex items-center justify-center">
+        <div className="text-[12vw] font-black opacity-[0.015] tracking-widest text-purple-500 select-none">
+          EDITOR
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-pink-600 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] uppercase tracking-tight">
+              Editar CV
+            </h1>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/50 px-3 py-1 rounded-sm">
+                <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                <span className="text-purple-300 text-xs font-bold uppercase">Game Editor</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => router.push('/dashboard')} className="text-purple-300 hover:text-purple-400 transition font-bold uppercase text-sm flex items-center gap-2">
+            <span>←</span> Volver al Dashboard
+          </button>
         </div>
         <div className="mb-8">
           <div className="w-full bg-black/40 rounded-full h-3 mb-2">
@@ -348,23 +399,24 @@ function EditorContent() {
           </div>
         </div>
 
-        <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30 mb-6">
+        <div className="bg-black/40 backdrop-blur-sm border-2 border-purple-900 p-1 mb-6" style={{ clipPath: 'polygon(0 12px, 12px 12px, 12px 0, calc(100% - 12px) 0, calc(100% - 12px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 12px), 0 calc(100% - 12px))' }}>
+          <div className="bg-[#0a0a0a] p-6 md:p-8">
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 1: Información Personal</h2>
-              <input placeholder="Nombre completo *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:border-purple-400" />
-              <input placeholder="Email *" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:border-purple-400" />
-              <input placeholder="Telefono" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white" />
-              <input placeholder="Ciudad/Pais" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white" />
-              <input placeholder="LinkedIn URL" value={formData.linkedin} onChange={e => setFormData({...formData, linkedin: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white" />
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 1: Información Personal</h2>
+              <input placeholder="Nombre completo *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+              <input placeholder="Email *" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+              <input placeholder="Telefono" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+              <input placeholder="Ciudad/Pais" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+              <input placeholder="LinkedIn URL" value={formData.linkedin} onChange={e => setFormData({...formData, linkedin: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 2: Experiencia Laboral</h2>
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 2: Experiencia Laboral</h2>
               {formData.experience.map((exp, idx) => (
-                <div key={idx} className="p-4 rounded-lg bg-black/20 border border-purple-500/20 space-y-3">
+                <div key={idx} className="p-4 bg-black/30 border-2 border-purple-900 space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-white font-semibold">Trabajo #{idx + 1}</h3>
                     <button onClick={() => removeExperience(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
@@ -382,15 +434,15 @@ function EditorContent() {
                   </div>
                 </div>
               ))}
-              <button onClick={addExperience} className="w-full p-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30">+ Agregar trabajo</button>
+              <button onClick={addExperience} className="w-full p-3 border-2 border-purple-500/50 text-purple-300 font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/30">+ Agregar trabajo</button>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 3: Educacion</h2>
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 3: Educacion</h2>
               {formData.education.map((edu, idx) => (
-                <div key={idx} className="p-4 rounded-lg bg-black/20 border border-purple-500/20 space-y-3">
+                <div key={idx} className="p-4 bg-black/30 border-2 border-purple-900 space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-white font-semibold">Educacion #{idx + 1}</h3>
                     <button onClick={() => removeEducation(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
@@ -400,15 +452,15 @@ function EditorContent() {
                   <input placeholder="Periodo" value={edu.dates} onChange={e => updateEducation(idx, 'dates', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
                 </div>
               ))}
-              <button onClick={addEducation} className="w-full p-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition">+ Agregar educacion</button>
+              <button onClick={addEducation} className="w-full p-3 border-2 border-purple-500/50 text-purple-300 font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/30 transition">+ Agregar educacion</button>
             </div>
           )}
 
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 4: Habilidades</h2>
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 4: Habilidades</h2>
               <div className="relative">
-                <textarea placeholder="Habilidades (separadas por comas)" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white min-h-[120px]" />
+                <textarea placeholder="Habilidades (separadas por comas)" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[120px]" />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('skills')} 
                   visible={formData.skills.length > 10} 
@@ -420,9 +472,9 @@ function EditorContent() {
 
           {step === 5 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 5: Resumen Profesional</h2>
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 5: Resumen Profesional</h2>
               <div className="relative">
-                <textarea placeholder="Describe tu perfil profesional..." value={formData.summary} onChange={e => setFormData({...formData, summary: e.target.value})} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white min-h-[150px]" />
+                <textarea placeholder="Describe tu perfil profesional..." value={formData.summary} onChange={e => setFormData({...formData, summary: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[150px]" />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('summary')} 
                   visible={formData.summary.length > 20} 
@@ -434,7 +486,7 @@ function EditorContent() {
 
           {step === 6 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 6: Estilo y Actualizacion</h2>
+              <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 6: Estilo y Actualizacion</h2>
               <div className="space-y-4">
                 <h3 className="text-white font-semibold text-lg">Estilo del CV:</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -454,11 +506,11 @@ function EditorContent() {
               </div>
 
               {models.length > 0 && (
-                <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
-                  <h3 className="text-white font-semibold text-lg text-center">🤖 Asistente Final</h3>
+                <div className="bg-black/40 border-2 border-purple-900 p-6 space-y-4" style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}>
+                  <h3 className="text-purple-300 font-black uppercase tracking-wider text-center text-sm">🤖 Asistente Final</h3>
                   <div className="flex gap-4">
-                    <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="flex-1 p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm">
-                      {models.map(m => <option key={m} value={m}>{m}</option>)}
+                    <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="flex-1 p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-sm">
+                      {models.map(m => <option key={m} value={m} className="bg-black">{m}</option>)}
                     </select>
                     <button 
                       onClick={handleFullReview} 
