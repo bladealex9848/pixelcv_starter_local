@@ -30,14 +30,19 @@ export default function CVWizard() {
       try {
         const res = await fetch('http://localhost:8000/ollama/models');
         const data = await res.json();
-        if (data.models && data.models.length > 0) {
+        if (data.models && Array.isArray(data.models) && data.models.length > 0) {
           setModels(data.models);
-          if (!data.models.find((m: any) => m.name === selectedModel)) {
-            setSelectedModel(data.models[0].name);
+          if (!data.models.includes(selectedModel)) {
+            setSelectedModel(data.models[0]);
           }
+        } else {
+            setModels([]);
+            setUseAI(false);
         }
       } catch (error) {
         console.error('Error cargando modelos:', error);
+        setModels([]);
+        setUseAI(false);
       }
     };
     fetchModels();
@@ -373,7 +378,8 @@ export default function CVWizard() {
                 </div>
               </div>
 
-              {/* Opciones de IA */}
+              {/* Opciones de IA - Solo visible si hay modelos */}
+              {models.length > 0 && (
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -391,7 +397,7 @@ export default function CVWizard() {
                   </label>
                 </div>
 
-                {useAI && models.length > 0 && (
+                {useAI && (
                   <div>
                     <label className="text-white font-semibold block mb-2">Modelo de IA:</label>
                     <select
@@ -399,15 +405,16 @@ export default function CVWizard() {
                       onChange={(e) => setSelectedModel(e.target.value)}
                       className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
                     >
-                      {models.map((model: any, index: number) => (
-                        <option key={model.name || index} value={model.name}>
-                          {model.name} ({model.parameter_size || '3.8B'})
+                      {models.map((model: string, index: number) => (
+                        <option key={model || index} value={model}>
+                          {model}
                         </option>
                       ))}
                     </select>
                   </div>
                 )}
               </div>
+              )}
 
               {/* Mensajes de carga por etapa */}
               {loading && (

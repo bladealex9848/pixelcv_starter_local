@@ -93,11 +93,20 @@ function EditorContent() {
       try {
         const res = await fetch('http://localhost:8000/ollama/models');
         const data = await res.json();
-        if (data.models && data.models.length > 0) {
+        if (data.models && Array.isArray(data.models) && data.models.length > 0) {
           setModels(data.models);
+          // Si el modelo seleccionado no esta en la lista, usar el primero
+          if (!data.models.includes(selectedModel)) {
+            setSelectedModel(data.models[0]);
+          }
+        } else {
+            setModels([]);
+            setUseAI(false);
         }
       } catch (error) {
         console.error('Error cargando modelos:', error);
+        setModels([]);
+        setUseAI(false);
       }
     };
     fetchModels();
@@ -401,6 +410,8 @@ function EditorContent() {
                 </div>
               </div>
 
+              {/* Opciones de IA - Solo visible si hay modelos disponibles */}
+              {models.length > 0 && (
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -413,17 +424,18 @@ function EditorContent() {
                   </label>
                 </div>
 
-                {useAI && models.length > 0 && (
+                {useAI && (
                   <div>
                     <label className="text-white font-semibold block mb-2">Modelo de IA:</label>
                     <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white">
-                      {models.map((model: any, index: number) => (
-                        <option key={model.name || index} value={model.name}>{model.name}</option>
+                      {models.map((model: string, index: number) => (
+                        <option key={model || index} value={model}>{model}</option>
                       ))}
                     </select>
                   </div>
                 )}
               </div>
+              )}
 
               {loading && (
                 <div className="bg-blue-600/20 border border-blue-500/30 p-6 rounded-lg">
