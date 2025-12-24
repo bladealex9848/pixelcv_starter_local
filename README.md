@@ -19,7 +19,7 @@
   - **Mejora Inteligente**: Botones ✨ integrados para optimizar logros, habilidades y resumen.
   - **Revisión Interactiva**: Compara sugerencias de IA lado a lado antes de aplicarlas.
   - **Instrucciones Personalizadas**: Guía a la IA (ej: "Hazlo más corto", "Usa tono ejecutivo").
-  - **Análisis Integral**: Reporte detallado de fortalezas y debilidades de tu perfil.
+  - **Análisis Integral**: Reporte detallado de fortalezas y debilidades de tu perfil con Markdown renderizado.
   - **Soporte Múltiples Modelos**: Compatible con modelos de Ollama (phi3.5, llama3, mistral, etc.).
 - 🎨 **Diseño Retro/Gamer Único**: 
   - **Login**: Tema verde ("Player Login") con efectos CRT y bordes pixel art.
@@ -74,6 +74,28 @@ cd pixelcv_starter_local
 ### Niveles
 🌱 Novato → 🌿 Aprendiz → 🌳 Maestro → 🏔️ Experto → 👑 **Leyenda**
 
+## 🤖 Configuración de IA (Ollama)
+
+### Modelos Soportados
+El sistema es compatible con cualquier modelo de Ollama. Los más recomendados para este proyecto:
+
+- **phi3.5:latest** (Principal) - Modelo ligero y eficiente, ideal para tareas de mejora de texto y revisión de CVs.
+- **llama3:latest** - Modelo más robusto para análisis complejos.
+- **mistral:latest** - Alternativa eficiente para español.
+- **qwen2:latest** - Excelente para tareas técnicas.
+
+### Instalación de Modelos
+```bash
+# Modelo principal recomendado
+ollama pull phi3.5:latest
+
+# Alternativas opcionales
+ollama pull llama3:latest
+ollama pull mistral:latest
+```
+
+El sistema detecta automáticamente los modelos disponibles en tu instalación de Ollama.
+
 ## 📖 Documentación
 
 La documentación se ha estructurado para facilitar la navegación:
@@ -85,14 +107,15 @@ La documentación se ha estructurado para facilitar la navegación:
 ## 🛠️ Tecnologías
 
 - **Backend**: FastAPI, SQLAlchemy, SQLite, JWT, RenderCV.
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Lucide Icons.
-- **IA**: Ollama (Phi-3.5 / Llama-3), Pydantic validation.
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Lucide Icons, react-markdown, remark-gfm, @tailwindcss/typography.
+- **IA**: Ollama (phi3.5 / llama3 / mistral), Pydantic validation.
+- **Estilos**: Tailwind CSS con animaciones personalizadas (twinkle, float, glow, scanline, glitch, pixel-border).
 
 ## 📝 Scripts Principales
 
 ```bash
-./run.sh        # Inicia backend y frontend (recomendado)
-./INSTALL.sh    # Instalación inicial de dependencias
+./run.sh           # Inicia backend y frontend (recomendado)
+./INSTALL.sh       # Instalación inicial de dependencias
 ./commit-simple.sh # Utilidad para commits rápidos
 ```
 
