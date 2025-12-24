@@ -295,15 +295,13 @@ function EditorContent() {
   };
 
   // Botón de IA reutilizable con estado de carga
-  const AIButton = ({ onClick, visible, isActive }: { onClick: () => void, visible: boolean, isActive: boolean }) => {
+  function AIButton({ onClick, visible, isActive }: { onClick: () => void, visible: boolean, isActive: boolean }) {
     if (!visible || models.length === 0) return null;
     return (
       <button
         onClick={onClick}
         disabled={isActive}
-        className={`absolute right-2 bottom-2 text-xs text-white px-3 py-1 rounded-full flex items-center gap-1 transition shadow-lg backdrop-blur-sm z-10 ${
-          isActive ? 'bg-purple-500/50 cursor-not-allowed' : 'bg-purple-600/80 hover:bg-purple-500'
-        }`}
+        className="absolute right-2 bottom-2 text-xs text-white px-3 py-1 rounded-full flex items-center gap-1 transition shadow-lg backdrop-blur-sm z-10 bg-purple-600/80 hover:bg-purple-500"
         title="Mejorar con IA"
       >
         {isActive ? (
@@ -318,7 +316,7 @@ function EditorContent() {
         )}
       </button>
     );
-  };
+  }
 
   if (loadingCV) {
     return (
@@ -426,9 +424,9 @@ function EditorContent() {
                   <input placeholder="Periodo" value={exp.dates} onChange={e => updateExperience(idx, 'dates', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
                   <div className="relative">
                     <textarea placeholder="Logros (uno por linea)" value={exp.highlights} onChange={e => updateExperience(idx, 'highlights', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white min-h-[80px]" />
-                    <AIButton 
-                      onClick={() => handleAnalyzeClick('experience', idx)} 
-                      visible={exp.highlights.length > 20} 
+                    <AIButton
+                      onClick={() => handleAnalyzeClick('experience', idx)}
+                      visible={exp.highlights.length > 20}
                       isActive={isAnalyzing && activeField?.type === 'experience' && activeField?.index === idx}
                     />
                   </div>
@@ -461,9 +459,9 @@ function EditorContent() {
               <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 4: Habilidades</h2>
               <div className="relative">
                 <textarea placeholder="Habilidades (separadas por comas)" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[120px]" />
-                <AIButton 
-                  onClick={() => handleAnalyzeClick('skills')} 
-                  visible={formData.skills.length > 10} 
+                <AIButton
+                  onClick={() => handleAnalyzeClick('skills')}
+                  visible={formData.skills.length > 10}
                   isActive={isAnalyzing && activeField?.type === 'skills'}
                 />
               </div>
@@ -475,9 +473,9 @@ function EditorContent() {
               <h2 className="text-2xl font-black text-purple-400 uppercase tracking-wider mb-4">Paso 5: Resumen Profesional</h2>
               <div className="relative">
                 <textarea placeholder="Describe tu perfil profesional..." value={formData.summary} onChange={e => setFormData({...formData, summary: e.target.value})} className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[150px]" />
-                <AIButton 
-                  onClick={() => handleAnalyzeClick('summary')} 
-                  visible={formData.summary.length > 20} 
+                <AIButton
+                  onClick={() => handleAnalyzeClick('summary')}
+                  visible={formData.summary.length > 20}
                   isActive={isAnalyzing && activeField?.type === 'summary'}
                 />
               </div>
@@ -574,6 +572,7 @@ function EditorContent() {
         content={reviewContent}
         isLoading={isReviewing}
       />
+    </div>
     </div>
   );
 }

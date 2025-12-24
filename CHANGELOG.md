@@ -2,6 +2,28 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.2] - 2024-12-24
+
+### Correcciones 🐛
+
+- **Editor de CV - Errores de Compilación:** Solucionados errores críticos de sintaxis JSX:
+  - **Error 1:** "Unexpected token `div`. Expected jsx identifier" en línea 347
+    - **Causa:** Div principal sin cierre adecuado
+    - **Solución:** Agregado cierre de div principal (`</div>`) antes del cierre de función
+  - **Error 2:** "Unexpected token. Did you mean `{'}'}` or `&rbrace;`" en línea 579
+    - **Causa:** Estructura incorrecta de cierre de componentes
+    - **Solución:** Balanceado correctamente todos los divs (49 abiertos / 49 cerrados)
+  - **Error 3:** Componente AIButton con sintaxis incorrecta
+    - **Causa:** Función flecha dentro de componente React
+    - **Solución:** Cambiado de `const AIButton = () => {}` a `function AIButton() {}`
+  - **Resultado:** Compilación exitosa de Next.js y eliminación de todos los errores de sintaxis
+
+### Mejorado ✨
+
+- **Limpieza de Código:** Eliminados espacios innecesarios en props de AIButton
+- **Consistencia:** Unificado estilo de className en botones de IA
+- **Estructura:** Mejorada la organización del componente EditorContent
+
 ## [2.4.1] - 2024-12-24
 
 ### Cambios 🎨
