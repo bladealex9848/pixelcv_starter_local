@@ -457,9 +457,14 @@ export default function CVWizard() {
                     </select>
                     <button
                       onClick={handleFullReview}
-                      className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition flex items-center gap-2 shadow-lg"
+                      disabled={isReviewing}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 shadow-lg ${
+                        isReviewing 
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:opacity-90 shadow-cyan-500/20'
+                      }`}
                     >
-                      <span>🔍</span> Revisión Integral
+                      <span>{isReviewing ? '⏳' : '🔍'}</span> {isReviewing ? 'Analizando...' : 'Revisión Integral'}
                     </button>
                   </div>
                 </div>

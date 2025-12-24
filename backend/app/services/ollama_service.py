@@ -117,9 +117,13 @@ def review_cv(model: str = None, cv_data: dict = None) -> str:
         resp.raise_for_status()
         data = resp.json()
         return data.get("message", {}).get("content", "No se pudo generar la revisión.")
+    except requests.exceptions.ReadTimeout:
+        return "⚠️ La IA está tomando demasiado tiempo para responder (Timeout). Por favor, intenta de nuevo en unos momentos o con un modelo más ligero."
+    except requests.exceptions.ConnectionError:
+        return "❌ No se pudo conectar con el servicio de IA (Ollama). Asegúrate de que el servidor de IA esté activo."
     except Exception as e:
         print(f"Error revisando CV: {e}")
-        return f"Error al generar la revisión: {str(e)}"
+        return f"Ocurrió un error inesperado al generar la revisión: {str(e)}"
 
 def list_models() -> list[str]:
     """Obtiene la lista de modelos disponibles en Ollama"""

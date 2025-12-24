@@ -460,8 +460,16 @@ function EditorContent() {
                     <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="flex-1 p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm">
                       {models.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <button onClick={handleFullReview} className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition flex items-center gap-2 shadow-lg">
-                      <span>🔍</span> Revisión Integral
+                    <button 
+                      onClick={handleFullReview} 
+                      disabled={isReviewing}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 shadow-lg ${
+                        isReviewing 
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:opacity-90'
+                      }`}
+                    >
+                      <span>{isReviewing ? '⏳' : '🔍'}</span> {isReviewing ? 'Analizando...' : 'Revisión Integral'}
                     </button>
                   </div>
                 </div>
