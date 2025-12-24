@@ -85,13 +85,21 @@ else
     exit 1
 fi
 
-# Ollama (opcional)
+# Ollama (local o remoto)
+OLLAMA_AVAILABLE=false
 if command -v ollama &> /dev/null; then
-    echo -e "  ${GREEN}✓${NC} Ollama instalado"
+    echo -e "  ${GREEN}✓${NC} Ollama local instalado"
     OLLAMA_AVAILABLE=true
-else
+elif [ -f "$BACKEND_DIR/.env" ]; then
+    OLLAMA_URL=$(grep "OLLAMA_BASE_URL" "$BACKEND_DIR/.env" 2>/dev/null | cut -d'=' -f2)
+    if [ ! -z "$OLLAMA_URL" ]; then
+        echo -e "  ${GREEN}✓${NC} Ollama remoto configurado: ${CYAN}$OLLAMA_URL${NC}"
+        OLLAMA_AVAILABLE=true
+    fi
+fi
+
+if [ "$OLLAMA_AVAILABLE" = false ]; then
     echo -e "  ${YELLOW}! Ollama no encontrado (IA deshabilitada)${NC}"
-    OLLAMA_AVAILABLE=false
 fi
 
 echo ""
@@ -173,14 +181,18 @@ fi
 
 echo ""
 
-# Verificar Ollama
+# Verificar conexion con Ollama
 if [ "$OLLAMA_AVAILABLE" = true ]; then
+    sleep 2  # Esperar a que el backend este listo
     OLLAMA_STATUS=$(curl -s http://localhost:8000/ollama/models 2>/dev/null)
     if echo "$OLLAMA_STATUS" | grep -q "connected"; then
         MODEL_COUNT=$(echo "$OLLAMA_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('count',0))" 2>/dev/null || echo "0")
-        echo -e "${GREEN}✓ Ollama conectado con $MODEL_COUNT modelo(s)${NC}"
+        echo -e "${GREEN}✓ Ollama conectado con $MODEL_COUNT modelo(s) disponible(s)${NC}"
+    elif echo "$OLLAMA_STATUS" | grep -q "models"; then
+        MODEL_COUNT=$(echo "$OLLAMA_STATUS" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('models',[])))" 2>/dev/null || echo "0")
+        echo -e "${GREEN}✓ Ollama conectado con $MODEL_COUNT modelo(s) disponible(s)${NC}"
     else
-        echo -e "${YELLOW}! Ollama no responde - ejecuta 'ollama serve' en otra terminal${NC}"
+        echo -e "${YELLOW}! Ollama no responde - verifica la configuracion${NC}"
     fi
 fi
 
