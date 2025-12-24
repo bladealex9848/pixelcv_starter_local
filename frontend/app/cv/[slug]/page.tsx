@@ -49,19 +49,7 @@ export default function PublicCVPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <header className="bg-black/30 backdrop-blur-sm border-b border-purple-500/30 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <a href="/" className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            PixelCV
-          </a>
-          <div className="flex gap-4">
-            <a href="/community" className="text-purple-300">Comunidad</a>
-            <a href="/leaderboard" className="text-purple-300">Ranking</a>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-20">
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-purple-500/30">
           <div className="flex items-start justify-between">
@@ -83,8 +71,16 @@ export default function PublicCVPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-2xl">
-          <pre className="whitespace-pre-wrap text-sm">{cv?.yaml_content}</pre>
+        <div className="bg-white rounded-2xl p-8 shadow-2xl min-h-[500px]">
+          {cv?.yaml_content ? (
+            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono overflow-x-auto">
+              {cv.yaml_content}
+            </pre>
+          ) : (
+            <div className="text-center py-16">
+              <p className="text-gray-500 text-lg">El contenido del CV no está disponible</p>
+            </div>
+          )}
         </div>
 
         {cv?.pdf_url && (

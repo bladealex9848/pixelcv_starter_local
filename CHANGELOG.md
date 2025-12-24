@@ -2,6 +2,26 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.3] - 2024-12-24
+
+### Correcciones 🐛
+
+- **Página de CV Público - Navbar Duplicado:** Eliminado navbar redundante en página de visualización de CV:
+  - **Problema:** La página `/cv/[slug]` tenía su propio navbar además del navbar principal del layout
+  - **Solución:** Eliminado el header duplicado y ajustado el padding superior (pt-20) para evitar superposición
+  - **Resultado:** Interfaz limpia con un solo navbar consistente en toda la aplicación
+
+- **Visualización de Contenido YAML:** Mejorada la visualización del contenido del CV:
+  - **Problema:** El contenido YAML no se mostraba correctamente o aparecía espacio en blanco
+  - **Solución:** Agregado manejo de contenido condicional y estilos mejorados (min-h-[500px], overflow-x-auto)
+  - **Resultado:** Visualización clara del contenido YAML con scroll horizontal si es necesario
+
+### Mejorado ✨
+
+- **Experiencia de Usuario:** Eliminada confusión de navegación con navbar duplicado
+- **Diseño Responsivo:** Mejorada la visualización en diferentes tamaños de pantalla
+- **Manejo de Errores:** Agregado mensaje amigable cuando el contenido no está disponible
+
 ## [2.4.2] - 2024-12-24
 
 ### Correcciones 🐛
