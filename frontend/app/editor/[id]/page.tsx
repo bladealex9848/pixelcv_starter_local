@@ -54,7 +54,7 @@ function EditorContent() {
       }
 
       try {
-        const res = await fetch(`http://localhost:8000/cv/${cvId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cvId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -101,7 +101,7 @@ function EditorContent() {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch('http://localhost:8000/ollama/models');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/models`);
         const data = await res.json();
         if (data.models && Array.isArray(data.models) && data.models.length > 0) {
           setModels(data.models);
@@ -158,7 +158,7 @@ function EditorContent() {
     const bulletsArray = Array.isArray(text) ? text : text.split('\n').filter(t => t.trim());
     if (bulletsArray.length === 0) return [];
 
-    const res = await fetch('http://localhost:8000/ollama/improve-bullets', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/improve-bullets`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bullets: bulletsArray, model: selectedModel, instruction })
@@ -223,7 +223,7 @@ function EditorContent() {
     setReviewContent('');
     setShowReviewModal(true);
     try {
-      const res = await fetch('http://localhost:8000/ollama/review-cv', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/review-cv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cv_data: formData, model: selectedModel })
@@ -249,7 +249,7 @@ function EditorContent() {
       if (!token) throw new Error('No autenticado');
 
       setLoadingStage('generando_pdf');
-      const res = await fetch(`http://localhost:8000/cv/${cvId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cvId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -291,7 +291,7 @@ function EditorContent() {
   };
 
   const downloadPDF = () => {
-    window.open(`http://localhost:8000/cv/${cvId}/pdf`, '_blank');
+    window.open(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cvId}/pdf`, '_blank');
   };
 
   // Botón de IA reutilizable con estado de carga

@@ -22,14 +22,14 @@ function DashboardContent() {
   const loadDashboard = async () => {
     const token = localStorage.getItem('token');
     try {
-      const statsRes = await fetch('http://localhost:8000/gamification/stats/me', {
+      const statsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gamification/stats/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (statsRes.ok) {
         setStats(await statsRes.json());
       }
 
-      const cvsRes = await fetch('http://localhost:8000/cv/my', {
+      const cvsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (cvsRes.ok) {
@@ -46,7 +46,7 @@ function DashboardContent() {
   const publishCV = async (cvId: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/cv/${cvId}/publish`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cvId}/publish`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -62,7 +62,7 @@ function DashboardContent() {
     if (!confirm('¿Estas seguro de eliminar este CV?')) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/cv/${cvId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cvId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -262,7 +262,7 @@ function DashboardContent() {
                           Edit
                         </button>
                         <a
-                          href={`http://localhost:8000/cv/${cv.id}/pdf`}
+                          href={`${process.env.NEXT_PUBLIC_API_URL}/cv/${cv.id}/pdf`}
                           target="_blank"
                           className="bg-teal-900/50 border border-teal-500/50 text-teal-300 px-3 py-1.5 text-xs font-bold uppercase hover:bg-teal-900/70 transition"
                         >
