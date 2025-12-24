@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 """Rutas para verificar y usar Ollama"""
 from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import Optional, List
 from app.services.ollama_service import list_models, generate_text, improve_bullets
 
 router = APIRouter(prefix="/ollama", tags=["ollama"])
+
+class ImproveBulletsRequest(BaseModel):
+    bullets: List[str]
+    model: Optional[str] = None
 
 @router.get("/models")
 def get_models():
@@ -25,10 +31,10 @@ def test_ollama():
     }
 
 @router.post("/improve-bullets")
-def improve_bullets_endpoint(bullets: list[str], model: str = None):
+def improve_bullets_endpoint(request: ImproveBulletsRequest):
     """Mejora bullets de experiencia"""
-    improved = improve_bullets(model=model, bullets=bullets)
+    improved = improve_bullets(model=request.model, bullets=request.bullets)
     return {
-        "original": bullets,
+        "original": request.bullets,
         "improved": improved
     }
