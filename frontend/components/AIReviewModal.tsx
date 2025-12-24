@@ -11,6 +11,8 @@ interface AIReviewModalProps {
 export default function AIReviewModal({ isOpen, onClose, onAccept, originalExperience, improvedExperience }: AIReviewModalProps) {
   if (!isOpen) return null;
 
+  const hasAnyChanges = improvedExperience.some((exp, idx) => exp.highlights !== originalExperience[idx]?.highlights);
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-purple-500/30 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
@@ -63,7 +65,7 @@ export default function AIReviewModal({ isOpen, onClose, onAccept, originalExper
             );
           })}
           
-          {improvedExperience.every((exp, idx) => exp.highlights === originalExperience[idx]?.highlights) && (
+          {!hasAnyChanges && (
              <div className="text-center text-gray-400 py-10">
                La IA no encontró mejoras significativas para el texto actual. ¡Ya está excelente!
              </div>
@@ -79,7 +81,8 @@ export default function AIReviewModal({ isOpen, onClose, onAccept, originalExper
           </button>
           <button
             onClick={() => onAccept(improvedExperience)}
-            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition shadow-lg shadow-purple-500/20"
+            disabled={!hasAnyChanges}
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Aplicar Mejoras
           </button>
