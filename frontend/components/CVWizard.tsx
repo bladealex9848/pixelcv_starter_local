@@ -42,12 +42,10 @@ export default function CVWizard() {
           }
         } else {
             setModels([]);
-            setUseAI(false);
         }
       } catch (error) {
         console.error('Error cargando modelos:', error);
         setModels([]);
-        setUseAI(false);
       }
     };
     fetchModels();
@@ -112,6 +110,20 @@ export default function CVWizard() {
     
     setShowAIModal(false);
     setActiveField(null);
+  };
+
+  // Botón de IA reutilizable
+  const AIButton = ({ onClick, visible }: { onClick: () => void, visible: boolean }) => {
+    if (!visible || models.length === 0) return null;
+    return (
+      <button
+        onClick={onClick}
+        className="absolute right-2 bottom-2 text-xs bg-purple-600/80 hover:bg-purple-500 text-white px-3 py-1 rounded-full flex items-center gap-1 transition shadow-lg backdrop-blur-sm z-10"
+        title="Mejorar con IA"
+      >
+        <span>✨</span> Mejorar
+      </button>
+    );
   };
 
   const generateCV = async () => {
@@ -477,9 +489,7 @@ export default function CVWizard() {
                   <div className="bg-green-500/20 border border-green-500/30 p-8 rounded-lg">
                     <p className="text-green-300 text-4xl mb-4">CV generado exitosamente!</p>
                     <p className="text-green-200 text-xl">
-                      {useAI && selectedModel
-                        ? `Tu CV ha sido optimizado con IA (${selectedModel}) y esta listo para descargar`
-                        : 'Tu CV esta listo para descargar'}
+                      Tu CV esta listo para descargar (Modelo IA: {selectedModel})
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -499,7 +509,6 @@ export default function CVWizard() {
                     </p>
                     <ul className="text-purple-300 text-base space-y-2 list-disc list-inside">
                       <li>Validacion de datos obligatorios</li>
-                      {useAI && <li>Mejora de logros con IA ({selectedModel})</li>}
                       <li>Generacion de YAML compatible con RenderCV</li>
                       <li>Creacion automatica de PDF profesional</li>
                     </ul>
