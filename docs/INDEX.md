@@ -6,8 +6,12 @@ La documentación se ha reorganizado para una mejor navegabilidad:
 
 -   **[Instalación y Configuración](installation/INDEX.md)**: Guías para configurar el entorno de desarrollo y producción.
 -   **[Desarrollo](development/INDEX.md)**: Documentación técnica interna, estado del proyecto, arquitectura y planes futuros.
--   **[Scripts y Herramientas](scripts/INDEX.md)**: Scripts de utilidad, pruebas y herramientas de diagnóstico.
+-   **[Scripts y Herramientas](scripts/INDEX.md)**: Scripts de utilidad, pruebas, herramientas de diagnóstico y generadores visuales.
 -   **[Test Interactivo](test-interactivo.html)**: Herramienta web para probar servicios y funciones avanzadas.
+
+## Scripts Destacados
+
+- **[Generador de Logo SVG](scripts/generate_svg_logo.py)**: Herramienta para regenerar el logo retrofuturista del proyecto.
 
 ## Archivos Principales
 
