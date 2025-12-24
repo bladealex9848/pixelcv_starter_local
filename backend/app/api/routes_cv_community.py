@@ -113,7 +113,7 @@ def get_public_cv(slug: str, db: Session = Depends(get_db)):
         "slug": cv.slug,
         "yaml_content": cv.yaml_content,
         "design": cv.design,
-        "pdf_url": cv.pdf_path,
+        "pdf_url": f"/cv/{cv.id}/pdf" if cv.pdf_path else None,
         "total_visits": cv.total_visits,
         "total_likes": cv.total_likes,
         "total_comments": cv.total_comments,

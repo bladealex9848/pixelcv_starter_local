@@ -73,9 +73,20 @@ export default function PublicCVPage() {
 
         <div className="bg-white rounded-2xl p-8 shadow-2xl min-h-[500px]">
           {cv?.yaml_content ? (
-            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono overflow-x-auto">
-              {cv.yaml_content}
-            </pre>
+            <div className="prose prose-sm max-w-none">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Contenido del CV (Formato YAML)</h3>
+              <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                  {cv.yaml_content}
+                </pre>
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Este es el contenido en formato YAML que se utiliza para generar el PDF. 
+                <a href={cv.pdf_url} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800">
+                  Descargar PDF para ver la versión formateada
+                </a>
+              </p>
+            </div>
           ) : (
             <div className="text-center py-16">
               <p className="text-gray-500 text-lg">El contenido del CV no está disponible</p>

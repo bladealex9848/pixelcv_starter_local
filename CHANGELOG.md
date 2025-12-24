@@ -2,6 +2,26 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.4] - 2024-12-24
+
+### Correcciones 🐛
+
+- **Página de CV Público - URL de PDF Incorrecta:** Solucionado problema de ruta absoluta en PDF:
+  - **Problema:** El `pdf_url` devolvía ruta absoluta del sistema de archivos (`/Volumes/NVMe1TB/...`)
+  - **Solución:** Cambiado a URL relativa (`/cv/{cv_id}/pdf`) en `backend/app/api/routes_cv_community.py`
+  - **Resultado:** Descarga de PDF funcional desde la interfaz pública
+
+- **Visualización de Contenido YAML:** Mejorada la visualización del contenido del CV:
+  - **Problema:** El contenido YAML se mostraba como texto plano sin contexto
+  - **Solución:** Agregado diseño estructurado con título, fondo gris y explicación clara
+  - **Resultado:** Interfaz más profesional con enlace directo al PDF
+
+### Mejorado ✨
+
+- **Backend API:** Normalización de URLs en endpoints públicos
+- **Frontend UX:** Explicación clara sobre el formato YAML y enlace al PDF
+- **Consistencia:** Mismo comportamiento de descarga que en dashboard y editor
+
 ## [2.4.3] - 2024-12-24
 
 ### Correcciones 🐛
