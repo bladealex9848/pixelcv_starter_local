@@ -15,11 +15,14 @@ def improve_bullets(model: str = None, bullets: list[str] = None) -> list[str]:
     
     url = f"{OLLAMA_BASE}/chat"
     prompt = (
-        "Actúa como un experto redactor de currículums. Reescribe los siguientes puntos de experiencia laboral "
-        "para que suenen más profesionales, orientados a resultados y con métricas si es posible. "
-        "RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO. No incluyas texto antes ni después del JSON.\n"
-        "Formato esperado: {\"bullets\": [\"punto mejorado 1\", \"punto mejorado 2\"]}\n\n"
-        "Puntos originales:\n" +
+        "Eres un experto consultor de carrera y redactor de CVs de alto impacto. "
+        "Tu tarea es transformar puntos de experiencia mediocres en logros impresionantes. "
+        "Usa verbos de acción fuertes (Lideré, Optimicé, Desarrollé, Gané) y, si el usuario no proporciona métricas, "
+        "agrega marcadores de posición lógicos como '[X]% ' o '[Y] personas' para que el usuario sepa dónde completarlos. "
+        "No te limites a corregir la gramática, REESCRIBE el logro para que suene ambicioso y profesional.\n\n"
+        "RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO. Sin explicaciones.\n"
+        "Formato: {\"bullets\": [\"Logro impactante 1\", \"Logro impactante 2\"]}\n\n"
+        "Puntos a transformar:\n" +
         "\n".join(f"- {b}" for b in bullets)
     )
 
@@ -36,6 +39,9 @@ def improve_bullets(model: str = None, bullets: list[str] = None) -> list[str]:
         data = resp.json()
         content = data.get("message", {}).get("content", "")
         
+        # LOG para depuración en la terminal del usuario
+        print(f"\n--- DEBUG OLLAMA RESPUESTA CRUDA ---\n{content}\n-----------------------------------\n")
+        
         # Intentar parsear JSON directo
         try:
             parsed = json.loads(content)
@@ -44,15 +50,17 @@ def improve_bullets(model: str = None, bullets: list[str] = None) -> list[str]:
         except json.JSONDecodeError:
             pass
             
-        # Si falla, buscar bloque JSON con regex
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
+        # Buscar bloques JSON (usando non-greedy para encontrar objetos individuales)
+        # Esto maneja casos donde el modelo devuelve múltiples JSONs o texto entre ellos
+        json_matches = re.finditer(r'\{.*?\}', content, re.DOTALL)
+        for match in json_matches:
             try:
-                parsed = json.loads(json_match.group(0))
+                candidate = match.group(0)
+                parsed = json.loads(candidate)
                 if "bullets" in parsed and isinstance(parsed["bullets"], list):
                     return parsed["bullets"]
             except:
-                pass
+                continue
 
         # Si todo falla, intentar devolver bullets si el modelo devolvió una lista markdown
         lines = [line.strip().lstrip('-•*').strip() for line in content.split('\n') if line.strip().startswith(('- ', '* ', '• '))]
