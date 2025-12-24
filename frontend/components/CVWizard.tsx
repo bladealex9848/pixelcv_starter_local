@@ -5,8 +5,17 @@ export default function CVWizard() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', location: '', linkedin: '',
-    experience: [] as any[], education: [] as any[], skills: '', summary: ''
+    experience: [] as any[], education: [] as any[], skills: '', summary: '',
+    theme: 'classic'
   });
+
+  const themes = [
+    { id: 'classic', name: 'Classic', description: 'Elegante y tradicional' },
+    { id: 'moderncv', name: 'Modern CV', description: 'Moderno con colores' },
+    { id: 'sb2nov', name: 'SB2Nov', description: 'Limpio y minimalista' },
+    { id: 'engineeringclassic', name: 'Engineering Classic', description: 'Para ingenieros' },
+    { id: 'engineeringresumes', name: 'Engineering Resumes', description: 'Tecnico detallado' },
+  ];
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [useAI, setUseAI] = useState(true);
@@ -125,6 +134,7 @@ export default function CVWizard() {
             skills: formData.skills.split(',').map(s => s.trim()).filter(s => s)
           },
           summary: formData.summary,
+          theme: formData.theme,
           improve: useAI,
           model: selectedModel,
           formats: ['pdf']
@@ -326,7 +336,42 @@ export default function CVWizard() {
 
           {step === 6 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 6: Generar CV</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Paso 6: Estilo y Generacion</h2>
+
+              {/* Selector de Tema */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg">Selecciona el estilo de tu CV:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {themes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setFormData({...formData, theme: theme.id})}
+                      className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
+                        formData.theme === theme.id
+                          ? 'border-purple-500 ring-2 ring-purple-500/50'
+                          : 'border-purple-500/30 hover:border-purple-500/60'
+                      }`}
+                    >
+                      <div className="aspect-[3/4] relative bg-white">
+                        <img
+                          src={`/themes/${theme.id}.png`}
+                          alt={theme.name}
+                          className="w-full h-full object-cover object-top"
+                        />
+                        {formData.theme === theme.id && (
+                          <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                            Seleccionado
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-2 bg-black/60">
+                        <p className="text-white font-medium text-sm">{theme.name}</p>
+                        <p className="text-purple-300 text-xs">{theme.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Opciones de IA */}
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">

@@ -11,8 +11,17 @@ function EditorContent() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', location: '', linkedin: '',
-    experience: [] as any[], education: [] as any[], skills: '', summary: ''
+    experience: [] as any[], education: [] as any[], skills: '', summary: '',
+    theme: 'classic'
   });
+
+  const themes = [
+    { id: 'classic', name: 'Classic', description: 'Elegante y tradicional' },
+    { id: 'moderncv', name: 'Modern CV', description: 'Moderno con colores' },
+    { id: 'sb2nov', name: 'SB2Nov', description: 'Limpio y minimalista' },
+    { id: 'engineeringclassic', name: 'Engineering Classic', description: 'Para ingenieros' },
+    { id: 'engineeringresumes', name: 'Engineering Resumes', description: 'Tecnico detallado' },
+  ];
   const [loading, setLoading] = useState(false);
   const [loadingCV, setLoadingCV] = useState(true);
   const [loadingStage, setLoadingStage] = useState('');
@@ -42,6 +51,7 @@ function EditorContent() {
 
         const data = await res.json();
         const cvData = data.data?.cv || {};
+        const designData = data.data?.design || {};
 
         // Mapear datos del CV al formulario
         setFormData({
@@ -52,6 +62,7 @@ function EditorContent() {
           linkedin: cvData.social_networks?.[0]?.username || '',
           summary: cvData.summary || '',
           skills: cvData.sections?.Habilidades?.[0]?.details || '',
+          theme: designData.theme || 'classic',
           experience: (cvData.sections?.Experiencia || []).map((exp: any) => ({
             company: exp.company || '',
             position: exp.position || '',
@@ -184,6 +195,7 @@ function EditorContent() {
             skills: formData.skills.split(',').map(s => s.trim()).filter(s => s)
           },
           summary: formData.summary,
+          theme: formData.theme,
           improve: useAI,
           model: selectedModel,
           formats: ['pdf']
@@ -352,7 +364,42 @@ function EditorContent() {
 
           {step === 6 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Paso 6: Actualizar CV</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Paso 6: Estilo y Actualizacion</h2>
+
+              {/* Selector de Tema */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg">Estilo del CV:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {themes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setFormData({...formData, theme: theme.id})}
+                      className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
+                        formData.theme === theme.id
+                          ? 'border-purple-500 ring-2 ring-purple-500/50'
+                          : 'border-purple-500/30 hover:border-purple-500/60'
+                      }`}
+                    >
+                      <div className="aspect-[3/4] relative bg-white">
+                        <img
+                          src={`/themes/${theme.id}.png`}
+                          alt={theme.name}
+                          className="w-full h-full object-cover object-top"
+                        />
+                        {formData.theme === theme.id && (
+                          <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                            Actual
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-2 bg-black/60">
+                        <p className="text-white font-medium text-sm">{theme.name}</p>
+                        <p className="text-purple-300 text-xs">{theme.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">

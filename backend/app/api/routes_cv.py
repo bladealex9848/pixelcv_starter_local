@@ -155,6 +155,7 @@ def get_my_cvs(
                     "total_visits": cv.total_visits,
                     "total_likes": cv.total_likes,
                     "total_comments": cv.total_comments,
+                    "theme": cv.design.get("theme", "classic") if cv.design else "classic",
                     "created_at": cv.created_at.isoformat() if cv.created_at else None,
                     "published_at": cv.published_at.isoformat() if cv.published_at else None,
                 }
@@ -289,6 +290,11 @@ def update_cv(
         cv.pdf_path = artefactos.get("pdf")
         cv.png_path = artefactos.get("png")
         cv.html_path = artefactos.get("html")
+        
+        # Actualizar diseño (theme)
+        current_theme = cv.design.get("theme", "classic") if cv.design else "classic"
+        new_theme = payload.get("theme", current_theme)
+        cv.design = {"theme": new_theme}
 
         db.commit()
 
