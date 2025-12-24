@@ -124,12 +124,12 @@ export default function CVWizard() {
     setError('');
 
     try {
-      let improvedContent = [];
+      let improvedContent: Array<{ highlights: string; company: string; position: string }> = [];
 
       if (type === 'experience' && typeof index === 'number') {
         const exp = formData.experience[index];
         const improvedBullets = await analyzeContent(exp.highlights, instruction);
-        improvedContent = [{ ...exp, highlights: improvedBullets.join('\n') }];
+        improvedContent = [{ ...exp, highlights: improvedBullets.join('\n') }] as Array<{ highlights: string; company: string; position: string }>;
       } else if (type === 'summary') {
         const text = formData.summary;
         const improvedBullets = await analyzeContent([text], instruction || "Mejora este resumen profesional para que sea impactante y conciso.");

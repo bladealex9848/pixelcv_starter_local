@@ -2,6 +2,32 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.3.0] - 2024-12-24
+
+### Añadido 🆕
+
+- **Estilo Retro Completo:** Rediseño de todas las páginas públicas con estética retro/gamer única por sección:
+  - **Login:** Tema verde ("Player Login") con efectos CRT y bordes pixel art
+  - **Register:** Tema cyan ("New Player") con iconos de gaming flotantes
+  - **Home:** Tema morado con glitch text y sección "How it Works"
+  - **Community:** Tema rosa con loading arcade y cards estilo pixel
+  - **Leaderboard:** Tema dorado con podio visual top 3 y tabla retro
+- **Renderizado Markdown:** El modal de análisis de CV ahora renderiza Markdown correctamente con `react-markdown` y estilos prose.
+- **Dependencias Frontend:**
+  - `react-markdown` y `remark-gfm` para renderizado de contenido
+  - `@tailwindcss/typography` para estilos prose
+
+### Mejorado ✨
+
+- **Modal de Análisis IA:** Títulos, listas y negritas ahora se visualizan correctamente en lugar de mostrar Markdown crudo.
+- **Consistencia Visual:** Todas las páginas ahora tienen scanlines CRT, grid de fondo, estrellas pixel flotantes y tipografía retro.
+
+### Corregido 🐛
+
+- Error de tipos TypeScript en `improvedContent` en editor y CVWizard que impedía el build.
+
+---
+
 ## [2.2.0] - 2024-12-23
 
 ### Añadido 🆕

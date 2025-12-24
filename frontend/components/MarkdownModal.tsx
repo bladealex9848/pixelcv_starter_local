@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MarkdownModalProps {
   isOpen: boolean;
@@ -18,8 +20,8 @@ export default function MarkdownModal({ isOpen, onClose, title, content, isLoadi
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <span>🤖</span> {title}
           </h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             disabled={isLoading}
             className={`text-gray-400 hover:text-white transition ${isLoading ? 'opacity-0 cursor-not-allowed' : ''}`}
           >
@@ -27,7 +29,7 @@ export default function MarkdownModal({ isOpen, onClose, title, content, isLoadi
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-4 text-gray-200 leading-relaxed">
+        <div className="flex-1 overflow-y-auto p-8 text-gray-200 leading-relaxed">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="text-5xl animate-bounce">🧠</div>
@@ -35,9 +37,20 @@ export default function MarkdownModal({ isOpen, onClose, title, content, isLoadi
               <p className="text-slate-500 text-sm italic">Esto puede tomar hasta un minuto dependiendo de la IA</p>
             </div>
           ) : (
-             <div className="prose prose-invert max-w-none whitespace-pre-wrap">
-               {content}
-             </div>
+            <div className="prose prose-invert prose-purple max-w-none
+              prose-headings:text-purple-300 prose-headings:font-bold prose-headings:border-b prose-headings:border-purple-500/20 prose-headings:pb-2 prose-headings:mb-4
+              prose-h3:text-xl prose-h3:mt-6
+              prose-p:text-gray-300 prose-p:leading-relaxed
+              prose-ul:space-y-2 prose-ul:my-4
+              prose-li:text-gray-300
+              prose-strong:text-purple-200 prose-strong:font-semibold
+              prose-em:text-gray-400
+              prose-a:text-purple-400 prose-a:no-underline hover:prose-a:underline
+            ">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
 
@@ -46,8 +59,8 @@ export default function MarkdownModal({ isOpen, onClose, title, content, isLoadi
             onClick={onClose}
             disabled={isLoading}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
-              isLoading 
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+              isLoading
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                 : 'bg-purple-600 text-white hover:bg-purple-700'
             }`}
           >

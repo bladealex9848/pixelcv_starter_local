@@ -1,0 +1,218 @@
+[
+  {
+    "model": "qwen3:4b",
+    "test": "improve-bullets",
+    "success": false,
+    "time_seconds": 120,
+    "error": "TIMEOUT"
+  },
+  {
+    "model": "qwen3:4b",
+    "test": "review-cv",
+    "success": false,
+    "time_seconds": 120,
+    "error": "TIMEOUT"
+  },
+  {
+    "model": "phi4-mini:latest",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 16.67,
+    "bullets_returned": 3,
+    "bullets": [
+      "Theo he diseñado y desarrollado aplicaciones robustas utilizando la plataforma React, elevando significativamente las métricas del rendimiento [X]%",
+      "Ha construido modelos innovadores en aprendizaje automático que han mejorado los resultados predictivos por un margen de X%",
+      "Había colaborado con equipos multidisciplinarios para agilizar el desarrollo y fomentar una cultura de innovación"
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "phi4-mini:latest",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 35.77,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 2076,
+    "preview": "### 🌟 Fortalezas\n- La experiencia laboral en el rol de Desarrollador Senior en Tech Corp destaca positivamente, mostrando una capacidad para desarrollar aplicaciones web y trabajar eficazmente con equipos.\n- Posee un título académico sólido en Ingeniería de Sistemas del Universidad Nacional, lo cual",
+    "error": null
+  },
+  {
+    "model": "phi3.5:latest",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 13.09,
+    "bullets_returned": 2,
+    "bullets": [
+      "Dirigí iniciativas complejas de Desarrollo Web utilizando React, optimizando experiencias digitales para los usuarios.",
+      "Proyecteé y materialicé aplicaciones avanzadas basadas en Machine Learning, mejorando significativamente la precisión predictiva [X]."
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "phi3.5:latest",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 58.79,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 2030,
+    "preview": "### 🌟 Fortalezas\n- Experiencia en el desarrollo de aplicaciones web como Desarrollador Senior.\n- Conocimiento técnico con lenguajes de programación populares: Python, JavaScript y React.\n- Familiaridad con frameworks modernos para construcción frontend/backend como FastAPI.\n\n### 🛠️ Áreas de Mejora\n-",
+    "error": null
+  },
+  {
+    "model": "granite3.3:2b",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 7.33,
+    "bullets_returned": 3,
+    "bullets": [
+      "Spearheaded web development projects utilizing React",
+      "Conducted advanced machine learning projects",
+      "Collaborated extensively with cross-functional development teams"
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "granite3.3:2b",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 29.54,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 1935,
+    "preview": "🌟 Fortalezas:\n\n- **Experiencia en Desarrollo Full Stack**: Juan Pérez tiene experiencia como Desarrollador Senior, lo que indica un nivel de competencia avanzado en el desarrollo de aplicaciones web.\n- **Habilidades Técnicas**: Destaca conocimientos en lenguajes y frameworks como Python, JavaScript,",
+    "error": null
+  },
+  {
+    "model": "qwen3:1.7b",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 15.14,
+    "bullets_returned": 3,
+    "bullets": [
+      "Led the development of web applications using React, delivering [X] high-impact features and optimizing [X] performance metrics.",
+      "Architected and implemented machine learning solutions, achieving [X] 90% accuracy in predictive models and [X] 20% reduction in training time.",
+      "Collaborated with the development team to drive innovation, aligning [X] cross-functional goals and delivering [X] 30% faster deployment cycles."
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "qwen3:1.7b",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 32.09,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 1406,
+    "preview": "### 🌟 Fortalezas  \n- **Experiencia relevante**: Posee una formación en Ingeniería de Sistemas y experiencia en desarrollo web, lo que confirma una base sólida en tecnologías clave.  \n- **Habilidades específicas**: Conoce Python, JavaScript, React y FastAPI, tecnologías de alto valor en desarrollo fu",
+    "error": null
+  },
+  {
+    "model": "gemma3:1b",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 6.52,
+    "bullets_returned": 3,
+    "bullets": [
+      "Desarrollé aplicaciones web robustas y dinámicas utilizando React, garantizando una experiencia de usuario excepcional y optimizada para [X] rendimiento.",
+      "Implementé una gama de proyectos de machine learning [X] que impulsaron [Y] avances en [Z] y generaron [A] valor para [B].",
+      "Fortalecí las colaboraciones del equipo de desarrollo a través de la participación activa en [C] iniciativas, fomentando la eficiencia y la innovación en el ciclo de vida del producto."
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "gemma3:1b",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 19.74,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 3458,
+    "preview": "### 🌟 Fortalezas\n\nEl perfil de Juan Pérez presenta varias fortalezas significativas que lo posicionan como un candidato valioso para roles de Desarrollo Full Stack.\n\n*   **Experiencia en Desarrollo Full Stack:** Su rol como Desarrollador Senior, con un enfoque en el desarrollo de aplicaciones web, i",
+    "error": null
+  },
+  {
+    "model": "qwen3:0.6b",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 8.79,
+    "bullets_returned": 3,
+    "bullets": [
+      "X: colaborar con equipo de desarrollo para optimizar procesos de desarrollo web con React X",
+      "X: desarrollar proyectos de machine learning para aumentar rendimiento en aplicaciones X",
+      "X: cooperar con el equipo de desarrollo para mejorar calidad de entrega X"
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "qwen3:0.6b",
+    "test": "review-cv",
+    "success": true,
+    "time_seconds": 17.82,
+    "quality_score": 5,
+    "has_fortalezas": true,
+    "has_mejoras": true,
+    "has_veredicto": true,
+    "is_spanish": true,
+    "not_json_echo": true,
+    "response_length": 1027,
+    "preview": "### 🌟 Fortalezas  \n- **Experiencia**: 20 años de experiencia en selección de talento.  \n- **Talento Tecnológico**: Dominio de 4 lenguajes (Python, JavaScript, React, FastAPI) y habilidades en desarrollo full stack.  \n- **Habilidades**: Proyección de soluciones tecnológicas innovadoras y habilidades ",
+    "error": null
+  },
+  {
+    "model": "gemma3:270m",
+    "test": "improve-bullets",
+    "success": true,
+    "time_seconds": 2.07,
+    "bullets_returned": 3,
+    "bullets": [
+      "Trabajé en desarrollo web con React",
+      "Hice proyectos de machine learning",
+      "Colaboré con el equipo de desarrollo"
+    ],
+    "raw_response": null,
+    "error": null
+  },
+  {
+    "model": "gemma3:270m",
+    "test": "review-cv",
+    "success": false,
+    "time_seconds": 3.61,
+    "quality_score": 1,
+    "has_fortalezas": false,
+    "has_mejoras": false,
+    "has_veredicto": false,
+    "is_spanish": true,
+    "not_json_echo": false,
+    "response_length": 539,
+    "preview": "```json\n{\n  \"name\": \"Juan Pérez\",\n  \"label\": \"Desarrollador Full Stack\",\n  \"email\": \"juan@ejemplo.com\",\n  \"experience\": [\n    {\n      \"company\": \"Tech Corp\",\n      \"position\": \"Desarrollador Senior\",\n      \"highlights\": [\n        \"Desarrollé aplicaciones web\",\n        \"Trabajé en equipo\"\n      ]\n   ",
+    "error": null
+  }
+]

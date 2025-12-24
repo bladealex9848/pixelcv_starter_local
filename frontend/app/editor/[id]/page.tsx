@@ -174,7 +174,7 @@ function EditorContent() {
     setError('');
 
     try {
-      let improvedContent = [];
+      let improvedContent: Array<{ highlights: string; company: string; position: string }> = [];
 
       if (type === 'experience' && typeof index === 'number') {
         const exp = formData.experience[index];
