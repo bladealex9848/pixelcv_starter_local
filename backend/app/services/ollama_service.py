@@ -4,7 +4,7 @@ import os, json, requests, re
 
 OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "phi3.5:latest")
-OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "60"))
+OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "300"))
 
 def improve_bullets(model: str = None, bullets: list[str] = None, instruction: str = None) -> list[str]:
     """Mejora bullets de experiencia usando Ollama"""
