@@ -167,6 +167,13 @@ fi
 # Iniciar Frontend
 echo -e "${CYAN}Iniciando Frontend (Next.js)...${NC}"
 cd "$FRONTEND_DIR"
+
+# Limpiar cache de Next.js para asegurar que los cambios se reflejen
+if [ -d ".next" ]; then
+    echo -e "  ${YELLOW}!${NC} Limpiando cache de build (.next)..."
+    rm -rf .next
+fi
+
 npm run dev > /tmp/pixelcv_frontend.log 2>&1 &
 FRONTEND_PID=$!
 

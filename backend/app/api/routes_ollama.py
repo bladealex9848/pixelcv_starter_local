@@ -12,6 +12,10 @@ class ImproveBulletsRequest(BaseModel):
     model: Optional[str] = None
     instruction: Optional[str] = None
 
+class ReviewCVRequest(BaseModel):
+    cv_data: dict
+    model: Optional[str] = None
+
 @router.get("/models")
 def get_models():
     """Obtiene la lista de modelos disponibles en Ollama"""
@@ -39,3 +43,10 @@ def improve_bullets_endpoint(request: ImproveBulletsRequest):
         "original": request.bullets,
         "improved": improved
     }
+
+@router.post("/review-cv")
+def review_cv_endpoint(request: ReviewCVRequest):
+    """Realiza una revisión integral del CV"""
+    from app.services.ollama_service import review_cv
+    review = review_cv(model=request.model, cv_data=request.cv_data)
+    return {"review": review}

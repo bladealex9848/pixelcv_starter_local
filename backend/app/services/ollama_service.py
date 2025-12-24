@@ -84,6 +84,43 @@ def improve_bullets(model: str = None, bullets: list[str] = None, instruction: s
         print(f"Error en Ollama: {e}")
         return bullets
 
+def review_cv(model: str = None, cv_data: dict = None) -> str:
+    """Revisa el CV completo y devuelve feedback en Markdown"""
+    if model is None:
+        model = OLLAMA_MODEL
+    
+    url = f"{OLLAMA_BASE}/chat"
+    
+    # Convertir datos relevantes a texto
+    cv_text = json.dumps(cv_data, indent=2, ensure_ascii=False)
+    
+    prompt = (
+        "Actúa como un reclutador senior experto. Revisa el siguiente contenido de un currículum (en formato JSON) "
+        "y proporciona un análisis crítico constructivo en formato MARKDOWN.\n"
+        "Estructura tu respuesta así:\n"
+        "1. **Fortalezas**: Qué está bien hecho.\n"
+        "2. **Áreas de Mejora**: Qué falta o qué es débil (cuantificación, verbos, estructura).\n"
+        "3. **Veredicto**: Una breve conclusión motivadora.\n"
+        "Sé directo, profesional y específico. Responde en ESPAÑOL.\n\n"
+        f"Datos del CV:\n{cv_text}"
+    )
+
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "options": {"temperature": 0.5}
+    }
+    
+    try:
+        resp = requests.post(url, json=payload, timeout=OLLAMA_TIMEOUT)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("message", {}).get("content", "No se pudo generar la revisión.")
+    except Exception as e:
+        print(f"Error revisando CV: {e}")
+        return f"Error al generar la revisión: {str(e)}"
+
 def list_models() -> list[str]:
     """Obtiene la lista de modelos disponibles en Ollama"""
     try:

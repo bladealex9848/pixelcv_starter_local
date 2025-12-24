@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import AIReviewModal from './AIReviewModal';
+import MarkdownModal from './MarkdownModal';
 
 export default function CVWizard() {
   const [step, setStep] = useState(1);
@@ -9,6 +10,39 @@ export default function CVWizard() {
     experience: [] as any[], education: [] as any[], skills: '', summary: '',
     theme: 'classic'
   });
+  
+  // ... (otros estados) ...
+  const [improvedExperience, setImprovedExperience] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeField, setActiveField] = useState<{type: 'experience' | 'skills' | 'summary', index?: number} | null>(null);
+  
+  // Estado para Revision General
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewContent, setReviewContent] = useState('');
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  // ... (useEffect y otras funciones) ...
+
+  const handleFullReview = async () => {
+    setIsReviewing(true);
+    setReviewContent('');
+    setShowReviewModal(true);
+    try {
+      const res = await fetch('http://localhost:8000/ollama/review-cv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_data: formData, model: selectedModel })
+      });
+      const data = await res.json();
+      setReviewContent(data.review);
+    } catch (e: any) {
+      setReviewContent('Error al realizar la revisión: ' + e.message);
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+  
+  // ... (resto del codigo)
 
   const themes = [
     { id: 'classic', name: 'Classic', description: 'Elegante y tradicional' },
@@ -432,17 +466,25 @@ export default function CVWizard() {
                 
                 <div>
                   <label className="text-white font-medium block mb-2 text-sm">Modelo Activo:</label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm focus:outline-none focus:border-purple-400"
-                  >
-                    {models.map((model: string, index: number) => (
-                      <option key={model || index} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-4">
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="flex-1 p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm focus:outline-none focus:border-purple-400"
+                    >
+                      {models.map((model: string, index: number) => (
+                        <option key={model || index} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleFullReview}
+                      className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                    >
+                      <span>🔍</span> Revisión Integral
+                    </button>
+                  </div>
                 </div>
               </div>
               )}
@@ -459,6 +501,14 @@ export default function CVWizard() {
                   [{highlights: formData.skills, company: 'Habilidades', position: ''}]
                 ) : []}
                 improvedExperience={improvedExperience}
+              />
+              
+              <MarkdownModal
+                isOpen={showReviewModal}
+                onClose={() => setShowReviewModal(false)}
+                title="Análisis Integral del CV"
+                content={reviewContent}
+                isLoading={isReviewing}
               />
 
               {/* Mensajes de carga por etapa */}
