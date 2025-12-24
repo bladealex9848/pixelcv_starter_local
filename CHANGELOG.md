@@ -2,6 +2,24 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.6] - 2024-12-24
+
+### Añadido 🆕
+
+- **Navbar - Diseño y Animaciones:** Aplicados estilos y animaciones coherentes con páginas principales:
+  - **Efectos de Fondo:** Scanlines, grid background y elementos flotantes
+  - **Animaciones:** Twinkle, float y transiciones suaves en botones
+  - **Texto de Fondo:** "NAVBAR" gigante semitransparente estilo páginas principales
+  - **Logo Animado:** Efecto bounce y escala en hover
+  - **Botones Mejorados:** Iconos más grandes, transiciones y efectos de escala
+  - **Menú Móvil:** Fondo con blur, animaciones de deslizamiento y hover
+
+### Mejorado ✨
+
+- **Consistencia Visual:** Navbar ahora coincide con el estilo retro/futurista de dashboard y editor
+- **Experiencia de Usuario:** Animaciones suaves y feedback visual en todas las interacciones
+- **Diseño Responsivo:** Menú móvil mejorado con efectos visuales coherentes
+
 ## [2.4.5] - 2024-12-24
 
 ### Correcciones 🐛
