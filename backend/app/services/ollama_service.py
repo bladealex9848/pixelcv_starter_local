@@ -95,21 +95,28 @@ def review_cv(model: str = None, cv_data: dict = None) -> str:
     cv_text = json.dumps(cv_data, indent=2, ensure_ascii=False)
     
     prompt = (
-        "Actúa como un reclutador senior experto. Revisa el siguiente contenido de un currículum (en formato JSON) "
-        "y proporciona un análisis crítico constructivo en formato MARKDOWN.\n"
-        "Estructura tu respuesta así:\n"
-        "1. **Fortalezas**: Qué está bien hecho.\n"
-        "2. **Áreas de Mejora**: Qué falta o qué es débil (cuantificación, verbos, estructura).\n"
-        "3. **Veredicto**: Una breve conclusión motivadora.\n"
-        "Sé directo, profesional y específico. Responde en ESPAÑOL.\n\n"
-        f"Datos del CV:\n{cv_text}"
+        "SISTEMA: Eres un RECLUTADOR TÉCNICO SENIOR con 20 años de experiencia en selección de talento.\n"
+        "TAREA: Analiza el siguiente CV proporcionado en formato JSON y genera un REPORTE CRÍTICO DE CALIDAD.\n"
+        "REGLAS ESTRICTAS:\n"
+        "1. NO devuelvas el JSON original.\n"
+        "2. NO inventes experiencia que no existe.\n"
+        "3. USA FORMATO MARKDOWN PROFESIONAL.\n"
+        "4. Responde SIEMPRE en ESPAÑOL.\n\n"
+        "ESTRUCTURA DEL REPORTE:\n"
+        "### 🌟 Fortalezas\n"
+        "(Lista de lo que destaca positivamente)\n\n"
+        "### 🛠️ Áreas de Mejora\n"
+        "(Crítica constructiva sobre verbos de acción, métricas faltantes, claridad o diseño)\n\n"
+        "### 📈 Veredicto Profesional\n"
+        "(Conclusión breve sobre el impacto del perfil y qué tan 'contratable' parece)\n\n"
+        f"--- DATOS DEL CV A ANALIZAR ---\n{cv_text}"
     )
 
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "options": {"temperature": 0.5}
+        "options": {"temperature": 0.4}
     }
     
     try:
