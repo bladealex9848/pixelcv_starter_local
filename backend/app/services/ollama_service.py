@@ -6,7 +6,7 @@ OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 OLLAMA_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "phi3.5:latest")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "60"))
 
-def improve_bullets(model: str = None, bullets: list[str] = None) -> list[str]:
+def improve_bullets(model: str = None, bullets: list[str] = None, instruction: str = None) -> list[str]:
     """Mejora bullets de experiencia usando Ollama"""
     if model is None:
         model = OLLAMA_MODEL
@@ -14,15 +14,25 @@ def improve_bullets(model: str = None, bullets: list[str] = None) -> list[str]:
         return []
     
     url = f"{OLLAMA_BASE}/chat"
+    
+    base_instruction = (
+        "Eres un experto consultor de carrera. Tu tarea es reescribir los siguientes textos "
+        "para que suenen más profesionales y de alto impacto. "
+    )
+    
+    if instruction:
+        base_instruction += f"\nIMPORTANTE - Sigue esta instrucción específica del usuario: '{instruction}'.\n"
+    else:
+        base_instruction += (
+            "Usa verbos de acción fuertes y agrega marcadores de métricas [X] si faltan datos. "
+            "No te limites a corregir, REESCRIBE para impresionar.\n"
+        )
+
     prompt = (
-        "Eres un experto consultor de carrera y redactor de CVs de alto impacto. "
-        "Tu tarea es transformar puntos de experiencia mediocres en logros impresionantes. "
-        "Usa verbos de acción fuertes (Lideré, Optimicé, Desarrollé, Gané) y, si el usuario no proporciona métricas, "
-        "agrega marcadores de posición lógicos como '[X]% ' o '[Y] personas' para que el usuario sepa dónde completarlos. "
-        "No te limites a corregir la gramática, REESCRIBE el logro para que suene ambicioso y profesional.\n\n"
+        f"{base_instruction}\n"
         "RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO. Sin explicaciones.\n"
-        "Formato: {\"bullets\": [\"Logro impactante 1\", \"Logro impactante 2\"]}\n\n"
-        "Puntos a transformar:\n" +
+        "Formato: {\"bullets\": [\"Texto mejorado 1\", \"Texto mejorado 2\"]}\n\n"
+        "Textos originales:\n" +
         "\n".join(f"- {b}" for b in bullets)
     )
 

@@ -97,39 +97,21 @@ export default function CVWizard() {
     });
   };
 
-  const analyzeWithAI = async () => {
-    setIsAnalyzing(true);
-    setError('');
-    try {
-      const currentExperience = [...formData.experience];
-      const improved = await Promise.all(currentExperience.map(async (exp) => {
-        if (!exp.highlights) return exp;
-        const bulletsArray = exp.highlights.split('\n').filter((h: string) => h.trim());
-        if (bulletsArray.length === 0) return exp;
+  const handleAcceptAI = (newData: any[]) => {
+    if (!activeField) return;
 
-        const res = await fetch('http://localhost:8000/ollama/improve-bullets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bullets: bulletsArray, model: selectedModel })
-        });
-        
-        const data = await res.json();
-        const improvedText = (data.improved || []).join('\n');
-        return { ...exp, highlights: improvedText };
-      }));
-
-      setImprovedExperience(improved);
-      setShowAIModal(true);
-    } catch (e: any) {
-      setError('Error al analizar con IA: ' + e.message);
-    } finally {
-      setIsAnalyzing(false);
+    if (activeField.type === 'experience' && typeof activeField.index === 'number') {
+      const exp = [...formData.experience];
+      exp[activeField.index].highlights = newData[0].highlights;
+      setFormData({ ...formData, experience: exp });
+    } else if (activeField.type === 'summary') {
+      setFormData({ ...formData, summary: newData[0].highlights });
+    } else if (activeField.type === 'skills') {
+      setFormData({ ...formData, skills: newData[0].highlights });
     }
-  };
-
-  const handleAcceptAI = (newExperience: any[]) => {
-    setFormData({ ...formData, experience: newExperience });
+    
     setShowAIModal(false);
+    setActiveField(null);
   };
 
   const generateCV = async () => {
@@ -296,12 +278,15 @@ export default function CVWizard() {
                     onChange={e => updateExperience(idx, 'location', e.target.value)}
                     className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400"
                   />
+                  <div className="relative">
                   <textarea
                     placeholder="Logros y responsabilidades (cada logro en una nueva linea)"
                     value={exp.highlights}
                     onChange={e => updateExperience(idx, 'highlights', e.target.value)}
                     className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400 min-h-[80px]"
                   />
+                  <AIButton onClick={() => handleAnalyzeClick('experience', idx)} visible={exp.highlights.length > 20} />
+                  </div>
                 </div>
               ))}
               <button onClick={addExperience} className="w-full p-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition">
@@ -356,12 +341,15 @@ export default function CVWizard() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">Paso 4: Habilidades</h2>
               <p className="text-purple-300 mb-4">Separa cada habilidad con una coma. Ej: Python, React, Git, Agile</p>
+              <div className="relative">
               <textarea
                 placeholder="Habilidades tecnicas y blandas (separadas por comas)"
                 value={formData.skills}
                 onChange={e => setFormData({...formData, skills: e.target.value})}
                 className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400 min-h-[120px]"
               />
+              <AIButton onClick={() => handleAnalyzeClick('skills')} visible={formData.skills.length > 10} />
+              </div>
             </div>
           )}
 
@@ -369,12 +357,15 @@ export default function CVWizard() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-white mb-4">Paso 5: Resumen Profesional</h2>
               <p className="text-purple-300 mb-4">Una breve descripcion de 2-3 frases sobre tu experiencia unica y objetivos profesionales.</p>
+              <div className="relative">
               <textarea
                 placeholder="Ej: Ingeniero de software con 5 anos de experiencia en desarrollo de aplicaciones web. Especializado en React y Node.js. Busco oportunidades para aplicar mis habilidades en proyectos innovadores..."
                 value={formData.summary}
                 onChange={e => setFormData({...formData, summary: e.target.value})}
                 className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white placeholder-purple-300 focus:outline-none focus:border-purple-400 min-h-[150px]"
               />
+              <AIButton onClick={() => handleAnalyzeClick('summary')} visible={formData.summary.length > 20} />
+              </div>
             </div>
           )}
 
@@ -422,41 +413,24 @@ export default function CVWizard() {
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-white font-semibold text-lg">Asistente de IA</label>
-                    <p className="text-purple-300 text-sm mt-1">Mejora la redacción de tus logros profesionales antes de generar el PDF.</p>
+                    <label className="text-white font-semibold text-lg">Configuración de IA</label>
+                    <p className="text-purple-300 text-sm mt-1">Modelo seleccionado para las mejoras automáticas.</p>
                   </div>
                 </div>
-
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <label className="text-white font-medium block mb-2 text-sm">Modelo:</label>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm focus:outline-none focus:border-purple-400"
-                    >
-                      {models.map((model: string, index: number) => (
-                        <option key={model || index} value={model}>
-                          {model}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button 
-                    onClick={analyzeWithAI} 
-                    disabled={isAnalyzing}
-                    className="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition disabled:opacity-50 flex items-center gap-2"
+                
+                <div>
+                  <label className="text-white font-medium block mb-2 text-sm">Modelo Activo:</label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="w-full p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm focus:outline-none focus:border-purple-400"
                   >
-                    {isAnalyzing ? (
-                      <>
-                        <span className="animate-spin">⚡</span> Analizando...
-                      </>
-                    ) : (
-                      <>
-                        <span>✨</span> Analizar Mejoras
-                      </>
-                    )}
-                  </button>
+                    {models.map((model: string, index: number) => (
+                      <option key={model || index} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               )}
@@ -465,7 +439,13 @@ export default function CVWizard() {
                 isOpen={showAIModal}
                 onClose={() => setShowAIModal(false)}
                 onAccept={handleAcceptAI}
-                originalExperience={formData.experience}
+                onRegenerate={handleRegenerate}
+                isRegenerating={isAnalyzing}
+                originalExperience={activeField ? (
+                  activeField.type === 'experience' && typeof activeField.index === 'number' ? [{...formData.experience[activeField.index]}] : 
+                  activeField.type === 'summary' ? [{highlights: formData.summary, company: 'Resumen', position: ''}] :
+                  [{highlights: formData.skills, company: 'Habilidades', position: ''}]
+                ) : []}
                 improvedExperience={improvedExperience}
               />
 

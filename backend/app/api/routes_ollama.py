@@ -10,6 +10,7 @@ router = APIRouter(prefix="/ollama", tags=["ollama"])
 class ImproveBulletsRequest(BaseModel):
     bullets: List[str]
     model: Optional[str] = None
+    instruction: Optional[str] = None
 
 @router.get("/models")
 def get_models():
@@ -33,7 +34,7 @@ def test_ollama():
 @router.post("/improve-bullets")
 def improve_bullets_endpoint(request: ImproveBulletsRequest):
     """Mejora bullets de experiencia"""
-    improved = improve_bullets(model=request.model, bullets=request.bullets)
+    improved = improve_bullets(model=request.model, bullets=request.bullets, instruction=request.instruction)
     return {
         "original": request.bullets,
         "improved": improved
