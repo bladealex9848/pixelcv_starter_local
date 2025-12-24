@@ -152,6 +152,12 @@ function DashboardContent() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => router.push(`/editor/${cv.id}`)}
+                      className="bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-lg text-sm hover:bg-indigo-500/30 transition"
+                    >
+                      Editar
+                    </button>
                     <a
                       href={`http://localhost:8000/cv/${cv.id}/pdf`}
                       target="_blank"

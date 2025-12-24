@@ -215,6 +215,96 @@ def publish_cv(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/{cv_id}")
+def get_cv(
+    cv_id: str,
+    authorization: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    """Obtiene un CV por ID para edicion"""
+    try:
+        token = authorization.replace("Bearer ", "")
+        user = AuthService.get_current_user(db, token)
+        if not user:
+            raise HTTPException(status_code=401, detail="No autenticado")
+
+        cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user.id).first()
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV no encontrado")
+
+        # Parsear YAML para obtener datos editables
+        import yaml
+        cv_data = yaml.safe_load(cv.yaml_content) if cv.yaml_content else {}
+
+        return {
+            "id": cv.id,
+            "name": cv.name,
+            "slug": cv.slug,
+            "yaml_content": cv.yaml_content,
+            "data": cv_data,
+            "is_published": cv.is_published,
+            "created_at": cv.created_at.isoformat() if cv.created_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{cv_id}")
+def update_cv(
+    cv_id: str,
+    payload: dict = Body(...),
+    authorization: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    """Actualiza un CV existente"""
+    try:
+        token = authorization.replace("Bearer ", "")
+        user = AuthService.get_current_user(db, token)
+        if not user:
+            raise HTTPException(status_code=401, detail="No autenticado")
+
+        cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user.id).first()
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV no encontrado")
+
+        # IA opcional para mejorar highlights
+        if payload.get("improve", False) and payload.get("model"):
+            sections = payload.get("sections", {})
+            for section_name, entries in sections.items():
+                if isinstance(entries, list):
+                    for entry in entries:
+                        if isinstance(entry, dict) and "highlights" in entry:
+                            entry["highlights"] = improve_bullets(payload["model"], entry["highlights"])
+            payload["sections"] = sections
+
+        # Construir nuevo YAML y regenerar PDF
+        yaml_text = build_yaml(payload)
+        artefactos = render_cv(yaml_text, cv_id, formats=tuple(payload.get("formats", ["pdf"])))
+
+        # Actualizar CV en base de datos
+        cv.name = payload.get("name", cv.name)
+        cv.yaml_content = yaml_text
+        cv.pdf_path = artefactos.get("pdf")
+        cv.png_path = artefactos.get("png")
+        cv.html_path = artefactos.get("html")
+
+        db.commit()
+
+        return {
+            "cvId": cv_id,
+            "slug": cv.slug,
+            "artefactos": artefactos,
+            "yaml": yaml_text,
+            "message": "CV actualizado exitosamente"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/{cv_id}/pdf")
 def get_pdf(cv_id: str):
     """Descarga el PDF de un CV"""
