@@ -2,6 +2,20 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.5] - 2024-12-24
+
+### Correcciones 🐛
+
+- **Página de CV Público - Descarga de PDF:** Solucionado problema de descarga de PDF:
+  - **Problema:** La URL relativa `/cv/{cv_id}/pdf` no funcionaba entre frontend (puerto 3000) y backend (puerto 8000)
+  - **Solución:** Cambiado a URL completa usando `process.env.NEXT_PUBLIC_API_URL` en frontend
+  - **Resultado:** Descarga de PDF funcional desde la interfaz pública
+
+### Mejorado ✨
+
+- **Frontend API:** Uso consistente de variables de entorno para URLs de API
+- **Experiencia de Usuario:** Descarga de PDF funcional desde la página pública de CV
+
 ## [2.4.4] - 2024-12-24
 
 ### Correcciones 🐛

@@ -82,7 +82,7 @@ export default function PublicCVPage() {
               </div>
               <p className="text-sm text-gray-500 mt-4">
                 Este es el contenido en formato YAML que se utiliza para generar el PDF. 
-                <a href={cv.pdf_url} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800">
+                <a href={`${process.env.NEXT_PUBLIC_API_URL}${cv.pdf_url}`} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800">
                   Descargar PDF para ver la versión formateada
                 </a>
               </p>
@@ -96,7 +96,7 @@ export default function PublicCVPage() {
 
         {cv?.pdf_url && (
           <div className="mt-8 flex justify-center">
-            <a href={cv.pdf_url} target="_blank" rel="noopener noreferrer" 
+            <a href={`${process.env.NEXT_PUBLIC_API_URL}${cv.pdf_url}`} target="_blank" rel="noopener noreferrer" 
                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
               📄 Descargar PDF
             </a>
