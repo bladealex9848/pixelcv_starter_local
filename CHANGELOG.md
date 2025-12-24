@@ -2,6 +2,35 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.1.0] - 2024-12-23
+
+### Añadido 🆕
+
+#### Funcionalidades de IA Avanzada
+- **Revisión Interactiva:** Modal "lado a lado" para comparar sugerencias de IA con el texto original antes de aceptar.
+- **IA Contextual:** Botones "✨ Mejorar" integrados directamente en los campos de Experiencia, Habilidades y Resumen del editor.
+- **Regeneración Guiada:** Capacidad de dar instrucciones personalizadas a la IA (ej: "Hazlo más corto", "Enfócate en ventas") para regenerar sugerencias.
+- **Revisión Integral:** Nuevo botón "🔍 Revisión Integral" que analiza todo el CV y genera un informe de fortalezas y debilidades.
+- **Robustez en Ollama:** Parser mejorado para manejar respuestas ruidosas o múltiples bloques JSON de modelos pequeños (Phi-3.5).
+
+#### Gestión de Temas
+- **Selector Visual de Temas:** Nueva interfaz en el paso 6 para elegir entre 5 temas de RenderCV (`classic`, `moderncv`, `sb2nov`, etc.) con vista previa.
+- **Persistencia de Diseño:** El tema seleccionado se guarda correctamente en la base de datos y se recupera al editar.
+
+#### Documentación y Scripts
+- **Reestructuración de Documentación:** Movimiento de documentación a carpeta `docs/` organizada por categorías (`installation`, `development`, `scripts`).
+- **PixelCV Diagnostic Suite:** Nueva herramienta web (`docs/test-interactivo.html`) para probar la salud del sistema y las funciones de IA.
+- **Limpieza Automática:** El script `run.sh` ahora limpia la caché de Next.js para asegurar que los cambios se reflejen.
+
+### Corregido 🐛
+
+- Error 422 en endpoint `/improve-bullets` al usar modelos Pydantic correctamente.
+- Duplicación de código en `CVWizard.tsx` que impedía la compilación.
+- Error en `routes_cv.py` que no guardaba la configuración de diseño al actualizar un CV.
+- Visibilidad condicional de opciones de IA cuando no hay modelos disponibles.
+
+---
+
 ## [2.0.0] - 2024-12
 
 ### Añadido 🆕
