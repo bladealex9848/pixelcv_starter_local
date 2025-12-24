@@ -105,24 +105,9 @@ def build_yaml(payload: dict) -> str:
     # Configuracion de diseno
     cv_data["design"] = {"theme": payload.get("theme", "classic")}
 
-    # Configurar idioma espanol (RenderCV usa 'spanish', no 'es')
+    # Configurar idioma espanol (solo el campo 'language' es soportado)
     cv_data["locale"] = {
-        "language": "spanish",
-        "date_style": "MONTH_ABBREVIATION YEAR",
-        "abbreviations_for_months": [
-            "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
-        ],
-        "full_names_of_months": [
-            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-        ],
-        "month": "mes",
-        "months": "meses",
-        "year": "año",
-        "years": "años",
-        "present": "presente",
-        "to": "–"
+        "language": "spanish"
     }
 
     return yaml.safe_dump(cv_data, sort_keys=False, allow_unicode=True, default_flow_style=False)
