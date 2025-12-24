@@ -2,6 +2,28 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.1] - 2024-12-24
+
+### Cambios 🎨
+
+- **CVWizard - Estilos Consistentes:** Unificación de estilos en todos los campos de formulario del wizard:
+  - **Paso 1 (Información Personal):** Inputs con fondo negro y bordes purple-900
+  - **Paso 2 (Experiencia Laboral):** Inputs y textarea con fondo negro consistente
+  - **Paso 3 (Educación):** Inputs con fondo negro consistente
+  - **Paso 4 (Habilidades):** Textarea con fondo negro agregado
+  - **Paso 5 (Resumen Profesional):** Textarea con fondo negro agregado
+  - **Paso 6 (Estilo y Generación):** Select de modelo con fondo negro agregado
+  - **Eliminado:** Código duplicado en className y estilos inconsistentes
+  - **Resultado:** Diseño retro completamente consistente en todos los pasos del wizard
+
+### Correcciones 🐛
+
+- Eliminado código duplicado `text-white focus:outline-none focus:border-purple-400` en className
+- Eliminados estilos `rounded` y bordes inconsistentes en pasos 2 y 3
+- Estandarizados todos los inputs a usar `bg-black border-2 border-purple-900`
+
+---
+
 ## [2.4.0] - 2024-12-24
 
 ### Añadido 🆕

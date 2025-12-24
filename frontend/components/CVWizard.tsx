@@ -337,31 +337,31 @@ export default function CVWizard() {
                 placeholder="Nombre completo *"
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
               />
               <input
                 placeholder="Email *"
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
               />
               <input
                 placeholder="Telefono"
                 value={formData.phone}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
               />
               <input
                 placeholder="Ciudad/Pais"
                 value={formData.location}
                 onChange={e => setFormData({...formData, location: e.target.value})}
-                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
               />
               <input
                 placeholder="LinkedIn URL"
                 value={formData.linkedin}
                 onChange={e => setFormData({...formData, linkedin: e.target.value})}
-                className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white focus:outline-none focus:border-purple-400"
+                className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
               />
             </div>
           )}
@@ -375,15 +375,15 @@ export default function CVWizard() {
                     <h3 className="text-white font-semibold">Trabajo #{idx + 1}</h3>
                     <button onClick={() => removeExperience(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
                   </div>
-                  <input placeholder="Empresa" value={exp.company} onChange={e => updateExperience(idx, 'company', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
-                  <input placeholder="Cargo" value={exp.position} onChange={e => updateExperience(idx, 'position', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
-                  <input placeholder="Periodo" value={exp.dates} onChange={e => updateExperience(idx, 'dates', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
+                  <input placeholder="Empresa" value={exp.company} onChange={e => updateExperience(idx, 'company', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+                  <input placeholder="Cargo" value={exp.position} onChange={e => updateExperience(idx, 'position', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+                  <input placeholder="Periodo" value={exp.dates} onChange={e => updateExperience(idx, 'dates', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
                   <div className="relative">
                     <textarea
                       placeholder="Logros (uno por linea)"
                       value={exp.highlights}
                       onChange={e => updateExperience(idx, 'highlights', e.target.value)}
-                      className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white min-h-[80px]"
+                      className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[80px]"
                     />
                     <AIButton 
                       onClick={() => handleAnalyzeClick('experience', idx)} 
@@ -406,9 +406,9 @@ export default function CVWizard() {
                     <h3 className="text-white font-semibold">Educacion #{idx + 1}</h3>
                     <button onClick={() => removeEducation(idx)} className="text-red-400 hover:text-red-300 text-sm">Eliminar</button>
                   </div>
-                  <input placeholder="Institucion" value={edu.institution} onChange={e => updateEducation(idx, 'institution', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
-                  <input placeholder="Grado" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
-                  <input placeholder="Periodo" value={edu.dates} onChange={e => updateEducation(idx, 'dates', e.target.value)} className="w-full p-2 rounded bg-black/40 border border-purple-500/30 text-white" />
+                  <input placeholder="Institucion" value={edu.institution} onChange={e => updateEducation(idx, 'institution', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+                  <input placeholder="Grado" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
+                  <input placeholder="Periodo" value={edu.dates} onChange={e => updateEducation(idx, 'dates', e.target.value)} className="w-full p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono" />
                 </div>
               ))}
               <button onClick={addEducation} className="w-full p-3 border-2 border-purple-500/50 text-purple-300 font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/30">+ Agregar educacion</button>
@@ -423,7 +423,7 @@ export default function CVWizard() {
                   placeholder="Habilidades (separadas por comas)"
                   value={formData.skills}
                   onChange={e => setFormData({...formData, skills: e.target.value})}
-                  className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white min-h-[120px]"
+                  className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[120px]"
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('skills')} 
@@ -442,7 +442,7 @@ export default function CVWizard() {
                   placeholder="Describe tu perfil profesional..."
                   value={formData.summary}
                   onChange={e => setFormData({...formData, summary: e.target.value})}
-                  className="w-full p-3 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white min-h-[150px]"
+                  className="w-full p-3 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono min-h-[150px]"
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('summary')} 
@@ -486,7 +486,7 @@ export default function CVWizard() {
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="flex-1 p-2 border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-white text-sm"
+                      className="flex-1 p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-sm"
                     >
                       {models.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
