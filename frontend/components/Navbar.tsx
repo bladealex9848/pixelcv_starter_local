@@ -41,6 +41,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-6">
+            <button onClick={() => router.push('/models')} className="text-purple-200 hover:text-white flex items-center gap-1">👾 Modelos</button>
             {isAuthenticated ? (
               <>
                 <button onClick={() => router.push('/dashboard')} className="text-purple-200 hover:text-white">📊 Dashboard</button>
@@ -73,6 +74,7 @@ export default function Navbar() {
 
         {menuOpen && (
           <div className="md:hidden py-4 border-t border-purple-500/20 space-y-3">
+            <button onClick={() => {router.push('/models'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2 flex items-center gap-2">👾 Modelos</button>
             {isAuthenticated ? (
               <>
                 <button onClick={() => {router.push('/dashboard'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2">📊 Dashboard</button>

@@ -2,6 +2,22 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.2.0] - 2024-12-23
+
+### Añadido 🆕
+
+- **Sección de Modelos:** Nueva página interactiva con estética retro-gamer (pixel art) que muestra el catálogo de IAs disponibles.
+- **Benchmark de IA:** Sistema de validación automática de modelos con métricas de Precisión, Recall y F1-Score.
+- **Gráficos de Rendimiento:** Visualización comparativa de latencia y precisión dentro de la aplicación.
+- **Soporte Gemma 3 & Qwen 3:** Integración y validación de los últimos modelos ligeros de Google y Alibaba.
+
+### Mejorado ✨
+
+- **Feedback de IA:** Indicadores de carga y bloqueo de UI mejorados para evitar colisiones en procesos largos.
+- **Robustez de Red:** Timeouts aumentados a 300s para soportar análisis complejos en servidores remotos.
+
+---
+
 ## [2.1.0] - 2024-12-23
 
 ### Añadido 🆕
