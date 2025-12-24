@@ -21,7 +21,7 @@ function DashboardContent() {
   const loadDashboard = async () => {
     const token = localStorage.getItem('token');
     try {
-      // Cargar estadísticas
+      // Cargar estadisticas
       const statsRes = await fetch('http://localhost:8000/gamification/stats/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -29,13 +29,49 @@ function DashboardContent() {
         setStats(await statsRes.json());
       }
 
-      // Aquí podrías cargar los CVs del usuario
-      // Por ahora, usamos un array vacío
-      setCvs([]);
+      // Cargar CVs del usuario
+      const cvsRes = await fetch('http://localhost:8000/cv/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (cvsRes.ok) {
+        const data = await cvsRes.json();
+        setCvs(data.cvs || []);
+      }
     } catch (error) {
       console.error('Error cargando dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const publishCV = async (cvId: string) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:8000/cv/${cvId}/publish`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        loadDashboard(); // Recargar datos
+      }
+    } catch (error) {
+      console.error('Error publicando CV:', error);
+    }
+  };
+
+  const deleteCV = async (cvId: string) => {
+    if (!confirm('¿Estas seguro de eliminar este CV?')) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:8000/cv/${cvId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        loadDashboard(); // Recargar datos
+      }
+    } catch (error) {
+      console.error('Error eliminando CV:', error);
     }
   };
 
@@ -90,19 +126,65 @@ function DashboardContent() {
 
         {/* Recent CVs */}
         <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
-          <h2 className="text-2xl font-bold text-white mb-6">📋 Tus CVs</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Tus CVs</h2>
           {cvs.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📄</div>
-              <p className="text-purple-300 text-lg">Aún no has creado ningún CV</p>
+              <p className="text-purple-300 text-lg">Aun no has creado ningun CV</p>
               <p className="text-purple-400 mt-2">Comienza creando tu primer CV con nuestro asistente</p>
             </div>
           ) : (
             <div className="space-y-4">
               {cvs.map((cv) => (
-                <div key={cv.id} className="p-4 bg-black/20 rounded-lg border border-purple-500/20">
-                  <h3 className="text-white font-semibold">{cv.title}</h3>
-                  <p className="text-purple-300 text-sm mt-1">Creado: {new Date(cv.created_at).toLocaleDateString()}</p>
+                <div key={cv.id} className="p-4 bg-black/20 rounded-lg border border-purple-500/20 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-white font-semibold">{cv.name}</h3>
+                    <div className="flex items-center gap-4 mt-1">
+                      <span className={`text-xs px-2 py-1 rounded ${cv.is_published ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                        {cv.is_published ? 'Publicado' : 'Borrador'}
+                      </span>
+                      <span className="text-purple-300 text-sm">
+                        {cv.total_visits || 0} visitas | {cv.total_likes || 0} likes
+                      </span>
+                      <span className="text-purple-400 text-sm">
+                        Creado: {new Date(cv.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href={`http://localhost:8000/cv/${cv.id}/pdf`}
+                      target="_blank"
+                      className="bg-purple-600/20 text-purple-300 px-3 py-2 rounded-lg text-sm hover:bg-purple-600/30 transition"
+                    >
+                      Descargar PDF
+                    </a>
+                    <button
+                      onClick={() => publishCV(cv.id)}
+                      className={`px-3 py-2 rounded-lg text-sm transition ${
+                        cv.is_published
+                          ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                          : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                      }`}
+                    >
+                      {cv.is_published ? 'Despublicar' : 'Publicar'}
+                    </button>
+                    {cv.is_published && (
+                      <a
+                        href={`/cv/${cv.slug}`}
+                        target="_blank"
+                        className="bg-blue-500/20 text-blue-300 px-3 py-2 rounded-lg text-sm hover:bg-blue-500/30 transition"
+                      >
+                        Ver
+                      </a>
+                    )}
+                    <button
+                      onClick={() => deleteCV(cv.id)}
+                      className="bg-red-500/20 text-red-300 px-3 py-2 rounded-lg text-sm hover:bg-red-500/30 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

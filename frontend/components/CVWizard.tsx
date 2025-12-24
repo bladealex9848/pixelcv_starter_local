@@ -88,10 +88,18 @@ export default function CVWizard() {
         throw new Error('Nombre y email son obligatorios');
       }
 
+      // Obtener token de autenticacion
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
       setLoadingStage('mejorando_ia');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('http://localhost:8000/cv', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
