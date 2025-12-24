@@ -354,8 +354,8 @@ export default function CVWizard() {
                       onChange={(e) => setSelectedModel(e.target.value)}
                       className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
                     >
-                      {models.map((model: any) => (
-                        <option key={model.name} value={model.name}>
+                      {models.map((model: any, index: number) => (
+                        <option key={model.name || index} value={model.name}>
                           {model.name} ({model.parameter_size || '3.8B'})
                         </option>
                       ))}

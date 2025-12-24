@@ -105,9 +105,9 @@ def build_yaml(payload: dict) -> str:
     # Configuracion de diseno
     cv_data["design"] = {"theme": payload.get("theme", "classic")}
 
-    # Configurar idioma espanol
+    # Configurar idioma espanol (RenderCV usa 'spanish', no 'es')
     cv_data["locale"] = {
-        "language": "es",
+        "language": "spanish",
         "date_style": "MONTH_ABBREVIATION YEAR",
         "abbreviations_for_months": [
             "Ene", "Feb", "Mar", "Abr", "May", "Jun",
