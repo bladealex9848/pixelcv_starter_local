@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PrivateRoute from '../../../components/PrivateRoute';
+import AIReviewModal from '../../../components/AIReviewModal';
 
 function EditorContent() {
   const params = useParams();
@@ -25,11 +26,15 @@ function EditorContent() {
   const [loading, setLoading] = useState(false);
   const [loadingCV, setLoadingCV] = useState(true);
   const [loadingStage, setLoadingStage] = useState('');
-  const [useAI, setUseAI] = useState(false);
-  const [models, setModels] = useState<any[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState('phi3.5:latest');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  
+  // Estado para Revision IA
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [improvedExperience, setImprovedExperience] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Cargar datos del CV existente
   useEffect(() => {
@@ -95,18 +100,15 @@ function EditorContent() {
         const data = await res.json();
         if (data.models && Array.isArray(data.models) && data.models.length > 0) {
           setModels(data.models);
-          // Si el modelo seleccionado no esta en la lista, usar el primero
           if (!data.models.includes(selectedModel)) {
             setSelectedModel(data.models[0]);
           }
         } else {
             setModels([]);
-            setUseAI(false);
         }
       } catch (error) {
         console.error('Error cargando modelos:', error);
         setModels([]);
-        setUseAI(false);
       }
     };
     fetchModels();
@@ -156,6 +158,54 @@ function EditorContent() {
     });
   };
 
+  const analyzeWithAI = async () => {
+    setIsAnalyzing(true);
+    setError('');
+    try {
+      // Clonar la experiencia actual
+      const currentExperience = [...formData.experience];
+      const improved = await Promise.all(currentExperience.map(async (exp) => {
+        // Si no hay bullets o highlights, saltar
+        if (!exp.highlights) return exp;
+        
+        // Convertir string multilinea a array para la API
+        const bulletsArray = exp.highlights.split('\n').filter((h: string) => h.trim());
+        if (bulletsArray.length === 0) return exp;
+
+        // Llamar a la API
+        const res = await fetch('http://localhost:8000/ollama/improve-bullets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bullets: bulletsArray,
+            model: selectedModel
+          })
+        });
+        
+        const data = await res.json();
+        // Unir array de vuelta a string
+        const improvedText = (data.improved || []).join('\n');
+        
+        return {
+          ...exp,
+          highlights: improvedText
+        };
+      }));
+
+      setImprovedExperience(improved);
+      setShowAIModal(true);
+    } catch (e: any) {
+      setError('Error al analizar con IA: ' + e.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAcceptAI = (newExperience: any[]) => {
+    setFormData({ ...formData, experience: newExperience });
+    setShowAIModal(false);
+  };
+
   const updateCV = async () => {
     setLoading(true);
     setError('');
@@ -172,7 +222,7 @@ function EditorContent() {
         throw new Error('No autenticado');
       }
 
-      setLoadingStage('mejorando_ia');
+      setLoadingStage('generando_pdf');
       const res = await fetch(`http://localhost:8000/cv/${cvId}`, {
         method: 'PUT',
         headers: {
@@ -205,13 +255,12 @@ function EditorContent() {
           },
           summary: formData.summary,
           theme: formData.theme,
-          improve: useAI,
+          improve: false, // Ya mejorado manualmente
           model: selectedModel,
           formats: ['pdf']
         })
       });
 
-      setLoadingStage('generando_pdf');
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.detail || 'Error al actualizar el CV');
@@ -415,27 +464,46 @@ function EditorContent() {
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-white font-semibold text-lg">Usar IA para mejorar</label>
-                    <p className="text-purple-300 text-sm mt-2">Optimizar logros con inteligencia artificial</p>
+                    <label className="text-white font-semibold text-lg">Asistente de IA</label>
+                    <p className="text-purple-300 text-sm mt-1">Mejora la redacción de tus logros profesionales antes de generar el PDF.</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={useAI} onChange={(e) => setUseAI(e.target.checked)} />
-                    <div className="w-11 h-6 bg-purple-900 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
                 </div>
 
-                {useAI && (
-                  <div>
-                    <label className="text-white font-semibold block mb-2">Modelo de IA:</label>
-                    <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white">
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="text-white font-medium block mb-2 text-sm">Modelo:</label>
+                    <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm">
                       {models.map((model: string, index: number) => (
                         <option key={model || index} value={model}>{model}</option>
                       ))}
                     </select>
                   </div>
-                )}
+                  <button 
+                    onClick={analyzeWithAI} 
+                    disabled={isAnalyzing}
+                    className="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <span className="animate-spin">⚡</span> Analizando...
+                      </>
+                    ) : (
+                      <>
+                        <span>✨</span> Analizar Mejoras
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               )}
+
+              <AIReviewModal 
+                isOpen={showAIModal}
+                onClose={() => setShowAIModal(false)}
+                onAccept={handleAcceptAI}
+                originalExperience={formData.experience}
+                improvedExperience={improvedExperience}
+              />
 
               {loading && (
                 <div className="bg-blue-600/20 border border-blue-500/30 p-6 rounded-lg">

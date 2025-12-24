@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import AIReviewModal from './AIReviewModal';
 
 export default function CVWizard() {
   const [step, setStep] = useState(1);
@@ -18,11 +19,15 @@ export default function CVWizard() {
   ];
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
-  const [useAI, setUseAI] = useState(true);
-  const [models, setModels] = useState<any[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState('phi3.5:latest');
   const [cvId, setCvId] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  // Estado para Revision IA
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [improvedExperience, setImprovedExperience] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Cargar modelos disponibles de Ollama
   useEffect(() => {
@@ -92,6 +97,41 @@ export default function CVWizard() {
     });
   };
 
+  const analyzeWithAI = async () => {
+    setIsAnalyzing(true);
+    setError('');
+    try {
+      const currentExperience = [...formData.experience];
+      const improved = await Promise.all(currentExperience.map(async (exp) => {
+        if (!exp.highlights) return exp;
+        const bulletsArray = exp.highlights.split('\n').filter((h: string) => h.trim());
+        if (bulletsArray.length === 0) return exp;
+
+        const res = await fetch('http://localhost:8000/ollama/improve-bullets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bullets: bulletsArray, model: selectedModel })
+        });
+        
+        const data = await res.json();
+        const improvedText = (data.improved || []).join('\n');
+        return { ...exp, highlights: improvedText };
+      }));
+
+      setImprovedExperience(improved);
+      setShowAIModal(true);
+    } catch (e: any) {
+      setError('Error al analizar con IA: ' + e.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAcceptAI = (newExperience: any[]) => {
+    setFormData({ ...formData, experience: newExperience });
+    setShowAIModal(false);
+  };
+
   const generateCV = async () => {
     setLoading(true);
     setError('');
@@ -105,7 +145,7 @@ export default function CVWizard() {
       // Obtener token de autenticacion
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-      setLoadingStage('mejorando_ia');
+      setLoadingStage('generando_pdf');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -140,18 +180,17 @@ export default function CVWizard() {
           },
           summary: formData.summary,
           theme: formData.theme,
-          improve: useAI,
+          improve: false, // Mejorado manualmente
           model: selectedModel,
           formats: ['pdf']
         })
       });
 
-      setLoadingStage('generando_pdf');
+      setLoadingStage('finalizando');
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.detail || 'Error al generar el CV');
 
-      setLoadingStage('finalizando');
       setCvId(data.cvId);
     } catch (e: any) {
       setError(e.message || 'Error al generar el CV');
@@ -383,27 +422,18 @@ export default function CVWizard() {
               <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-white font-semibold text-lg">Usar IA para mejorar mi CV</label>
-                    <p className="text-purple-300 text-sm mt-2">La IA optimizara tus logros y lenguaje profesionalmente</p>
+                    <label className="text-white font-semibold text-lg">Asistente de IA</label>
+                    <p className="text-purple-300 text-sm mt-1">Mejora la redacción de tus logros profesionales antes de generar el PDF.</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={useAI}
-                      onChange={(e) => setUseAI(e.target.checked)}
-                    />
-                    <div className="w-11 h-6 bg-purple-900 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
                 </div>
 
-                {useAI && (
-                  <div>
-                    <label className="text-white font-semibold block mb-2">Modelo de IA:</label>
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="text-white font-medium block mb-2 text-sm">Modelo:</label>
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-black/40 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
+                      className="w-full p-2 rounded-lg bg-black/40 border border-purple-500/30 text-white text-sm focus:outline-none focus:border-purple-400"
                     >
                       {models.map((model: string, index: number) => (
                         <option key={model || index} value={model}>
@@ -412,9 +442,32 @@ export default function CVWizard() {
                       ))}
                     </select>
                   </div>
-                )}
+                  <button 
+                    onClick={analyzeWithAI} 
+                    disabled={isAnalyzing}
+                    className="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <span className="animate-spin">⚡</span> Analizando...
+                      </>
+                    ) : (
+                      <>
+                        <span>✨</span> Analizar Mejoras
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               )}
+
+              <AIReviewModal 
+                isOpen={showAIModal}
+                onClose={() => setShowAIModal(false)}
+                onAccept={handleAcceptAI}
+                originalExperience={formData.experience}
+                improvedExperience={improvedExperience}
+              />
 
               {/* Mensajes de carga por etapa */}
               {loading && (
