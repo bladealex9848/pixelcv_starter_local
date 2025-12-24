@@ -49,8 +49,8 @@ def improve_bullets(model: str = None, bullets: list[str] = None, instruction: s
         data = resp.json()
         content = data.get("message", {}).get("content", "")
         
-        # LOG para depuración en la terminal del usuario
-        print(f"\n--- DEBUG OLLAMA RESPUESTA CRUDA ---\n{content}\n-----------------------------------\n")
+        # Log discreto de actividad
+        print(f"[Ollama] Respuesta recibida ({len(content)} caracteres). Procesando sugerencias...")
         
         # Intentar parsear JSON directo
         try:

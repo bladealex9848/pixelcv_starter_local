@@ -38,15 +38,27 @@ def test_ollama():
 @router.post("/improve-bullets")
 def improve_bullets_endpoint(request: ImproveBulletsRequest):
     """Mejora bullets de experiencia"""
-    improved = improve_bullets(model=request.model, bullets=request.bullets, instruction=request.instruction)
-    return {
-        "original": request.bullets,
-        "improved": improved
-    }
+    try:
+        improved = improve_bullets(model=request.model, bullets=request.bullets, instruction=request.instruction)
+        return {
+            "status": "success",
+            "original": request.bullets,
+            "improved": improved
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Error procesando con IA: {str(e)}")
 
 @router.post("/review-cv")
 def review_cv_endpoint(request: ReviewCVRequest):
     """Realiza una revisión integral del CV"""
-    from app.services.ollama_service import review_cv
-    review = review_cv(model=request.model, cv_data=request.cv_data)
-    return {"review": review}
+    try:
+        from app.services.ollama_service import review_cv
+        review = review_cv(model=request.model, cv_data=request.cv_data)
+        return {
+            "status": "success",
+            "review": review
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Error en la revisión integral: {str(e)}")

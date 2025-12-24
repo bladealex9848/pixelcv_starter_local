@@ -1,83 +1,332 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PixelCV - Test Interactivo</title>
+    <title>PixelCV Diagnostic Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#a855f7', // Purple
+                            600: '#9333ea',
+                            900: '#581c87',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #7c3aed 50%, #0f172a 100%); min-height: 100vh; color: #ffffff; }
-        .glass-card { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 8px 32px rgba(124, 58, 237, 0.3); }
-        .gradient-text { background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #a855f7 100%); -webkit-background-clip: text; background-clip: text; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .step-card { opacity: 0; transform: translateY(30px); animation: fadeInUp 0.6s ease forwards; }
-        .step-card.active { border: 2px solid #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
-        .step-card.completed { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1); }
-        .check-icon { animation: pulse 1.5s ease infinite; }
-        .loading-spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #a855f7; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        .progress-bar { transition: width 0.5s ease; }
+        body { background: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); }
+        .success-pulse { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
-        <header class="glass-card rounded-2xl p-6 mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold gradient-text text-center mb-4">
-                🎮 Test Interactivo - PixelCV v2.0
+<body class="min-h-screen p-6 font-sans">
+
+    <!-- Header & Status -->
+    <header class="max-w-6xl mx-auto mb-8 flex justify-between items-center glass p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                PixelCV <span class="text-white">Diagnostic Suite</span>
             </h1>
-            <p class="text-purple-200 text-center text-lg">
-                Sigue los pasos para verificar toda la funcionalidad del sistema
-            </p>
-        </header>
-        
-        <div class="glass-card rounded-xl p-4 mb-6">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-purple-300">Progreso del Test</span>
-                <span id="progress-text" class="text-white font-bold">0%</span>
+            <p class="text-slate-400 text-sm mt-1">Prueba integral de servicios y funciones avanzadas</p>
+        </div>
+        <div class="flex gap-4 text-sm font-mono">
+            <div id="status-backend" class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700">
+                <span class="w-2 h-2 rounded-full bg-gray-500"></span> Backend (8000)
             </div>
-            <div class="w-full bg-purple-900/50 rounded-full h-3">
-                <div id="progress-bar" style="width: 0%" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"></div>
+            <div id="status-ollama" class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700">
+                <span class="w-2 h-2 rounded-full bg-gray-500"></span> Ollama
             </div>
         </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <div id="steps-container" class="space-y-4">
-            <div id="step-1" class="step-card glass-card rounded-2xl p-6" data-step="1">
-                <div class="flex items-start gap-4">
-                    <div id="icon-1" class="text-4xl check-icon">1️⃣</div>
-                    <div class="flex-1">
-                        <h2 class="text-2xl font-bold text-white mb-2">Verificar Conexión del Backend</h2>
-                        <p class="text-purple-200 mb-4">
-                            Testea que el servidor backend esté funcionando en el puerto 8000
-                        </p>
-                        <button onclick="testBackend()" id="btn-step-1" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2">
-                            <span>🔍 Verificar Backend</span>
+        <!-- Left Column: Controls -->
+        <div class="space-y-6">
+            
+            <!-- Section 1: AI Lab -->
+            <section class="glass rounded-2xl p-6 shadow-lg border-l-4 border-purple-500">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>🧠</span> Laboratorio de IA
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-slate-400 text-xs uppercase font-bold mb-2">Modelo Activo</label>
+                        <select id="model-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:border-purple-500 outline-none">
+                            <option value="">Cargando modelos...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-400 text-xs uppercase font-bold mb-2">Texto Original (Bullets)</label>
+                        <textarea id="ai-input" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none font-mono text-sm" placeholder="Ej: Vendi mucho este año y fui el mejor empleado.">Desarrollé una app web. Usé React y Python. Fue un éxito total.</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-400 text-xs uppercase font-bold mb-2">Instrucción de Refinamiento (Opcional)</label>
+                        <input id="ai-instruction" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:border-purple-500 outline-none text-sm" placeholder="Ej: Hazlo más ejecutivo, usa métricas, sé breve...">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="testImprove()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg transition">
+                            ✨ Mejorar Bullets
                         </button>
-                        <div id="result-1" class="mt-4 hidden"></div>
+                        <button onclick="testReview()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-lg transition">
+                            🔍 Revisión Integral
+                        </button>
                     </div>
                 </div>
-            </div>
-            
-            <div id="step-2" class="step-card glass-card rounded-2xl p-6" data-step="2">
-                <div class="flex items-start gap-4">
-                    <div id="icon-2" class="text-4xl check-icon">2️⃣</div>
-                    <div class="flex-1">
-                        <h2 class="text-2xl font-bold text-white mb-2">Verificar Conexión del Frontend</h2>
-                        <p class="text-purple-200 mb-4">
-                            Testea que el servidor frontend esté funcionando en el puerto 3000
-                        </p>
-                        <button onclick="testFrontend()" id="btn-step-2" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2">
-                            <span>🔍 Verificar Frontend</span>
-                        </button>
-                        <div id="result-2" class="mt-4 hidden"></div>
+            </section>
+
+            <!-- Section 2: Core Generator -->
+            <section class="glass rounded-2xl p-6 shadow-lg border-l-4 border-emerald-500">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>📄</span> Generador Core
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-400 text-xs uppercase font-bold mb-2">Tema</label>
+                            <select id="theme-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-sm">
+                                <option value="classic">Classic</option>
+                                <option value="moderncv">Modern CV</option>
+                                <option value="sb2nov">SB2Nov</option>
+                                <option value="engineeringclassic">Engineering Classic</option>
+                                <option value="engineeringresumes">Engineering Resumes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs uppercase font-bold mb-2">Nombre</label>
+                            <input id="cv-name" type="text" value="Test User" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-sm">
+                        </div>
+                    </div>
+
+                    <button onclick="testGenerateCV()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg transition flex justify-center items-center gap-2">
+                        <span>🚀</span> Generar PDF & YAML
+                    </button>
+                    
+                    <div id="download-area" class="hidden p-4 bg-emerald-900/30 border border-emerald-500/30 rounded-lg text-center">
+                        <a id="download-link" href="#" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-bold underline decoration-2 underline-offset-4">
+                            Descargar PDF Generado
+                        </a>
                     </div>
                 </div>
+            </section>
+
+        </div>
+
+        <!-- Right Column: Live Logs -->
+        <div class="glass rounded-2xl p-0 shadow-lg flex flex-col h-full max-h-[800px] border border-slate-700">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl">
+                <h2 class="text-sm font-bold text-slate-300 font-mono">LIVE_CONSOLE_OUTPUT</h2>
+                <button onclick="clearLog()" class="text-xs text-slate-500 hover:text-white">Clear</button>
             </div>
+            <div id="console-output" class="flex-1 p-4 overflow-y-auto font-mono text-xs text-green-400 bg-black/50 rounded-b-2xl whitespace-pre-wrap leading-tight">
+                // Esperando acciones...
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        const consoleEl = document.getElementById('console-output');
+
+        // Utils
+        function log(data, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            let content = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+            const color = type === 'error' ? 'text-red-400' : (type === 'success' ? 'text-cyan-400' : 'text-green-400');
             
-            <div id="step-3" class="step-card glass-card rounded-2xl p-6" data-step="3">
-                <div class="flex items-start gap-4">
-                    <div id="icon-3" class="text-4xl check-icon">3️⃣</div>
-                    <div class="flex-1">
-                        <h2 class="text-2xl font-bold text-white mb-2">Probar Ollama
+            const entry = document.createElement('div');
+            entry.className = `mb-4 ${color} border-b border-slate-800 pb-2`;
+            entry.innerHTML = `<span class="text-slate-500">[${timestamp}]</span> ${content}`;
+            
+            consoleEl.prepend(entry);
+        }
+
+        function clearLog() {
+            consoleEl.innerHTML = '// Console cleared.';
+        }
+
+        function updateStatus(id, connected, extra = '') {
+            const el = document.getElementById(id);
+            const dot = el.querySelector('span');
+            if (connected) {
+                dot.className = 'w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]';
+                el.classList.add('border-green-900', 'bg-green-900/20', 'text-green-300');
+                if(extra) el.innerHTML += ` <span class='ml-1 text-xs opacity-75'>(${extra})</span>`;
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                el.classList.add('border-red-900', 'bg-red-900/20', 'text-red-300');
+            }
+        }
+
+        // 1. Initial Checks
+        async function checkSystem() {
+            log('Iniciando chequeo de sistema...', 'info');
+            
+            // Backend Check
+            try {
+                const res = await fetch(`${API_BASE}/docs`); // Simple ping check
+                if (res.ok) {
+                    updateStatus('status-backend', true);
+                    log('Backend: ONLINE', 'success');
+                } else {
+                    throw new Error('Status ' + res.status);
+                }
+            } catch (e) {
+                updateStatus('status-backend', false);
+                log('Backend: OFFLINE - Asegúrate de ejecutar ./run.sh', 'error');
+            }
+
+            // Ollama Check
+            try {
+                const res = await fetch(`${API_BASE}/ollama/models`);
+                const data = await res.json();
+                
+                if (data.status === 'connected') {
+                    updateStatus('status-ollama', true, `${data.count} models`);
+                    log(`Ollama: CONECTADO (${data.count} modelos disponibles)`, 'success');
+                    
+                    // Populate Select
+                    const select = document.getElementById('model-select');
+                    select.innerHTML = '';
+                    data.models.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.text = m;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    throw new Error('Desconectado');
+                }
+            } catch (e) {
+                updateStatus('status-ollama', false);
+                log('Ollama: NO DETECTADO - La IA no funcionará', 'error');
+                document.getElementById('model-select').innerHTML = '<option>No disponible</option>';
+            }
+        }
+
+        // 2. Test Improve Bullets
+        async function testImprove() {
+            const bullets = document.getElementById('ai-input').value.split('\n');
+            const model = document.getElementById('model-select').value;
+            const instruction = document.getElementById('ai-instruction').value;
+
+            log(`Enviando solicitud a Ollama (Modelo: ${model})...`, 'info');
+
+            try {
+                const res = await fetch(`${API_BASE}/ollama/improve-bullets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bullets, model, instruction: instruction || null })
+                });
+                
+                const data = await res.json();
+                log('Respuesta recibida:', 'success');
+                log(data);
+            } catch (e) {
+                log('Error en solicitud IA: ' + e.message, 'error');
+            }
+        }
+
+        // 3. Test Full Review
+        async function testReview() {
+            const model = document.getElementById('model-select').value;
+            const dummyCV = {
+                name: "Test User",
+                email: "test@example.com",
+                summary: document.getElementById('ai-input').value, // Usamos el input como resumen simple
+                sections: {
+                    experiencia: [{ company: "Empresa X", position: "Dev", highlights: ["Hice cosas"] }]
+                }
+            };
+
+            log(`Solicitando Revisión Integral (Review CV)...`, 'info');
+
+            try {
+                const res = await fetch(`${API_BASE}/ollama/review-cv`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cv_data: dummyCV, model })
+                });
+                
+                const data = await res.json();
+                log('Revisión completada:', 'success');
+                log(data.review); // Markdown content
+            } catch (e) {
+                log('Error en revisión: ' + e.message, 'error');
+            }
+        }
+
+        // 4. Test Generate CV
+        async function testGenerateCV() {
+            const theme = document.getElementById('theme-select').value;
+            const name = document.getElementById('cv-name').value;
+            
+            const payload = {
+                name: name,
+                email: "test@pixelcv.com",
+                phone: "+1234567890",
+                location: "Madrid, ES",
+                linkedin: "linkedin.com/in/test",
+                sections: {
+                    experiencia: [
+                        { company: "Tech Corp", position: "Senior Dev", start_date: "2020", end_date: "Present", location: "Remote", highlights: ["Lideré equipos", "Optimicé bases de datos"] }
+                    ],
+                    educacion: [
+                        { institution: "Universidad X", degree: "CS Degree", start_date: "2016", end_date: "2020", location: "Madrid" }
+                    ],
+                    skills: ["Python", "FastAPI", "React", "Ollama"]
+                },
+                summary: "Desarrollador apasionado probando sistemas complejos.",
+                theme: theme,
+                improve: false, // No usamos auto-improve aqui, testeamos el core
+                formats: ["pdf"]
+            };
+
+            log(`Generando CV (Tema: ${theme})...`, 'info');
+
+            try {
+                const res = await fetch(`${API_BASE}/cv`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    log('✅ CV Generado Exitosamente', 'success');
+                    log(data);
+                    
+                    // Show download link
+                    const linkArea = document.getElementById('download-area');
+                    const link = document.getElementById('download-link');
+                    link.href = `${API_BASE}/cv/${data.cvId}/pdf`;
+                    linkArea.classList.remove('hidden');
+                } else {
+                    throw new Error(data.detail || 'Error desconocido');
+                }
+            } catch (e) {
+                log('Error generando CV: ' + e.message, 'error');
+            }
+        }
+
+        // Start
+        checkSystem();
+    </script>
+</body>
+</html>
