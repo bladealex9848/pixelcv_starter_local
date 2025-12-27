@@ -180,11 +180,11 @@ export default function GamesPage() {
         </header>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
           {games.map((game) => (
             <div
               key={game.id}
-              className="group h-full"
+              className="group min-h-[460px]"
             >
               <div
                 className="bg-black border-2 border-orange-900 p-1 transition-all duration-300 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:scale-105 h-full flex flex-col"
@@ -192,12 +192,12 @@ export default function GamesPage() {
               >
                 <div className="bg-[#0a0a0a] p-6 text-center flex flex-col h-full">
                   {/* Icon */}
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
+                  <div className="text-5xl mb-3 h-16 flex items-center justify-center">
                     {game.icon}
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-xl font-black text-orange-400 mb-2 uppercase">
+                  <h3 className="text-xl font-black text-orange-400 mb-2 uppercase leading-tight">
                     {game.name}
                   </h3>
 
