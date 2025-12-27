@@ -374,6 +374,11 @@ POINT_VALUES = {
     # Games - puntuación por rendimiento
     'game_score_pong': 1,  # por rally
     'game_score_tictactoe': 0,
+    'game_score_chinese_checkers': 0,  # Sin puntos por rendimiento
+    'game_score_domino': 0,  # Sin puntos por rendimiento
+    'game_score_chess': 0,  # Sin puntos por rendimiento
+    'game_score_tron': 1,  # por segundo de supervivencia
+    'game_score_offroad4x4': 1,  # por distancia recorrida
     'game_score_memory': 10,  # (1000 - moves×10)
     'game_score_snake': 10,  # por manzana
     'game_score_breakout': 10,  # por bloque
@@ -384,7 +389,9 @@ POINT_VALUES = {
     'game_perfect': 100,  # juego perfecto
     'game_high_score': 75,  # mejor puntuación personal
     'game_win_2048': 200,  # alcanzar 2048
-}
+    'game_survivor': 50,  # supervivencia (Tron)
+    'game_completed': 25,  # completar circuito (4x4)
+
 
 BADGES = {
     'early_adopter': {'name': 'Pionero', 'description': 'Uno de los primeros 100 usuarios', 'icon': '🚀'},
