@@ -9,6 +9,10 @@ import dynamic from 'next/dynamic';
 // Import game components dynamically
 const PongGame = dynamic(() => import('../../../components/games/PongGame'), { ssr: false });
 const TicTacToe = dynamic(() => import('../../../components/games/TicTacToe'), { ssr: false });
+const ChineseCheckers = dynamic(() => import('../../../components/games/ChineseCheckers'), { ssr: false });
+const DominoGame = dynamic(() => import('../../../components/games/DominoGame'), { ssr: false });
+const ChessGame = dynamic(() => import('../../../components/games/ChessGame'), { ssr: false });
+const TronGame = dynamic(() => import('../../../components/games/TronGame'), { ssr: false });
 const MemoryMatch = dynamic(() => import('../../../components/games/MemoryMatch'), { ssr: false });
 const SnakeGame = dynamic(() => import('../../../components/games/SnakeGame'), { ssr: false });
 const BreakoutGame = dynamic(() => import('../../../components/games/BreakoutGame'), { ssr: false });
@@ -19,6 +23,10 @@ const SpaceInvaders = dynamic(() => import('../../../components/games/SpaceInvad
 const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any }> = {
   pong: { name: 'Pong', icon: '🏓', component: PongGame },
   tictactoe: { name: 'Tic Tac Toe', icon: '⭕', component: TicTacToe },
+  chinese_checkers: { name: 'Damas Chinas', icon: '🎯', component: ChineseCheckers },
+  domino: { name: 'Domino', icon: '🁠', component: DominoGame },
+  chess: { name: 'Ajedrez', icon: '♔', component: ChessGame },
+  tron: { name: 'Tron', icon: '⚡', component: TronGame },
   memory: { name: 'Memory Match', icon: '🃏', component: MemoryMatch },
   snake: { name: 'Snake', icon: '🐍', component: SnakeGame },
   breakout: { name: 'Breakout', icon: '🧱', component: BreakoutGame },

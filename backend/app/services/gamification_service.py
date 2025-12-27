@@ -449,6 +449,18 @@ class GamificationService:
         elif game_id == 'tictactoe':
             # Sin puntos por rendimiento
             return 0
+        elif game_id == 'chinese_checkers':
+            # Sin puntos por rendimiento (solo por victoria/derrota)
+            return 0
+        elif game_id == 'domino':
+            # Sin puntos por rendimiento (solo por victoria/derrota)
+            return 0
+        elif game_id == 'chess':
+            # Sin puntos por rendimiento (solo por victoria/derrota)
+            return 0
+        elif game_id == 'tron':
+            # 1 punto por segundo de supervivencia
+            return score * base_point
         elif game_id == 'memory':
             # 1000 - (moves × 10), mínimo 0
             return max(0, min(1000, (1000 - moves * 10))) * base_point // 10
@@ -582,6 +594,20 @@ class GamificationService:
                     'description': f'¡Mejor puntuación en Space Invaders: {score}!'
                 })
 
+        elif game_id == 'tron':
+            # Superviviente: sobrevivir más de 60 segundos
+            if score >= 60:
+                achievements.append({
+                    'action': 'game_survivor',
+                    'description': '¡Superviviente! Sobreviviste más de 60 segundos'
+                })
+            # Perfeccionista: ganar sin colisiones (esto sería difícil de detectar sin más data)
+            if won and score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en Tron: {score} segundos!'
+                })
+
         return achievements
 
     @staticmethod
@@ -635,6 +661,42 @@ class GamificationService:
                 'description': 'El clásico juego de 3 en raya contra la IA',
                 'icon': '⭕',
                 'category': 'Estrategia',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'chinese_checkers',
+                'name': 'Damas Chinas',
+                'description': 'Mueve tus piezas al lado opuesto para ganar',
+                'icon': '🎯',
+                'category': 'Estrategia',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'domino',
+                'name': 'Domino',
+                'description': 'Empareja los números para deshacerte de tus fichas',
+                'icon': '🁠',
+                'category': 'Estrategia',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'chess',
+                'name': 'Ajedrez',
+                'description': 'El clásico juego de estrategia contra la IA',
+                'icon': '♔',
+                'category': 'Estrategia',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'tron',
+                'name': 'Tron',
+                'description': 'Deja un trail y evita chocar con las paredes y trails',
+                'icon': '⚡',
+                'category': 'Arcade',
                 'has_ai': True,
                 'multiplayer': False
             },
