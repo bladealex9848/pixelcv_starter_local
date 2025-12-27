@@ -23,8 +23,8 @@ export default function SnakeGame({ isAuthenticated, onGameEnd }: SnakeGameProps
   const CELL_SIZE = 20;
   const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
 
-  const generateFood = useCallback((snakeBody: Point[]) => {
-    let newFood;
+  const generateFood = useCallback((snakeBody: Point[]): Point => {
+    let newFood: Point = { x: 0, y: 0 };
     do {
       newFood = {
         x: Math.floor(Math.random() * GRID_SIZE),

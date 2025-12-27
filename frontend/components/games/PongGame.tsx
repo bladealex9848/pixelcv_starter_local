@@ -60,7 +60,7 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
 
   const playerTargetYRef = useRef(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
   const keysRef = useRef<Record<string, boolean>>({});
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const currentRalliesRef = useRef(0);
   const aiMoveRef = useRef<{ targetY: number; timestamp: number } | null>(null);
 
