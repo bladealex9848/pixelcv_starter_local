@@ -14,7 +14,7 @@ from app.services.gamification_service import GamificationService
 from app.services.yaml_service import build_yaml
 from app.services.render_service import render_cv
 
-router = APIRouter(prefix="/cv", tags=["cv"])
+router = APIRouter(prefix="/community", tags=["community"])
 
 
 class CreateCVRequest(BaseModel):

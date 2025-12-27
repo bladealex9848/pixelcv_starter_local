@@ -23,7 +23,7 @@ export default function CommunityPage() {
 
   const fetchCVs = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/browse?sort_by=${sortBy}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/browse?sort_by=${sortBy}`);
       const data = await response.json();
       setCvs(data.cvs || []);
       setLoading(false);

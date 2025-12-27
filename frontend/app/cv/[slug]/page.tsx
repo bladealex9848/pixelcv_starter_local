@@ -10,7 +10,7 @@ export default function PublicCVPage() {
   const [liked, setLiked] = useState(false);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/public/${slug}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/public/${slug}`)
       .then(res => res.json())
       .then(data => {
         setCv(data);
@@ -21,7 +21,7 @@ export default function PublicCVPage() {
         setLoading(false);
       });
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/public/${slug}/visit?visitor_ip=${Date.now()}`, { method: 'POST' });
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/public/${slug}/visit?visitor_ip=${Date.now()}`, { method: 'POST' });
   }, [slug]);
 
   const handleLike = async () => {
@@ -30,13 +30,13 @@ export default function PublicCVPage() {
       alert('Debes iniciar sesión para dar like');
       return;
     }
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/${cv?.id}/like`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/${cv?.id}/like`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
       setLiked(!liked);
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv/public/${slug}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/public/${slug}`)
         .then(res => res.json())
         .then(setCv);
     }
