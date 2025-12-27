@@ -184,13 +184,13 @@ export default function GamesPage() {
           {games.map((game) => (
             <div
               key={game.id}
-              className="group"
+              className="group h-full"
             >
               <div
-                className="bg-black border-2 border-orange-900 p-1 transition-all duration-300 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:scale-105"
+                className="bg-black border-2 border-orange-900 p-1 transition-all duration-300 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:scale-105 h-full flex flex-col"
                 style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
               >
-                <div className="bg-[#0a0a0a] p-6 text-center">
+                <div className="bg-[#0a0a0a] p-6 text-center flex flex-col h-full">
                   {/* Icon */}
                   <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
                     {game.icon}
@@ -207,7 +207,7 @@ export default function GamesPage() {
                   </div>
 
                   {/* Description */}
-                  <p className="text-gray-400 text-xs mb-4 min-h-[40px]">
+                  <p className="text-gray-400 text-xs mb-4 flex-1">
                     {game.description}
                   </p>
 
