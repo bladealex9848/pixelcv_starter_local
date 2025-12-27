@@ -74,7 +74,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-mono overflow-x-hidden pt-16 relative">
+    <div className="min-h-screen bg-[#050505] text-white font-mono pt-16 pb-12 px-2 md:px-4 relative overflow-hidden">
 
       {/* Scanlines Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]" style={{
@@ -111,37 +111,11 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Corner Decorations */}
-      <div className="fixed top-20 left-4 pointer-events-none opacity-30 hidden md:block">
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-yellow-500"></div>
-            <div className="w-2 h-2 bg-yellow-400"></div>
-            <div className="w-2 h-2 bg-yellow-300"></div>
-          </div>
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-yellow-400"></div>
-          </div>
-        </div>
-      </div>
-      <div className="fixed top-20 right-4 pointer-events-none opacity-30 rotate-90 hidden md:block">
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-amber-500"></div>
-            <div className="w-2 h-2 bg-amber-400"></div>
-            <div className="w-2 h-2 bg-amber-300"></div>
-          </div>
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-amber-400"></div>
-          </div>
-        </div>
-      </div>
-
-      <main className="container mx-auto px-4 py-12 relative z-10 max-w-4xl">
+      <main className="container mx-auto relative z-10 max-w-7xl py-8">
         {/* Header */}
-        <header className="text-center mb-12 space-y-4">
+        <header className="text-center mb-8 space-y-4">
           <div className="relative inline-block">
-            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-yellow-400 to-amber-600 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] uppercase glitch-text" data-text="LEADERBOARD">
+            <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-yellow-400 to-amber-600 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] uppercase glitch-text" data-text="LEADERBOARD">
               LEADERBOARD
             </h1>
             <div className="absolute -top-2 -left-4 w-2 h-2 bg-yellow-400 animate-twinkle hidden md:block"></div>
@@ -150,174 +124,153 @@ export default function LeaderboardPage() {
 
           {/* Status Bar */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2 bg-yellow-900/30 border border-yellow-500/50 px-4 py-1 rounded-sm">
+            <div className="flex items-center gap-2 bg-yellow-900/30 border border-yellow-500/50 px-3 py-1 rounded-sm">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
-              <span className="text-yellow-300 text-xs font-bold uppercase tracking-wider">Live Rankings</span>
+              <span className="text-yellow-300 text-xs font-bold uppercase tracking-wider hidden sm:inline">Live Rankings</span>
+              <span className="text-yellow-300 text-xs font-bold uppercase tracking-wider sm:hidden">Live</span>
             </div>
-            <div className="bg-gray-900/50 border border-gray-700 px-3 py-1 rounded-sm">
+            <div className="bg-gray-900/50 border border-gray-700 px-2 py-1 rounded-sm">
               <span className="text-gray-400 text-xs font-mono">{users.length} Players</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-3 mt-4">
-            <div className="hidden md:flex gap-1">
-              <div className="w-1 h-1 bg-yellow-500"></div>
-              <div className="w-1 h-1 bg-yellow-400"></div>
-              <div className="w-1 h-1 bg-yellow-300"></div>
-              <div className="w-2 h-1 bg-yellow-200"></div>
-            </div>
-            <p className="text-gray-400 text-sm max-w-xl">
-              Los creadores más destacados de la comunidad PixelCV
-            </p>
-            <div className="hidden md:flex gap-1">
-              <div className="w-2 h-1 bg-yellow-200"></div>
-              <div className="w-1 h-1 bg-yellow-300"></div>
-              <div className="w-1 h-1 bg-yellow-400"></div>
-              <div className="w-1 h-1 bg-yellow-500"></div>
             </div>
           </div>
         </header>
 
-        {/* Top 3 Podium */}
+        {/* Top 3 Podium - hidden on small mobile */}
         {users.length >= 3 && (
-          <div className="flex justify-center items-end gap-4 mb-12">
+          <div className="hidden md:flex justify-center items-end gap-3 mb-8">
             {/* 2nd Place */}
-            <div className="text-center group">
+            <div className="text-center group flex-1 max-w-[140px]">
               <div className="relative">
                 <img
                   src={users[1]?.avatar_url}
                   alt={users[1]?.username}
-                  className="w-16 h-16 rounded-sm border-2 border-gray-400 mx-auto mb-2 group-hover:scale-110 transition-transform"
+                  className="w-14 h-14 rounded-sm border-2 border-gray-400 mx-auto mb-2 group-hover:scale-110 transition-transform"
                 />
-                <div className="absolute -top-2 -right-2 text-2xl">🥈</div>
+                <div className="absolute -top-2 -right-2 text-xl">🥈</div>
               </div>
-              <div className="bg-gray-500/20 border border-gray-500/50 px-4 py-3 h-20 flex flex-col justify-end">
-                <div className="text-gray-300 font-bold text-sm truncate max-w-[100px]">@{users[1]?.username}</div>
+              <div className="bg-gray-500/20 border border-gray-500/50 px-3 py-2">
+                <div className="text-gray-300 font-bold text-sm truncate">@{users[1]?.username}</div>
                 <div className="text-gray-400 text-xs">{users[1]?.total_points.toLocaleString()} pts</div>
               </div>
             </div>
 
             {/* 1st Place */}
-            <div className="text-center group -mt-8">
+            <div className="text-center group flex-1 max-w-[160px] -mt-4">
               <div className="relative">
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-3xl animate-bounce">👑</div>
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl animate-bounce">👑</div>
                 <img
                   src={users[0]?.avatar_url}
                   alt={users[0]?.username}
-                  className="w-20 h-20 rounded-sm border-2 border-yellow-500 mx-auto mb-2 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(234,179,8,0.5)]"
+                  className="w-16 h-16 rounded-sm border-2 border-yellow-500 mx-auto mb-2 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(234,179,8,0.5)]"
                 />
-                <div className="absolute -top-2 -right-2 text-3xl">🥇</div>
+                <div className="absolute -top-2 -right-2 text-2xl">🥇</div>
               </div>
-              <div className="bg-yellow-500/20 border border-yellow-500/50 px-6 py-4 h-28 flex flex-col justify-end shadow-[0_0_30px_rgba(234,179,8,0.3)]">
-                <div className="text-yellow-300 font-bold truncate max-w-[120px]">@{users[0]?.username}</div>
+              <div className="bg-yellow-500/20 border border-yellow-500/50 px-4 py-3 shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                <div className="text-yellow-300 font-bold text-sm truncate">@{users[0]?.username}</div>
                 <div className="text-yellow-400 text-sm font-bold">{users[0]?.total_points.toLocaleString()} pts</div>
-                <div className="text-yellow-500/70 text-xs mt-1">CHAMPION</div>
+                <div className="text-yellow-500/70 text-[10px]">CHAMPION</div>
               </div>
             </div>
 
             {/* 3rd Place */}
-            <div className="text-center group">
+            <div className="text-center group flex-1 max-w-[140px]">
               <div className="relative">
                 <img
                   src={users[2]?.avatar_url}
                   alt={users[2]?.username}
-                  className="w-16 h-16 rounded-sm border-2 border-amber-500 mx-auto mb-2 group-hover:scale-110 transition-transform"
+                  className="w-14 h-14 rounded-sm border-2 border-amber-500 mx-auto mb-2 group-hover:scale-110 transition-transform"
                 />
-                <div className="absolute -top-2 -right-2 text-2xl">🥉</div>
+                <div className="absolute -top-2 -right-2 text-xl">🥉</div>
               </div>
-              <div className="bg-amber-500/20 border border-amber-500/50 px-4 py-3 h-16 flex flex-col justify-end">
-                <div className="text-amber-300 font-bold text-sm truncate max-w-[100px]">@{users[2]?.username}</div>
+              <div className="bg-amber-500/20 border border-amber-500/50 px-3 py-2">
+                <div className="text-amber-300 font-bold text-sm truncate">@{users[2]?.username}</div>
                 <div className="text-amber-400 text-xs">{users[2]?.total_points.toLocaleString()} pts</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Full Rankings Table */}
-        <div
-          className="bg-black border-2 border-yellow-900 p-1"
-          style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
-        >
-          <div className="bg-[#0a0a0a]">
-            {/* Table Header */}
-            <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 bg-yellow-900/30 border-b border-yellow-900/50 text-xs uppercase tracking-wider text-yellow-400 font-bold">
-              <div className="col-span-1">Rank</div>
-              <div className="col-span-4">Player</div>
-              <div className="col-span-3">Rango</div>
-              <div className="col-span-2">Level</div>
-              <div className="col-span-2 text-right">Points</div>
-              <div className="col-span-1 text-right">CVs</div>
-            </div>
-
-            {/* Table Body */}
-            {users.map((user, index) => {
-              const style = getRankStyle(index + 1);
-              return (
-                <div
-                  key={user.user_id}
-                  className={`grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 border-b border-gray-800/50 hover:bg-yellow-900/10 transition-all duration-300 ${style.glow} group`}
-                >
-                  {/* Rank */}
-                  <div className={`col-span-1 font-black text-lg ${style.color}`}>
-                    {index < 3 ? (
-                      <span className="text-xl">{getRankIcon(index + 1)}</span>
-                    ) : (
-                      <span className="text-gray-500">#{index + 1}</span>
-                    )}
-                  </div>
-
-                  {/* Player Info */}
-                  <div className="col-span-4 flex items-center gap-3">
-                    <div className="relative">
-                      <img
-                        src={user.avatar_url}
-                        alt={user.username}
-                        className={`w-10 h-10 rounded-sm border-2 ${style.border} group-hover:scale-110 transition-transform`}
-                      />
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-black"></div>
+        {/* Full Rankings - Responsive Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {users.map((user, index) => {
+            const style = getRankStyle(index + 1);
+            const rank = index + 1;
+            return (
+              <div
+                key={user.user_id}
+                className={`bg-black border-2 ${style.border} p-1 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)] ${style.glow} group`}
+                style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+              >
+                <div className="bg-[#0a0a0a] p-3 md:p-4">
+                  {/* Rank Badge - Top 3突出显示 */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`flex items-center gap-2 px-2 py-1 rounded-sm ${style.bg} border ${style.border}`}>
+                      <span className={`text-lg md:text-xl font-black ${style.color}`}>
+                        {rank <= 3 ? getRankIcon(rank) : `#${rank}`}
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-white font-bold truncate">{user.full_name || user.username}</div>
-                      <div className="text-gray-500 text-xs">@{user.username}</div>
-                    </div>
-                    <div className="flex gap-1 ml-auto">
+                    {/* Badges */}
+                    <div className="flex gap-0.5">
                       {user.badges.slice(0, 3).map((badge) => (
-                        <span key={badge} title={badge} className="text-sm hover:scale-125 transition-transform cursor-pointer">
+                        <span key={badge} title={badge} className="text-xs sm:text-sm hover:scale-125 transition-transform cursor-pointer">
                           {getBadgeIcon(badge)}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  {/* Rango (Rank Title) */}
-                  <div className="col-span-3 flex items-center">
-                    <span className={`${style.bg} ${style.color} border ${style.border} px-3 py-1 text-xs font-bold truncate`}>
-                      {user.rank_title}
-                    </span>
+                  {/* Player Info - Nombre destacado */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={user.avatar_url}
+                        alt={user.username}
+                        className={`w-10 h-10 md:w-12 md:h-12 rounded-sm border-2 ${style.border} group-hover:scale-110 transition-transform`}
+                      />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-white font-bold text-sm md:text-base truncate">{user.full_name || user.username}</div>
+                      <div className="text-gray-500 text-xs">@{user.username}</div>
+                    </div>
                   </div>
 
-                  {/* Level */}
-                  <div className="col-span-2 flex items-center">
-                    <span className={`${style.bg} ${style.color} border ${style.border} px-2 py-1 text-xs font-bold`}>
-                      LVL {user.level}
-                    </span>
+                  {/* Stats Grid - Más espaciado */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {/* Rango */}
+                    <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-400">Rango</div>
+                      <div className={`text-xs md:text-sm font-bold ${style.color} mt-0.5 truncate`}>
+                        {user.rank_title}
+                      </div>
+                    </div>
+
+                    {/* Level */}
+                    <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-400">Nivel</div>
+                      <div className={`text-xs md:text-sm font-bold ${style.color} mt-0.5`}>
+                        {user.level}
+                      </div>
+                    </div>
+
+                    {/* Points - Más prominente */}
+                    <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-400">Puntos</div>
+                      <div className={`text-sm md:text-base font-black ${style.color} mt-0.5`}>
+                        {user.total_points.toLocaleString()}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Points */}
-                  <div className={`col-span-2 text-right font-bold ${style.color} flex items-center justify-end gap-1`}>
-                    <span>{user.total_points.toLocaleString()}</span>
-                    <span className="text-gray-500 text-xs">pts</span>
-                  </div>
-
-                  {/* CVs */}
-                  <div className="col-span-1 text-right text-gray-400 flex items-center justify-end gap-1">
+                  {/* CVs - Más pequeño */}
+                  <div className="flex items-center justify-center gap-1 text-gray-400 text-xs pt-2 border-t border-gray-800/30">
                     <span className="text-sm">📄</span>
-                    <span className="text-xs">{user.cvs_published}</span>
+                    <span>{user.cvs_published} CV{user.cvs_published !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Empty State */}
@@ -339,7 +292,7 @@ export default function LeaderboardPage() {
         )}
 
         {/* Retro Footer */}
-        <footer className="text-center space-y-6 mt-16">
+        <footer className="text-center space-y-4 mt-12">
           <div className="flex items-center justify-center gap-2">
             <div className="flex gap-1">
               <div className="w-1 h-1 bg-yellow-600"></div>
@@ -356,7 +309,7 @@ export default function LeaderboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-4 text-[10px] text-gray-600">
+          <div className="flex items-center justify-center gap-3 text-[10px] text-gray-600">
             <span>PIXELCV RANKINGS</span>
             <span>|</span>
             <span className="flex items-center gap-1">
