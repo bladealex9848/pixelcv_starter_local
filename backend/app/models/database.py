@@ -34,6 +34,7 @@ class User(Base):
     comments = relationship("Comment", back_populates="user")
     likes = relationship("Like", back_populates="user")
     visits = relationship("Visit", back_populates="user")
+    game_sessions = relationship("GameSession", back_populates="user")
 
 
 class UserProfile(Base):
@@ -195,6 +196,38 @@ class Like(Base):
     user = relationship("User", back_populates="likes")
 
 
+class GameSession(Base):
+    """Sesión de juego para el sistema de gamificación arcade"""
+    __tablename__ = "game_sessions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Null para demo mode
+    game_id = Column(String, nullable=False)  # pong, tictactoe, memory, snake, etc.
+
+    # Resultados del juego
+    score = Column(Integer, default=0)
+    won = Column(Boolean, default=False)  # Para juegos con win/loss
+    moves = Column(Integer, default=0)  # Para juegos de turnos o puntuación por movimientos
+    time_seconds = Column(Integer, default=0)  # Tiempo de duración
+
+    # Datos adicionales del juego (JSON flexible)
+    game_data = Column(JSON, default={})  # Para guardar datos específicos de cada juego
+
+    # Puntos calculados
+    points_earned = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Índice para leaderboard de cada juego
+    __table_args__ = (
+        Index('idx_game_score', 'game_id', 'score'),
+        Index('idx_user_games', 'user_id', 'game_id'),
+    )
+
+    # Relaciones
+    user = relationship("User", back_populates="game_sessions")
+
+
 # Función para inicializar la base de datos
 def init_db():
     """Crea todas las tablas en la base de datos"""
@@ -231,6 +264,23 @@ POINT_VALUES = {
     'share_received': 25,
     'profile_completed': 30,
     'badge_earned': 100,
+    # Games - puntos base por jugar
+    'game_completed': 5,
+    'game_won': 50,
+    'game_lost': 10,
+    # Games - puntuación por rendimiento
+    'game_score_pong': 1,  # por rally
+    'game_score_tictactoe': 0,
+    'game_score_memory': 10,  # (1000 - moves×10)
+    'game_score_snake': 10,  # por manzana
+    'game_score_breakout': 10,  # por bloque
+    'game_score_2048': 1,  # por punto
+    'game_score_tetris': 1,  # por punto
+    'game_score_spaceinvaders': 10,  # por enemigo
+    # Games - achievements
+    'game_perfect': 100,  # juego perfecto
+    'game_high_score': 75,  # mejor puntuación personal
+    'game_win_2048': 200,  # alcanzar 2048
 }
 
 BADGES = {

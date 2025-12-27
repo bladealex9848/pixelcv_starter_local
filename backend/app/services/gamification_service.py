@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Servicio de Gamificación - Sistema de puntos, niveles y badges"""
 from sqlalchemy.orm import Session
-from app.models.database import User, UserProfile, CV, PointHistory, Visit, Comment, Like
+from app.models.database import User, UserProfile, CV, PointHistory, Visit, Comment, Like, GameSession
 from app.models.database import LEVEL_THRESHOLDS, POINT_VALUES, BADGES
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -303,3 +303,387 @@ class GamificationService:
             'badges': badges_info,
             'next_level_points': LEVEL_THRESHOLDS.get(current_level + 1, LEVEL_THRESHOLDS[5])
         }
+
+    @staticmethod
+    def record_game_session(
+        db: Session,
+        user_id: Optional[str],
+        game_id: str,
+        score: int,
+        won: bool = False,
+        moves: int = 0,
+        time_seconds: int = 0,
+        game_data: dict = None
+    ) -> GameSession:
+        """
+        Registra una sesión de juego y calcula los puntos ganados.
+
+        Si user_id es None, es un juego de demo (sin puntos).
+        """
+        # Crear sesión de juego
+        session = GameSession(
+            user_id=user_id,
+            game_id=game_id,
+            score=score,
+            won=won,
+            moves=moves,
+            time_seconds=time_seconds,
+            game_data=game_data or {}
+        )
+
+        # Solo calcular puntos si hay usuario registrado
+        if user_id:
+            points = GamificationService._calculate_game_points(
+                game_id=game_id,
+                score=score,
+                won=won,
+                moves=moves,
+                game_data=game_data or {}
+            )
+            session.points_earned = points
+
+            # Agregar puntos al usuario
+            GamificationService.add_points(
+                db=db,
+                user_id=user_id,
+                action='game_completed',
+                description=f"Jugaste {game_id} - Score: {score}",
+            )
+
+            # Puntos por victoria/derrota
+            if won:
+                GamificationService.add_points(
+                    db=db,
+                    user_id=user_id,
+                    action='game_won',
+                    description=f"Ganaste en {game_id}",
+                )
+            else:
+                GamificationService.add_points(
+                    db=db,
+                    user_id=user_id,
+                    action='game_lost',
+                    description=f"Perdiste en {game_id}",
+                )
+
+            # Puntos por rendimiento
+            score_points = GamificationService._calculate_score_points(
+                game_id=game_id,
+                score=score,
+                moves=moves,
+                game_data=game_data or {}
+            )
+            if score_points > 0:
+                GamificationService.add_points(
+                    db=db,
+                    user_id=user_id,
+                    action=f'game_score_{game_id}',
+                    description=f"Rendimiento en {game_id}: +{score_points} puntos",
+                )
+
+            # Verificar achievements
+            achievements = GamificationService._check_game_achievements(
+                db=db,
+                user_id=user_id,
+                game_id=game_id,
+                score=score,
+                won=won,
+                moves=moves,
+                game_data=game_data or {}
+            )
+            for achievement in achievements:
+                GamificationService.add_points(
+                    db=db,
+                    user_id=user_id,
+                    action=achievement['action'],
+                    description=achievement['description'],
+                )
+
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+        return session
+
+    @staticmethod
+    def _calculate_game_points(
+        game_id: str,
+        score: int,
+        won: bool,
+        moves: int,
+        game_data: dict
+    ) -> int:
+        """Calcula los puntos base por jugar un juego."""
+        points = 0
+
+        # Puntos base
+        points += POINT_VALUES.get('game_completed', 0)
+
+        # Puntos por resultado
+        if won:
+            points += POINT_VALUES.get('game_won', 0)
+        else:
+            points += POINT_VALUES.get('game_lost', 0)
+
+        return points
+
+    @staticmethod
+    def _calculate_score_points(
+        game_id: str,
+        score: int,
+        moves: int,
+        game_data: dict
+    ) -> int:
+        """Calcula puntos por rendimiento según el juego."""
+        game_point_key = f'game_score_{game_id}'
+        base_point = POINT_VALUES.get(game_point_key, 0)
+
+        if game_id == 'pong':
+            # 1 punto por rally
+            return score * base_point
+        elif game_id == 'tictactoe':
+            # Sin puntos por rendimiento
+            return 0
+        elif game_id == 'memory':
+            # 1000 - (moves × 10), mínimo 0
+            return max(0, min(1000, (1000 - moves * 10))) * base_point // 10
+        elif game_id == 'snake':
+            # 10 puntos por manzana
+            return score * base_point
+        elif game_id == 'breakout':
+            # 10 puntos por bloque
+            return score * base_point
+        elif game_id == '2048':
+            # 1 punto por punto de score
+            return score * base_point
+        elif game_id == 'tetris':
+            # 1 punto por punto de score
+            return score * base_point
+        elif game_id == 'spaceinvaders':
+            # 10 puntos por enemigo
+            return score * base_point
+        else:
+            return 0
+
+    @staticmethod
+    def _check_game_achievements(
+        db: Session,
+        user_id: str,
+        game_id: str,
+        score: int,
+        won: bool,
+        moves: int,
+        game_data: dict
+    ) -> List[dict]:
+        """Verifica achievements desbloqueados en el juego."""
+        achievements = []
+
+        # Buscar mejor puntuación anterior del usuario en este juego
+        best_score = db.query(GameSession).filter(
+            GameSession.user_id == user_id,
+            GameSession.game_id == game_id
+        ).order_by(GameSession.score.desc()).first()
+
+        previous_best = best_score.score if best_score else 0
+
+        if game_id == 'pong':
+            # Perfect: ganar sin recibir puntos (game_data['opponent_score'] == 0)
+            if won and game_data.get('opponent_score', 1) == 0:
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Perfecto en Pong! No recibiste puntos'
+                })
+            # High score
+            elif score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nueva mejor puntuación en Pong: {score}!'
+                })
+
+        elif game_id == 'tictactoe':
+            # Perfect: ganar en menos de 5 movimientos
+            if won and moves <= 5:
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Victoria rápida en Tic Tac Toe!'
+                })
+
+        elif game_id == 'memory':
+            # Perfect: completar en 12 o menos movimientos
+            if moves <= 12:
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Memoria perfecta! Completado en ≤12 movimientos'
+                })
+            elif score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Mejor puntuación en Memory: {score}!'
+                })
+
+        elif game_id == 'snake':
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en Snake: {score} manzanas!'
+                })
+
+        elif game_id == 'breakout':
+            # Perfect: destruir todos los bloques
+            if game_data.get('blocks_destroyed', 0) >= game_data.get('total_blocks', 999):
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Breakout perfecto! Destruiste todos los bloques'
+                })
+            elif score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Mejor puntuación en Breakout: {score}!'
+                })
+
+        elif game_id == '2048':
+            # Win: alcanzar el tile 2048
+            max_tile = game_data.get('max_tile', 0)
+            if max_tile >= 2048:
+                achievements.append({
+                    'action': 'game_win_2048',
+                    'description': '¡Alcanzaste el 2048!'
+                })
+            elif score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Mejor puntuación en 2048: {score}!'
+                })
+
+        elif game_id == 'tetris':
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en Tetris: {score}!'
+                })
+
+        elif game_id == 'spaceinvaders':
+            # Perfect: eliminar todos los enemigos
+            if game_data.get('enemies_destroyed', 0) >= game_data.get('total_enemies', 999):
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Space Invaders perfecto! Eliminaste todos los enemigos'
+                })
+            elif score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Mejor puntuación en Space Invaders: {score}!'
+                })
+
+        return achievements
+
+    @staticmethod
+    def get_game_leaderboard(db: Session, game_id: str, limit: int = 50) -> List[dict]:
+        """
+        Obtiene el ranking de un juego específico.
+        Solo incluye usuarios registrados (user_id not null).
+        """
+        query = db.query(User, UserProfile, GameSession).join(
+            UserProfile, User.id == UserProfile.user_id
+        ).join(
+            GameSession, User.id == GameSession.user_id
+        ).filter(
+            GameSession.game_id == game_id,
+            GameSession.user_id.isnot(None)
+        ).order_by(GameSession.score.desc()).limit(limit)
+
+        results = []
+        for user, profile, session in query.all():
+            results.append({
+                'user_id': user.id,
+                'username': user.username,
+                'avatar_url': user.avatar_url,
+                'level': profile.level,
+                'rank_title': profile.rank_title,
+                'score': session.score,
+                'won': session.won,
+                'moves': session.moves,
+                'time_seconds': session.time_seconds,
+                'created_at': session.created_at.isoformat()
+            })
+
+        return results
+
+    @staticmethod
+    def get_games_list() -> List[dict]:
+        """Retorna la lista de juegos disponibles con sus configuraciones."""
+        return [
+            {
+                'id': 'pong',
+                'name': 'Pong',
+                'description': 'El clásico juego de ping pong arcade',
+                'icon': '🏓',
+                'category': 'Arcade',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'tictactoe',
+                'name': 'Tic Tac Toe',
+                'description': 'El clásico juego de 3 en raya contra la IA',
+                'icon': '⭕',
+                'category': 'Estrategia',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'memory',
+                'name': 'Memory Match',
+                'description': 'Encuentra las parejas de cartas',
+                'icon': '🃏',
+                'category': 'Puzzle',
+                'has_ai': False,
+                'multiplayer': False
+            },
+            {
+                'id': 'snake',
+                'name': 'Snake',
+                'description': 'El clásico juego de la serpiente',
+                'icon': '🐍',
+                'category': 'Arcade',
+                'has_ai': False,
+                'multiplayer': False
+            },
+            {
+                'id': 'breakout',
+                'name': 'Breakout',
+                'description': 'Destruye los bloques con la pelota',
+                'icon': '🧱',
+                'category': 'Arcade',
+                'has_ai': False,
+                'multiplayer': False
+            },
+            {
+                'id': '2048',
+                'name': '2048',
+                'description': 'Combina números para llegar a 2048',
+                'icon': '🔢',
+                'category': 'Puzzle',
+                'has_ai': False,
+                'multiplayer': False
+            },
+            {
+                'id': 'tetris',
+                'name': 'Tetris',
+                'description': 'El clásico juego de bloques',
+                'icon': '🧩',
+                'category': 'Arcade',
+                'has_ai': False,
+                'multiplayer': False
+            },
+            {
+                'id': 'spaceinvaders',
+                'name': 'Space Invaders',
+                'description': 'Defiende la Tierra de los invasores',
+                'icon': '👾',
+                'category': 'Arcade',
+                'has_ai': True,
+                'multiplayer': False
+            },
+        ]

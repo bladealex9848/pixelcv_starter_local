@@ -16,6 +16,7 @@ from app.api.routes_auth import router as auth_router
 from app.api.routes_cv_community import router as cv_community_router
 from app.api.routes_gamification import router as gamification_router
 from app.api.routes_ollama import router as ollama_router
+from app.api.routes_games import router as games_router
 from app.models.database import init_db
 
 app = FastAPI(
@@ -45,6 +46,7 @@ app.include_router(auth_router)
 app.include_router(cv_community_router)
 app.include_router(gamification_router)
 app.include_router(ollama_router)
+app.include_router(games_router)
 
 @app.get("/")
 def root():

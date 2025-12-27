@@ -67,6 +67,9 @@ export default function Navbar() {
             <button onClick={() => router.push('/models')} className="text-purple-200 hover:text-white flex items-center gap-1 transition-all duration-200 hover:scale-105">
               <span className="text-lg">👾</span> Modelos
             </button>
+            <button onClick={() => router.push('/games')} className="text-purple-200 hover:text-white flex items-center gap-1 transition-all duration-200 hover:scale-105">
+              <span className="text-lg">🕹️</span> Juegos
+            </button>
             {isAuthenticated ? (
               <>
                 <button onClick={() => router.push('/dashboard')} className="text-purple-200 hover:text-white transition-all duration-200 hover:scale-105">
@@ -116,6 +119,9 @@ export default function Navbar() {
           <div className="md:hidden py-4 border-t border-purple-500/20 space-y-3 bg-black/30 backdrop-blur-sm">
             <button onClick={() => {router.push('/models'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2 flex items-center gap-2 transition-all duration-200 hover:bg-purple-600/20 hover:pl-4">
               <span className="text-lg">👾</span> Modelos
+            </button>
+            <button onClick={() => {router.push('/games'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2 flex items-center gap-2 transition-all duration-200 hover:bg-purple-600/20 hover:pl-4">
+              <span className="text-lg">🕹️</span> Juegos
             </button>
             {isAuthenticated ? (
               <>

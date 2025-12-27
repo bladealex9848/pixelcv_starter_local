@@ -240,12 +240,13 @@ export default function LeaderboardPage() {
         >
           <div className="bg-[#0a0a0a]">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-2 p-4 bg-yellow-900/30 border-b border-yellow-900/50 text-xs uppercase tracking-wider text-yellow-400 font-bold">
+            <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 bg-yellow-900/30 border-b border-yellow-900/50 text-xs uppercase tracking-wider text-yellow-400 font-bold">
               <div className="col-span-1">Rank</div>
-              <div className="col-span-5">Player</div>
+              <div className="col-span-4">Player</div>
+              <div className="col-span-3">Rango</div>
               <div className="col-span-2">Level</div>
               <div className="col-span-2 text-right">Points</div>
-              <div className="col-span-2 text-right">CVs</div>
+              <div className="col-span-1 text-right">CVs</div>
             </div>
 
             {/* Table Body */}
@@ -254,7 +255,7 @@ export default function LeaderboardPage() {
               return (
                 <div
                   key={user.user_id}
-                  className={`grid grid-cols-12 gap-2 p-4 border-b border-gray-800/50 hover:bg-yellow-900/10 transition-all duration-300 ${style.glow} group`}
+                  className={`grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 border-b border-gray-800/50 hover:bg-yellow-900/10 transition-all duration-300 ${style.glow} group`}
                 >
                   {/* Rank */}
                   <div className={`col-span-1 font-black text-lg ${style.color}`}>
@@ -266,7 +267,7 @@ export default function LeaderboardPage() {
                   </div>
 
                   {/* Player Info */}
-                  <div className="col-span-5 flex items-center gap-3">
+                  <div className="col-span-4 flex items-center gap-3">
                     <div className="relative">
                       <img
                         src={user.avatar_url}
@@ -288,6 +289,13 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
 
+                  {/* Rango (Rank Title) */}
+                  <div className="col-span-3 flex items-center">
+                    <span className={`${style.bg} ${style.color} border ${style.border} px-3 py-1 text-xs font-bold truncate`}>
+                      {user.rank_title}
+                    </span>
+                  </div>
+
                   {/* Level */}
                   <div className="col-span-2 flex items-center">
                     <span className={`${style.bg} ${style.color} border ${style.border} px-2 py-1 text-xs font-bold`}>
@@ -302,9 +310,9 @@ export default function LeaderboardPage() {
                   </div>
 
                   {/* CVs */}
-                  <div className="col-span-2 text-right text-gray-400 flex items-center justify-end gap-1">
-                    <span className="text-lg">📄</span>
-                    <span>{user.cvs_published}</span>
+                  <div className="col-span-1 text-right text-gray-400 flex items-center justify-end gap-1">
+                    <span className="text-sm">📄</span>
+                    <span className="text-xs">{user.cvs_published}</span>
                   </div>
                 </div>
               );
