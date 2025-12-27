@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface TicTacToeProps {
   isAuthenticated: boolean;
@@ -9,27 +9,29 @@ interface TicTacToeProps {
 type Player = 'X' | 'O' | null;
 type Board = Player[];
 
+// Tipo para movimientos de entrenamiento
+interface TrainingMove {
+  position: number;
+  timestamp: number;
+  board_state: Board;
+}
+
 export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps) {
   const [board, setBoard] = useState<Board>(Array(9).fill(null));
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'ended'>('menu');
   const [moves, setMoves] = useState(0);
   const [winner, setWinner] = useState<Player>(null);
-  const [aiEnabled, setAiEnabled] = useState(false);
+
+  // NUEVO: Recolectar movimientos para entrenamiento
+  const movesRef = useRef<TrainingMove[]>([]);
+  const gameStartTimeRef = useRef<number>(0);
 
   const WINNING_COMBINATIONS = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
     [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
     [0, 4, 8], [2, 4, 6] // diagonals
   ];
-
-  // Verificar disponibilidad de IA al montar
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/ai/status`)
-      .then(res => res.json())
-      .then(data => setAiEnabled(data.available))
-      .catch(() => setAiEnabled(false));
-  }, []);
 
   const checkWinner = (board: Board): Player => {
     for (const combo of WINNING_COMBINATIONS) {
@@ -74,66 +76,40 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
     }
   }, []);
 
-  const getAIMoveFromOllama = useCallback(async (currentBoard: Board): Promise<number | null> => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/ai/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_type: 'tictactoe',
-          game_state: { board: currentBoard, player: 'O' }
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.move && data.move.position !== undefined) {
-          return data.move.position;
-        }
-      }
-    } catch {
-      // Silencioso - usa fallback local
-    }
-    return null;
-  }, []);
-
-  const makeAIMove = useCallback(async () => {
+  // NUEVO: makeAIMove SOLO usa Minimax local (sin llamadas HTTP)
+  const makeAIMove = useCallback(() => {
     let bestMove = -1;
+    let bestScore = -Infinity;
 
-    // Intentar obtener movimiento de Ollama primero
-    if (aiEnabled) {
-      const ollamaMove = await getAIMoveFromOllama(board);
-      if (ollamaMove !== null && board[ollamaMove] === null) {
-        bestMove = ollamaMove;
+    // Add some randomness to make AI beatable sometimes
+    if (Math.random() < 0.15) {  // 15% chance de movimiento aleatorio
+      const available = board.map((cell, i) => cell === null ? i : -1).filter(i => i !== -1);
+      if (available.length > 0) {
+        bestMove = available[Math.floor(Math.random() * available.length)];
       }
-    }
-
-    // Fallback a minimax local
-    if (bestMove === -1) {
-      let bestScore = -Infinity;
-
-      // Add some randomness to make AI beatable sometimes
-      if (Math.random() < 0.2) {
-        const available = board.map((cell, i) => cell === null ? i : -1).filter(i => i !== -1);
-        if (available.length > 0) {
-          bestMove = available[Math.floor(Math.random() * available.length)];
-        }
-      } else {
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === null) {
-            const newBoard = [...board];
-            newBoard[i] = 'O';
-            const score = minimax(newBoard, false);
-            if (score > bestScore) {
-              bestScore = score;
-              bestMove = i;
-            }
+    } else {
+      // Usar Minimax para movimiento óptimo
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === null) {
+          const newBoard = [...board];
+          newBoard[i] = 'O';
+          const score = minimax(newBoard, false);
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = i;
           }
         }
       }
     }
 
     if (bestMove !== -1) {
+      // NUEVO: Recolectar movimiento de IA
+      movesRef.current.push({
+        position: bestMove,
+        timestamp: Date.now() - gameStartTimeRef.current,
+        board_state: [...board]
+      });
+
       const newBoard = [...board];
       newBoard[bestMove] = 'O';
       setBoard(newBoard);
@@ -144,13 +120,31 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
       if (win) {
         setWinner(win);
         setGameState('ended');
-        onGameEnd(0, win === 'X', moves + 1, 0, {});
+        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+        // NUEVO: Enviar training_data
+        onGameEnd(0, win === 'X', moves + 1, gameTime, {
+          training_data: {
+            game_id: 'tictactoe',
+            moves_sequence: movesRef.current,
+            final_board_state: { board: newBoard },
+            player_won: win === 'X'
+          }
+        });
       } else if (isBoardFull(newBoard)) {
         setGameState('ended');
-        onGameEnd(0, false, moves + 1, 0, {});
+        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+        // NUEVO: Enviar training_data
+        onGameEnd(0, false, moves + 1, gameTime, {
+          training_data: {
+            game_id: 'tictactoe',
+            moves_sequence: movesRef.current,
+            final_board_state: { board: newBoard },
+            player_won: false
+          }
+        });
       }
     }
-  }, [board, minimax, moves, onGameEnd, aiEnabled, getAIMoveFromOllama]);
+  }, [board, minimax, moves, onGameEnd]);
 
   useEffect(() => {
     if (gameState === 'playing' && !isPlayerTurn) {
@@ -162,6 +156,13 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
   const handleCellClick = (index: number) => {
     if (gameState !== 'playing' || !isPlayerTurn || board[index] !== null) return;
 
+    // NUEVO: Recolectar movimiento del jugador
+    movesRef.current.push({
+      position: index,
+      timestamp: Date.now() - gameStartTimeRef.current,
+      board_state: [...board]
+    });
+
     const newBoard = [...board];
     newBoard[index] = 'X';
     setBoard(newBoard);
@@ -171,13 +172,31 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
     if (win) {
       setWinner(win);
       setGameState('ended');
-      onGameEnd(0, win === 'X', moves + 1, 0, {});
+      const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+      // NUEVO: Enviar training_data
+      onGameEnd(0, win === 'X', moves + 1, gameTime, {
+        training_data: {
+          game_id: 'tictactoe',
+          moves_sequence: movesRef.current,
+          final_board_state: { board: newBoard },
+          player_won: true
+        }
+      });
       return;
     }
 
     if (isBoardFull(newBoard)) {
       setGameState('ended');
-      onGameEnd(0, false, moves + 1, 0, {});
+      const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+      // NUEVO: Enviar training_data
+      onGameEnd(0, false, moves + 1, gameTime, {
+        training_data: {
+          game_id: 'tictactoe',
+          moves_sequence: movesRef.current,
+          final_board_state: { board: newBoard },
+          player_won: false
+        }
+      });
       return;
     }
 
@@ -190,6 +209,9 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
     setGameState('playing');
     setMoves(0);
     setWinner(null);
+    // NUEVO: Limpiar movimientos de entrenamiento y empezar timer
+    movesRef.current = [];
+    gameStartTimeRef.current = Date.now();
   };
 
   return (
@@ -216,15 +238,10 @@ export default function TicTacToe({ isAuthenticated, onGameEnd }: TicTacToeProps
           </p>
           <div className="flex items-center justify-center gap-2">
             <p className="text-gray-500 text-xs">Movimientos: {moves}</p>
-            {aiEnabled ? (
-              <div className="flex items-center gap-1 bg-green-900/30 border border-green-500/50 px-2 py-0.5 rounded-sm">
-                <span className="text-green-400 text-[10px]">🤖 AI</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 bg-gray-900/30 border border-gray-700 px-2 py-0.5 rounded-sm">
-                <span className="text-gray-500 text-[10px]">🤖 Local</span>
-              </div>
-            )}
+            {/* NUEVO: Indicador de IA predictiva local */}
+            <div className="flex items-center gap-1 bg-purple-900/30 border border-purple-500/50 px-2 py-0.5 rounded-sm">
+              <span className="text-purple-400 text-[10px]">🤖 Minimax AI</span>
+            </div>
           </div>
         </div>
       )}

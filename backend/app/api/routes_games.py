@@ -9,6 +9,9 @@ from app.models.database import get_db
 from app.services.gamification_service import GamificationService
 from app.api.routes_auth import get_current_user
 from app.services.game_ai_service import get_ollama_move, check_ollama_health
+from app.services.game_training_service import GameTrainingService
+from app.services.game_parameters_service import GameParametersService
+from app.services.game_algorithms_service import GameAlgorithmService
 
 router = APIRouter(prefix="/games", tags=["games"])
 
@@ -49,6 +52,7 @@ async def submit_game_result(
 
     - Para usuarios registrados: acumula puntos y actualiza estadísticas
     - Para usuarios no registrados (demo mode): registra sesión sin puntos
+    - Si game_data incluye training_data, se guarda para análisis offline de IA
     """
     # Verificar que el game_id es válido
     games_list = GamificationService.get_games_list()
@@ -71,6 +75,18 @@ async def submit_game_result(
             time_seconds=request.time_seconds,
             game_data=request.game_data
         )
+
+        # NUEVO: Guardar datos de entrenamiento si se proporcionan
+        if request.game_data and 'training_data' in request.game_data:
+            try:
+                GameTrainingService.record_training_data(
+                    db=db,
+                    session_id=session.id,
+                    training_data=request.game_data['training_data']
+                )
+            except Exception as e:
+                # No fallar el submit si falla guardar training_data
+                print(f"[Games] Warning: No se guardó training_data: {e}")
 
         if user_id:
             return GameSubmitResponse(
@@ -188,35 +204,6 @@ async def get_my_game_scores(
     }
 
 
-@router.post("/ai/move")
-async def get_ai_move(request: GameAIRequest):
-    """
-    Obtiene un movimiento de IA para un juego usando Ollama.
-
-    Los movimientos se calculan localmente con fallback a Ollama para mejora.
-    Timeout de 2 segundos para mantener el juego fluido.
-    """
-    try:
-        move = get_ollama_move(request.game_type, request.game_state)
-        if move is None:
-            return {
-                "move": None,
-                "using_fallback": True,
-                "message": "IA no disponible, usando algoritmo local"
-            }
-        return {
-            "move": move,
-            "using_fallback": False,
-            "message": "Movimiento calculado con IA"
-        }
-    except Exception as e:
-        return {
-            "move": None,
-            "using_fallback": True,
-            "message": f"Error en IA: {str(e)}"
-        }
-
-
 @router.get("/ai/status")
 async def get_ai_status():
     """
@@ -229,3 +216,191 @@ async def get_ai_status():
         "available": is_healthy,
         "message": "Ollama disponible" if is_healthy else "Ollama no disponible - usando IA local",
     }
+
+
+# ============== NUEVOS ENDPOINTS PARA SISTEMA OFFLINE ==============
+
+
+@router.get("/ai/parameters/{game_id}/{difficulty}")
+async def get_ai_parameters(
+    game_id: str,
+    difficulty: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna los parámetros activos para un juego y dificultad.
+
+    No requiere autenticación.
+    """
+    try:
+        params = GameParametersService.get_active_parameters(db, game_id, difficulty)
+        return {
+            "game_id": game_id,
+            "difficulty": difficulty,
+            "parameters": params
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo parámetros: {str(e)}")
+
+
+@router.get("/ai/parameters/history/{game_id}")
+async def get_parameters_history(
+    game_id: str,
+    difficulty: str,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna el historial de versiones de parámetros para un juego.
+
+    Útil para análisis y rollback.
+
+    No requiere autenticación.
+    """
+    try:
+        history = GameParametersService.get_parameter_version_history(
+            db=db,
+            game_id=game_id,
+            difficulty=difficulty,
+            limit=min(limit, 100)
+        )
+
+        return {
+            "game_id": game_id,
+            "difficulty": difficulty,
+            "history": [
+                {
+                    "version": h.version,
+                    "parameters": h.parameters_snapshot,
+                    "change_reason": h.change_reason,
+                    "created_at": h.created_at.isoformat()
+                }
+                for h in history
+            ],
+            "total": len(history)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo historial: {str(e)}")
+
+
+@router.post("/ai/train")
+async def train_ai_parameters(
+    game_id: str,
+    difficulty: str = 'medium',
+    batch_size: int = 50,
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """
+    Ejecuta entrenamiento offline de parámetros de IA.
+
+    Analiza partidas completadas con Ollama (sin restricciones de tiempo)
+    y genera mejores parámetros para los algoritmos locales.
+
+    Requiere autenticación. Solo admin debería usar este endpoint.
+
+    Este proceso puede tomar 2-5 minutos.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+    # TODO: Verificar que el usuario sea admin
+    # if not current_user.get('is_admin', False):
+    #     raise HTTPException(status_code=403, detail="Solo admin puede entrenar IA")
+
+    try:
+        result = GameTrainingService.train_parameters_batch(
+            db=db,
+            game_id=game_id,
+            difficulty=difficulty,
+            batch_size=min(batch_size, 100)
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en entrenamiento: {str(e)}")
+
+
+@router.get("/ai/training/stats")
+async def get_training_stats(
+    game_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene estadísticas de datos de entrenamiento recolectados.
+
+    Útil para monitorear cuántos datos hay disponibles para entrenamiento.
+
+    No requiere autenticación.
+    """
+    try:
+        stats = GameTrainingService.get_training_stats(db=db, game_id=game_id)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo estadísticas: {str(e)}")
+
+
+@router.post("/ai/parameters/initialize")
+async def initialize_parameters(
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """
+    Inicializa parámetros por defecto para todos los juegos.
+
+    Debe ejecutarse al iniciar el sistema o cuando se agregan nuevos juegos.
+
+    Requiere autenticación.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+    try:
+        result = GameParametersService.initialize_default_parameters(db)
+        return {
+            "status": "success",
+            "message": f"Parámetros inicializados: {result['total']} totales ({result['created']} nuevos, {result['updated']} actualizados)",
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inicializando parámetros: {str(e)}")
+
+
+# ============== ENDPOINTS DEPRECATED (Mantener por compatibilidad) ==============
+
+
+@router.post("/ai/move")
+async def get_ai_move(request: GameAIRequest):
+    """
+    ⚠️ DEPRECATED: Este endpoint será removido en futuras versiones.
+
+    Usa GameAlgorithmService directamente en el frontend para latencia cero.
+    Este endpoint hace llamadas en tiempo real a Ollama causando timeouts 502.
+
+    RECOMENDACIÓN:
+    - Frontend debe usar GameAlgorithmService.get_<game>_move() localmente
+    - Solo usar este endpoint para backward compatibility temporal
+    """
+    try:
+        move = get_ollama_move(request.game_type, request.game_state)
+        if move is None:
+            return {
+                "move": None,
+                "using_fallback": True,
+                "message": "⚠️ DEPRECATED: IA no disponible, usando algoritmo local",
+                "deprecated_warning": "Este endpoint será removido. Usa algoritmos locales en el frontend."
+            }
+        return {
+            "move": move,
+            "using_fallback": False,
+            "message": "⚠️ DEPRECATED: Movimiento calculado con IA",
+            "deprecated_warning": "Este endpoint será removido. Usa algoritmos locales en el frontend."
+        }
+    except Exception as e:
+        return {
+            "move": None,
+            "using_fallback": True,
+            "message": f"⚠️ DEPRECATED: Error en IA: {str(e)}",
+            "deprecated_warning": "Este endpoint será removido. Usa algoritmos locales en el frontend."
+        }

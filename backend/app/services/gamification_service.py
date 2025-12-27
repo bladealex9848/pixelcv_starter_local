@@ -333,6 +333,7 @@ class GamificationService:
 
         # Solo calcular puntos si hay usuario registrado
         if user_id:
+            # Calcular TODOS los puntos que recibirá el usuario
             points = GamificationService._calculate_game_points(
                 game_id=game_id,
                 score=score,
@@ -340,7 +341,18 @@ class GamificationService:
                 moves=moves,
                 game_data=game_data or {}
             )
-            session.points_earned = points
+
+            # Puntos por rendimiento
+            score_points = GamificationService._calculate_score_points(
+                game_id=game_id,
+                score=score,
+                moves=moves,
+                game_data=game_data or {}
+            )
+
+            # Total de puntos (incluye rendimiento)
+            total_points = points + score_points
+            session.points_earned = total_points
 
             # Agregar puntos al usuario
             GamificationService.add_points(
@@ -367,12 +379,6 @@ class GamificationService:
                 )
 
             # Puntos por rendimiento
-            score_points = GamificationService._calculate_score_points(
-                game_id=game_id,
-                score=score,
-                moves=moves,
-                game_data=game_data or {}
-            )
             if score_points > 0:
                 GamificationService.add_points(
                     db=db,

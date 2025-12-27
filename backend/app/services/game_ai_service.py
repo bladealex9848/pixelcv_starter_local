@@ -1,5 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Servicio de IA para juegos usando Ollama con fallback local."""
+"""Servicio de IA para juegos usando Ollama con fallback local.
+
+⚠️ DEPRECATED: Este servicio está siendo reemplazado por game_algorithms_service.py
+
+USAR EN SU LUGAR:
+- GameAlgorithmService.get_pong_move() para Pong
+- GameAlgorithmService.get_tictactoe_move() para Tic Tac Toe
+
+RAZÓN:
+Las llamadas en tiempo real a Ollama causan timeouts 502 porque el modelo
+tarda más que el timeout permitido durante gameplay. Los nuevos algoritmos
+locales son instantáneos (<1ms) y no dependen de Ollama.
+
+Para entrenamiento offline y mejora de algoritmos, ver:
+- GameTrainingService.train_parameters_batch()
+- POST /games/ai/train
+"""
 import os
 import requests
 import random
@@ -16,12 +32,27 @@ _model_warmed_up = False
 
 def get_ollama_move(game_type: str, game_state: dict) -> dict:
     """
-    Obtiene un movimiento de IA desde Ollama para un juego.
+    ⚠️ DEPRECATED: Usar GameAlgorithmService en su lugar.
+
+    Esta función hace llamadas en tiempo real a Ollama causando timeouts.
+    Reemplazar por: GameAlgorithmService.get_<game>_move()
+
+    Para entrenamiento offline, usa:
+    - GameTrainingService.train_parameters_batch()
+    - POST /games/ai/train
+
     Retorna un diccionario con el movimiento o None si falla.
 
     game_type puede ser: 'pong', 'tictactoe', 'spaceinvaders'
     game_state contiene el estado actual del juego
     """
+    import warnings
+    warnings.warn(
+        "get_ollama_move is DEPRECATED. Use GameAlgorithmService instead. "
+        "This function causes 502 timeouts due to real-time Ollama calls.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     # Seleccionar el primer modelo disponible
     available_models = _get_available_models()
     if not available_models:

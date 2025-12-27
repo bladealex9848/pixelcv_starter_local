@@ -226,6 +226,109 @@ class GameSession(Base):
 
     # Relaciones
     user = relationship("User", back_populates="game_sessions")
+    training_data = relationship("GameTrainingData", back_populates="session", uselist=False)
+
+
+class GameAIParameters(Base):
+    """Parámetros configurables para IA de juegos (sistema offline)"""
+    __tablename__ = "game_ai_parameters"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    game_id = Column(String, nullable=False)  # pong, tictactoe, spaceinvaders, etc.
+    difficulty = Column(String, nullable=False)  # easy, medium, hard, expert
+
+    # Parámetros serializados como JSON (estructura flexible por juego)
+    # Pong: {base_error: 15.0, reaction_delay_chance: 0.05, max_bounces: 2}
+    # TicTacToe: {error_chance: 0.15, max_depth: 4, position_weights: [...]}
+    parameters = Column(JSON, nullable=False)
+
+    # Metadatos
+    version = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+
+    # Estadísticas de rendimiento (para analizar si params son buenos)
+    total_games_trained = Column(Integer, default=0)  # Partidas analizadas para estos params
+    win_rate_vs_players = Column(Float, default=0.5)  # Win rate de IA contra jugadores
+    avg_score_diff = Column(Float, default=0.0)  # Diferencia promedio de score
+
+    # Información de entrenamiento
+    trained_at = Column(DateTime)  # Última vez que IA entrenó estos params
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Índices
+    __table_args__ = (
+        Index('idx_game_diff_params', 'game_id', 'difficulty', 'is_active'),
+    )
+
+
+class GameTrainingData(Base):
+    """Datos de entrenamiento recolectados de partidas para análisis offline"""
+    __tablename__ = "game_training_data"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
+
+    # Identificación del juego
+    game_id = Column(String, nullable=False)  # pong, tictactoe, etc.
+
+    # Datos del juego (formato optimizado para análisis)
+    # Pong: [{ball_x, ball_y, ball_vx, ball_vy, paddle_y, timestamp}, ...]
+    # TicTacToe: [{position, timestamp, board_state}, ...]
+    moves_sequence = Column(JSON, nullable=False)
+
+    # Estado final del juego
+    final_board_state = Column(JSON)  # Estado final del tablero/cancha
+
+    # Resultados
+    player_won = Column(Boolean, nullable=False)
+    player_score = Column(Integer, nullable=False)
+    ai_score = Column(Integer, default=0)
+
+    # Métricas de rendimiento
+    game_duration = Column(Integer)  # Segundos
+    total_moves = Column(Integer, default=0)
+    critical_moments = Column(JSON, default=list)  # Momentos clave: [{event, timestamp, context}, ...]
+
+    # Datos del jugador (para segmentación por nivel)
+    player_level = Column(Integer)  # Nivel del jugador (si estaba autenticado)
+    player_experience = Column(Integer)  # Experiencia total del jugador
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Índices
+    __table_args__ = (
+        Index('idx_training_game_date', 'game_id', 'created_at'),
+    )
+
+    # Relaciones
+    session = relationship("GameSession", back_populates="training_data")
+
+
+class AIParameterHistory(Base):
+    """Historial de versiones de parámetros para rollback y análisis"""
+    __tablename__ = "ai_parameter_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    game_id = Column(String, nullable=False)
+    difficulty = Column(String, nullable=False)
+
+    # Parámetros archivados (snapshot completo)
+    parameters_snapshot = Column(JSON, nullable=False)
+    version = Column(Integer, nullable=False)
+
+    # Información de cambio
+    change_reason = Column(String)  # "ai_trained", "manual_adjustment", "rollback"
+    previous_version = Column(Integer)  # Versión anterior (para rollback)
+
+    # Métricas antes del cambio (para comparar rendimiento)
+    performance_metrics = Column(JSON)  # {win_rate, avg_score, total_games}
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Índices
+    __table_args__ = (
+        Index('idx_param_version_history', 'game_id', 'difficulty', 'version'),
+    )
 
 
 # Función para inicializar la base de datos

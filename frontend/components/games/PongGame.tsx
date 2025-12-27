@@ -20,13 +20,77 @@ interface Paddle {
   width: number;
 }
 
+// Tipo para eventos de entrenamiento
+interface GameEvent {
+  timestamp: number;
+  ball_x: number;
+  ball_y: number;
+  ball_vx: number;
+  ball_vy: number;
+  player_paddle_y: number;
+  opponent_paddle_y: number;
+  rally_count: number;
+  event_type?: 'paddle_hit' | 'wall_bounce' | 'score';
+}
+
+// Algoritmo local de IA para Pong (SIN llamadas HTTP)
+const getLocalAIMove = (
+  ball: Ball,
+  paddle: Paddle,
+  canvasHeight: number,
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert' = 'medium'
+) => {
+  // Parámetros según dificultad
+  const params = {
+    easy: { baseError: 50, reactionDelay: 0.2, maxBounces: 1 },
+    medium: { baseError: 20, reactionDelay: 0.05, maxBounces: 2 },
+    hard: { baseError: 5, reactionDelay: 0.01, maxBounces: 3 },
+    expert: { baseError: 0, reactionDelay: 0, maxBounces: 5 },
+  }[difficulty];
+
+  // 1. Calcular posición de intersección con física
+  let predictedY = ball.y;
+  let bounces = 0;
+  let tempBallY = ball.y;
+  let tempBallVY = ball.vy;
+
+  if (ball.vx > 0) { // Solo predecir si la pelota viene hacia el oponente
+    // Calcular tiempo para llegar al lado derecho
+    const timeToEdge = (800 - ball.x) / ball.vx;
+    predictedY = ball.y + ball.vy * timeToEdge;
+
+    // Simular rebotes
+    while (bounces < params.maxBounces) {
+      if (predictedY >= 0 && predictedY <= canvasHeight) break;
+
+      if (predictedY < 0) {
+        predictedY = -predictedY;
+      } else if (predictedY > canvasHeight) {
+        predictedY = 2 * canvasHeight - predictedY;
+      }
+      bounces++;
+    }
+  }
+
+  // 2. Agregar error controlado
+  const error = (Math.random() - 0.5) * 2 * params.baseError;
+  predictedY += error;
+
+  // 3. Calcular target Y (centro de la paleta)
+  let targetY = predictedY - paddle.height / 2;
+
+  // 4. Mantener dentro de límites
+  targetY = Math.max(0, Math.min(canvasHeight - paddle.height, targetY));
+
+  return targetY;
+};
+
 export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'ended'>('menu');
   const [rallies, setRallies] = useState(0);
-  const [aiEnabled, setAiEnabled] = useState(false); // Estado de IA Ollama
 
   // Game constants
   const CANVAS_WIDTH = 800;
@@ -62,15 +126,10 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
   const keysRef = useRef<Record<string, boolean>>({});
   const animationFrameRef = useRef<number | undefined>(undefined);
   const currentRalliesRef = useRef(0);
-  const aiMoveRef = useRef<{ targetY: number; timestamp: number } | null>(null);
 
-  // Verificar disponibilidad de IA al montar
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/ai/status`)
-      .then(res => res.json())
-      .then(data => setAiEnabled(data.available))
-      .catch(() => setAiEnabled(false));
-  }, []);
+  // NUEVO: Recolectar datos de entrenamiento
+  const gameEventsRef = useRef<GameEvent[]>([]);
+  const gameStartTimeRef = useRef<number>(0);
 
   // Reset ball to center
   const resetBall = useCallback((direction: 1 | -1 = 1) => {
@@ -83,61 +142,18 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
     };
     currentRalliesRef.current = 0;
     setRallies(0);
+    // NUEVO: Limpiar eventos de entrenamiento
+    gameEventsRef.current = [];
+    gameStartTimeRef.current = Date.now();
   }, []);
 
-  // Obtener movimiento de IA de Ollama
-  const getAIMove = useCallback(async (ball: Ball, paddle: Paddle) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/ai/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_type: 'pong',
-          game_state: {
-            ball_x: ball.x,
-            ball_y: ball.y,
-            ball_vx: ball.vx,
-            ball_vy: ball.vy,
-            paddle_y: paddle.y,
-            paddle_height: paddle.height,
-            canvas_height: CANVAS_HEIGHT,
-          }
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.move && data.move.targetY !== undefined) {
-          aiMoveRef.current = { targetY: data.move.targetY, timestamp: Date.now() };
-        }
-      }
-    } catch {
-      // Silencioso - usa fallback local
-    }
-  }, []);
-
-  // AI opponent logic con Ollama
+  // AI opponent logic con algoritmo LOCAL (sin llamadas HTTP)
   const updateOpponent = useCallback(() => {
     const paddle = opponentPaddleRef.current;
     const ball = ballRef.current;
 
-    // Usar movimiento de IA si está disponible y es reciente (< 100ms)
-    const now = Date.now();
-    let targetY: number;
-
-    if (aiEnabled && aiMoveRef.current && now - aiMoveRef.current.timestamp < 100) {
-      targetY = aiMoveRef.current.targetY;
-    } else {
-      // Fallback local: predecir posición de pelota
-      targetY = ball.y - paddle.height / 2;
-      const randomOffset = (Math.random() - 0.5) * 30;
-      targetY += randomOffset;
-
-      // Solicitar nuevo movimiento a IA si la pelota viene hacia el oponente
-      if (aiEnabled && ball.vx > 0 && Math.random() < 0.1) {
-        getAIMove(ball, paddle);
-      }
-    }
+    // NUEVO: Usar algoritmo local SIN latencia
+    const targetY = getLocalAIMove(ball, paddle, CANVAS_HEIGHT, 'medium');
 
     // Smooth movement hacia target
     const diff = targetY - paddle.y;
@@ -145,7 +161,7 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
 
     // Mantener paleta en límites
     paddle.y = Math.max(0, Math.min(CANVAS_HEIGHT - paddle.height, paddle.y));
-  }, [aiEnabled, getAIMove]);
+  }, []);
 
   // Update game physics
   const update = useCallback(() => {
@@ -179,6 +195,21 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
     if (ball.y <= BALL_SIZE / 2 || ball.y >= CANVAS_HEIGHT - BALL_SIZE / 2) {
       ball.vy *= -1;
       ball.y = ball.y <= BALL_SIZE / 2 ? BALL_SIZE / 2 : CANVAS_HEIGHT - BALL_SIZE / 2;
+
+      // NUEVO: Recolectar evento de rebote
+      if (gameEventsRef.current.length < 5000) { // Límite para no saturar
+        gameEventsRef.current.push({
+          timestamp: Date.now() - gameStartTimeRef.current,
+          ball_x: ball.x,
+          ball_y: ball.y,
+          ball_vx: ball.vx,
+          ball_vy: ball.vy,
+          player_paddle_y: playerPaddle.y,
+          opponent_paddle_y: opponentPaddle.y,
+          rally_count: currentRalliesRef.current,
+          event_type: 'wall_bounce'
+        });
+      }
     }
 
     // Ball collision with player paddle
@@ -199,6 +230,21 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
 
       currentRalliesRef.current++;
       setRallies(currentRalliesRef.current);
+
+      // NUEVO: Recolectar evento de golpe de paleta
+      if (gameEventsRef.current.length < 5000) {
+        gameEventsRef.current.push({
+          timestamp: Date.now() - gameStartTimeRef.current,
+          ball_x: ball.x,
+          ball_y: ball.y,
+          ball_vx: ball.vx,
+          ball_vy: ball.vy,
+          player_paddle_y: playerPaddle.y,
+          opponent_paddle_y: opponentPaddle.y,
+          rally_count: currentRalliesRef.current,
+          event_type: 'paddle_hit'
+        });
+      }
     }
 
     // Ball collision with opponent paddle
@@ -218,19 +264,76 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
 
       currentRalliesRef.current++;
       setRallies(currentRalliesRef.current);
+
+      // NUEVO: Recolectar evento de golpe de paleta (oponente)
+      if (gameEventsRef.current.length < 5000) {
+        gameEventsRef.current.push({
+          timestamp: Date.now() - gameStartTimeRef.current,
+          ball_x: ball.x,
+          ball_y: ball.y,
+          ball_vx: ball.vx,
+          ball_vy: ball.vy,
+          player_paddle_y: playerPaddle.y,
+          opponent_paddle_y: opponentPaddle.y,
+          rally_count: currentRalliesRef.current,
+          event_type: 'paddle_hit'
+        });
+      }
     }
 
     // Update opponent AI
     updateOpponent();
 
+    // NUEVO: Recolectar muestra de frame cada ~10 frames (para no saturar)
+    if (Math.random() < 0.1 && gameEventsRef.current.length < 5000) {
+      gameEventsRef.current.push({
+        timestamp: Date.now() - gameStartTimeRef.current,
+        ball_x: ball.x,
+        ball_y: ball.y,
+        ball_vx: ball.vx,
+        ball_vy: ball.vy,
+        player_paddle_y: playerPaddle.y,
+        opponent_paddle_y: opponentPaddle.y,
+        rally_count: currentRalliesRef.current
+      });
+    }
+
     // Score points
     if (ball.x < 0) {
       setOpponentScore(s => {
         const newScore = s + 1;
+        // NUEVO: Recolectar evento de anotación
+        gameEventsRef.current.push({
+          timestamp: Date.now() - gameStartTimeRef.current,
+          ball_x: ball.x,
+          ball_y: ball.y,
+          ball_vx: ball.vx,
+          ball_vy: ball.vy,
+          player_paddle_y: playerPaddle.y,
+          opponent_paddle_y: opponentPaddle.y,
+          rally_count: currentRalliesRef.current,
+          event_type: 'score'
+        });
+
         if (newScore >= WINNING_SCORE) {
           setGameState('ended');
           setTimeout(() => {
-            onGameEnd(rallies, false, 0, 0, { opponent_score: newScore });
+            // NUEVO: Enviar training_data
+            const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+            onGameEnd(rallies, false, 0, gameTime, {
+              opponent_score: newScore,
+              training_data: {
+                game_id: 'pong',
+                moves_sequence: gameEventsRef.current,
+                final_board_state: {
+                  final_score: playerScore,
+                  opponent_score: newScore,
+                  total_rallies: rallies
+                },
+                critical_moments: gameEventsRef.current.filter(e => e.event_type),
+                player_won: false
+              }
+            });
           }, 500);
         } else {
           resetBall(1);
@@ -242,10 +345,38 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
     if (ball.x > CANVAS_WIDTH) {
       setPlayerScore(s => {
         const newScore = s + 1;
+        // NUEVO: Recolectar evento de anotación
+        gameEventsRef.current.push({
+          timestamp: Date.now() - gameStartTimeRef.current,
+          ball_x: ball.x,
+          ball_y: ball.y,
+          ball_vx: ball.vx,
+          ball_vy: ball.vy,
+          player_paddle_y: playerPaddle.y,
+          opponent_paddle_y: opponentPaddle.y,
+          rally_count: currentRalliesRef.current,
+          event_type: 'score'
+        });
+
         if (newScore >= WINNING_SCORE) {
           setGameState('ended');
           setTimeout(() => {
-            onGameEnd(rallies, true, 0, 0, { opponent_score: opponentScore });
+            // NUEVO: Enviar training_data
+            const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+            onGameEnd(rallies, true, 0, gameTime, {
+              opponent_score: opponentScore,
+              training_data: {
+                game_id: 'pong',
+                moves_sequence: gameEventsRef.current,
+                final_board_state: {
+                  final_score: newScore,
+                  opponent_score: opponentScore,
+                  total_rallies: rallies
+                },
+                critical_moments: gameEventsRef.current.filter(e => e.event_type),
+                player_won: true
+              }
+            });
           }, 500);
         } else {
           resetBall(-1);
@@ -253,7 +384,7 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
         return newScore;
       });
     }
-  }, [gameState, onGameEnd, resetBall, updateOpponent, rallies, opponentScore]);
+  }, [gameState, onGameEnd, resetBall, updateOpponent, rallies, opponentScore, playerScore]);
 
   // Render game
   const render = useCallback(() => {
@@ -381,15 +512,10 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
           <span className="text-gray-400">Player:</span> {playerScore}
         </div>
         <div className="flex items-center gap-2">
-          {aiEnabled ? (
-            <div className="flex items-center gap-1 bg-green-900/30 border border-green-500/50 px-2 py-1 rounded-sm">
-              <span className="text-green-400 text-xs">🤖 AI Active</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 bg-gray-900/30 border border-gray-700 px-2 py-1 rounded-sm">
-              <span className="text-gray-500 text-xs">🤖 Local AI</span>
-            </div>
-          )}
+          {/* NUEVO: Indicador de IA predictiva local (sin latencia) */}
+          <div className="flex items-center gap-1 bg-purple-900/30 border border-purple-500/50 px-2 py-1 rounded-sm">
+            <span className="text-purple-400 text-xs">🤖 Predictive AI</span>
+          </div>
         </div>
         <div className="text-red-400">
           <span className="text-gray-400">CPU:</span> {opponentScore}
