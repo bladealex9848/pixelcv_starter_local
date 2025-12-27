@@ -184,8 +184,22 @@ export default function GamesPage() {
           {games.map((game) => (
             <div
               key={game.id}
-              className="group min-h-[460px]"
+              className="group min-h-[460px] relative"
             >
+              {/* AI Badge - Animated Corner Label */}
+              {game.has_ai && (
+                <div className="absolute -top-2 -right-2 z-20 animate-pulse-glow">
+                  <div className="relative">
+                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-purple-400 rounded-sm shadow-[0_0_15px_rgba(168,85,247,0.6)] transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                      🤖 AI POWERED
+                    </div>
+                    {/* Sparkle effects */}
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-sparkle"></div>
+                    <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-pink-400 rounded-full animate-sparkle-delayed"></div>
+                  </div>
+                </div>
+              )}
+
               <div
                 className="bg-black border-2 border-orange-900 p-1 transition-all duration-300 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:scale-105 h-full flex flex-col"
                 style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
@@ -211,19 +225,14 @@ export default function GamesPage() {
                     {game.description}
                   </p>
 
-                  {/* Features */}
-                  <div className="flex justify-center gap-2 mb-3">
-                    {game.has_ai && (
-                      <div className="bg-purple-900/30 border border-purple-500/50 px-2 py-1 rounded-sm">
-                        <span className="text-purple-300 text-[10px] font-bold uppercase">🤖 AI</span>
-                      </div>
-                    )}
-                    {game.multiplayer && (
+                  {/* Multiplayer Badge (only if not AI) */}
+                  {game.multiplayer && !game.has_ai && (
+                    <div className="flex justify-center mb-3">
                       <div className="bg-blue-900/30 border border-blue-500/50 px-2 py-1 rounded-sm">
                         <span className="text-blue-300 text-[10px] font-bold uppercase">👥 Multi</span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Play Button */}
                   <button
@@ -303,6 +312,25 @@ export default function GamesPage() {
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-15px) rotate(3deg); }
+        }
+
+        .animate-pulse-glow {
+          animation: pulseGlow 2s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.85; }
+        }
+
+        .animate-sparkle {
+          animation: sparkle 1.5s ease-in-out infinite;
+        }
+        .animate-sparkle-delayed {
+          animation: sparkle 1.5s ease-in-out infinite 0.75s;
+        }
+        @keyframes sparkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
         }
 
         .glitch-text {
