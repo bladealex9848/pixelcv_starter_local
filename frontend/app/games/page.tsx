@@ -212,7 +212,7 @@ export default function GamesPage() {
                   </p>
 
                   {/* Features */}
-                  <div className="flex justify-center gap-2 mb-4">
+                  <div className="flex justify-center gap-2 mb-3">
                     {game.has_ai && (
                       <div className="bg-purple-900/30 border border-purple-500/50 px-2 py-1 rounded-sm">
                         <span className="text-purple-300 text-[10px] font-bold uppercase">🤖 AI</span>
@@ -228,7 +228,7 @@ export default function GamesPage() {
                   {/* Play Button */}
                   <button
                     onClick={() => handlePlayGame(game.id)}
-                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-black uppercase tracking-wider py-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(249,115,22,0.5)] hover:from-orange-500 hover:to-red-500"
+                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-black uppercase tracking-wider py-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(249,115,22,0.5)] hover:from-orange-500 hover:to-red-500 mt-auto"
                     style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
                   >
                     Play Now
