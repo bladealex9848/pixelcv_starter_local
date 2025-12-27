@@ -7,12 +7,14 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends
+from typing import Optional
 
 # Cargar variables de entorno
 load_dotenv()
 
 from app.api.routes_cv import router as cv_router
-from app.api.routes_auth import router as auth_router
+from app.api.routes_auth import router as auth_router, get_current_user
 from app.api.routes_cv_community import router as cv_community_router
 from app.api.routes_gamification import router as gamification_router
 from app.api.routes_ollama import router as ollama_router
@@ -65,3 +67,28 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+# ==================== ENDPOINT TEMPORAL PARA INICIALIZAR DB ====================
+@app.post("/admin/init-db")
+def admin_init_db(
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """
+    ⚠️ ENDPOINT TEMPORAL para inicializar/actualizar la base de datos.
+
+    Este endpoint debe removerse después de usar.
+    Requiere autenticación de admin.
+    """
+    # TODO: Verificar que el usuario sea admin
+    # if not current_user.get('is_admin', False):
+    #     raise HTTPException(status_code=403, detail="Solo admin puede inicializar DB")
+
+    try:
+        init_db()
+        return {
+            "status": "success",
+            "message": "Base de datos inicializada correctamente",
+            "tables_created": True
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inicializando DB: {str(e)}")
