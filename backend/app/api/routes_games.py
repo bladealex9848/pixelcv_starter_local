@@ -7,7 +7,7 @@ from typing import Optional, List
 
 from app.models.database import get_db
 from app.services.gamification_service import GamificationService
-from app.services.auth_service import get_current_user
+from app.api.routes_auth import get_current_user
 from app.services.game_ai_service import get_ollama_move, check_ollama_health
 
 router = APIRouter(prefix="/games", tags=["games"])
