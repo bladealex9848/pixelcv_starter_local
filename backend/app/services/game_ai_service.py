@@ -8,7 +8,10 @@ OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
 # Modelos rápidos para juegos (en orden de preferencia según disponibilidad en el VPS)
 # Modelos reales disponibles: qwen3:0.6b, qwen3:1.7b, gemma3:1b, granite3.3:2b
 FAST_MODELS = ["qwen3:0.6b", "qwen3:1.7b", "gemma3:1b", "granite3.3:2b"]
-GAME_AI_TIMEOUT = 2  # 2 segundos máximo para mantener el juego fluido
+GAME_AI_TIMEOUT = 5  # 5 segundos máximo, luego usa fallback local
+
+# Variable para rastrear si el modelo ya está "caliente"
+_model_warmed_up = False
 
 
 def get_ollama_move(game_type: str, game_state: dict) -> dict:
@@ -210,3 +213,37 @@ def check_ollama_health() -> bool:
         return resp.status_code == 200
     except:
         return False
+
+
+def warmup_model() -> bool:
+    """
+    Calienta el modelo enviando una petición simple.
+    Esto carga el modelo en memoria para respuestas más rápidas.
+    """
+    global _model_warmed_up
+    if _model_warmed_up:
+        return True
+
+    try:
+        available = _get_available_models()
+        if not available:
+            return False
+
+        model = available[0]
+        # Enviar una petición simple para cargar el modelo
+        resp = requests.post(
+            f"{OLLAMA_BASE}/generate",
+            json={
+                "model": model,
+                "prompt": "Responde solo: OK",
+                "stream": False,
+                "options": {"num_predict": 5}
+            },
+            timeout=120  # 2 minutos para el warmup inicial
+        )
+        if resp.status_code == 200:
+            _model_warmed_up = True
+            return True
+    except:
+        pass
+    return False
