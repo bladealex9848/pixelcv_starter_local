@@ -117,6 +117,36 @@ DEFAULT_PARAMETERS = {
             'randomness': 0.0
         },
     },
+    'offroad4x4': {
+        'easy': {
+            'error_chance': 0.3,
+            'look_ahead': 2,
+            'turn_strength': 0.5,
+            'throttle_power': 0.7,
+            'avoidance_sensitivity': 0.6
+        },
+        'medium': {
+            'error_chance': 0.15,
+            'look_ahead': 3,
+            'turn_strength': 0.8,
+            'throttle_power': 0.8,
+            'avoidance_sensitivity': 0.8
+        },
+        'hard': {
+            'error_chance': 0.05,
+            'look_ahead': 4,
+            'turn_strength': 1.0,
+            'throttle_power': 0.9,
+            'avoidance_sensitivity': 1.0
+        },
+        'expert': {
+            'error_chance': 0.0,
+            'look_ahead': 5,
+            'turn_strength': 1.2,
+            'throttle_power': 1.0,
+            'avoidance_sensitivity': 1.2
+        },
+    },
 }
 
 
@@ -817,6 +847,113 @@ class GameAlgorithmService:
 
         return space
 
+    @staticmethod
+    def get_offroad4x4_move(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+        """
+        Algoritmo A* pathfinding para 4x4 Off-Road con evasión de obstáculos.
+
+        Args:
+            game_state: {
+                vehicle: {'x': int, 'y': int, 'angle': float},
+                checkpoints: [{'x': int, 'y': int}],
+                current_checkpoint: int,
+                terrain: [[0-3]] (0=easy, 1=normal, 2=obstacle, 3=checkpoint)
+            }
+            difficulty: easy, medium, hard, expert
+            parameters: Parámetros personalizados (opcional)
+
+        Returns:
+            {
+                throttle: -1 to 1,
+                turn: -1 to 1,
+                strategy: 'pathfinding' | 'avoid' | 'direct'
+            }
+        """
+        import random
+        import math
+
+        # Obtener parámetros
+        if parameters is None:
+            parameters = GameAlgorithmService.get_default_parameters('offroad4x4', difficulty)
+
+        vehicle = game_state.get('vehicle', {'x': 0, 'y': 0, 'angle': 0})
+        checkpoints = game_state.get('checkpoints', [])
+        current_checkpoint = game_state.get('current_checkpoint', 0)
+        terrain = game_state.get('terrain', [])
+
+        if not checkpoints or current_checkpoint >= len(checkpoints):
+            return {'throttle': 0, 'turn': 0, 'strategy': 'direct'}
+
+        # Obtener checkpoint objetivo
+        target = checkpoints[current_checkpoint]
+        target_x = target['x']
+        target_y = target['y']
+
+        # Calcular ángulo hacia el checkpoint
+        dx = target_x - vehicle['x']
+        dy = target_y - vehicle['y']
+        target_angle = math.atan2(dy, dx)
+
+        # Calcular diferencia de ángulo
+        angle_diff = target_angle - vehicle['angle']
+        while angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+        while angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+
+        # Recolectar movimiento de IA
+        movesRef = game_state.get('moves_ref', [])
+        if movesRef is not None:
+            import time
+            movesRef.append({
+                'position': {'x': vehicle['x'], 'y': vehicle['y']},
+                'timestamp': int(time.time() * 1000),
+                'terrain_state': terrain,
+                'checkpoint_reached': current_checkpoint
+            })
+
+        # Verificar obstáculos adelante
+        look_ahead_distance = parameters.get('look_ahead', 3)
+        check_x = vehicle['x'] + math.cos(vehicle['angle']) * look_ahead_distance
+        check_y = vehicle['y'] + math.sin(vehicle['angle']) * look_ahead_distance
+
+        # Verificar colisión
+        if GameAlgorithmService._offroad4x4_check_collision(check_x, check_y, terrain):
+            # Obstáculo adelante - girar para evitar
+            return {
+                'throttle': 0.5,
+                'turn': angle_diff > 0 and random.random() > 0.5 or angle_diff < 0 and random.random() < 0.5,
+                'strategy': 'avoid'
+            }
+
+        # Normal - dirigir hacia el checkpoint
+        turn_strength = parameters.get('turn_strength', 1.0)
+        throttle_power = parameters.get('throttle_power', 1.0)
+
+        return {
+            'throttle': throttle_power,
+            'turn': max(-1, min(1, angle_diff * turn_strength)),
+            'strategy': 'pathfinding'
+        }
+
+    @staticmethod
+    def _offroad4x4_check_collision(x: float, y: float, terrain: list) -> bool:
+        """Verificar colisión con obstáculos en el terreno"""
+        grid_width = 40
+        grid_height = 30
+        cell_size = 20
+
+        cell_x = int(x / cell_size)
+        cell_y = int(y / cell_size)
+
+        if cell_x < 0 or cell_x >= grid_width or cell_y < 0 or cell_y >= grid_height:
+            return True
+
+        if cell_y < len(terrain) and cell_x < len(terrain[cell_y]):
+            return terrain[cell_y][cell_x] == 2  # 2 = obstacle
+
+        return False
+
 
 # Funciones de conveniencia para compatibilidad con código existente
 def get_pong_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
@@ -836,3 +973,7 @@ def get_chinese_checkers_move_local(game_state: dict, difficulty: str = 'medium'
 def get_tron_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
     """Wrapper para get_tron_move (compatibilidad)"""
     return GameAlgorithmService.get_tron_move(game_state, difficulty, parameters)
+
+def get_offroad4x4_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+    """Wrapper para get_offroad4x4_move (compatibilidad)"""
+    return GameAlgorithmService.get_offroad4x4_move(game_state, difficulty, parameters)

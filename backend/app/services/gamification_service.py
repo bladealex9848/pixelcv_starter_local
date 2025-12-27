@@ -461,6 +461,9 @@ class GamificationService:
         elif game_id == 'tron':
             # 1 punto por segundo de supervivencia
             return score * base_point
+        elif game_id == 'offroad4x4':
+            # Puntos por distancia recorrida
+            return score * base_point
         elif game_id == 'memory':
             # 1000 - (moves × 10), mínimo 0
             return max(0, min(1000, (1000 - moves * 10))) * base_point // 10
@@ -608,6 +611,26 @@ class GamificationService:
                     'description': f'¡Nuevo récord en Tron: {score} segundos!'
                 })
 
+        elif game_id == 'offroad4x4':
+            # Explorador: completar circuito
+            if won:
+                achievements.append({
+                    'action': 'game_completed',
+                    'description': '¡Explorador! Completaste el circuito'
+                })
+            # Sin crashes
+            if won and not game_data.get('crashed', True):
+                achievements.append({
+                    'action': 'game_perfect',
+                    'description': '¡Conductor perfecto! Completaste sin crashes'
+                })
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Mejor distancia en 4x4: {Math.floor(score)}m!'
+                })
+
         return achievements
 
     @staticmethod
@@ -697,6 +720,15 @@ class GamificationService:
                 'description': 'Deja un trail y evita chocar con las paredes y trails',
                 'icon': '⚡',
                 'category': 'Arcade',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'offroad4x4',
+                'name': '4x4 Off-Road',
+                'description': 'Completa el circuito evitando obstáculos',
+                'icon': '🚙',
+                'category': 'Racing',
                 'has_ai': True,
                 'multiplayer': False
             },
