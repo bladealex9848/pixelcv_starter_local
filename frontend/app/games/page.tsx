@@ -184,7 +184,7 @@ export default function GamesPage() {
           {games.map((game) => (
             <div
               key={game.id}
-              className="group min-h-[460px] relative"
+              className="group min-h-[380px] relative"
             >
               {/* AI Badge - Animated Corner Label */}
               {game.has_ai && (
