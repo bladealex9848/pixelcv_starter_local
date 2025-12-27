@@ -391,7 +391,7 @@ POINT_VALUES = {
     'game_win_2048': 200,  # alcanzar 2048
     'game_survivor': 50,  # supervivencia (Tron)
     'game_completed': 25,  # completar circuito (4x4)
-
+}
 
 BADGES = {
     'early_adopter': {'name': 'Pionero', 'description': 'Uno de los primeros 100 usuarios', 'icon': '🚀'},

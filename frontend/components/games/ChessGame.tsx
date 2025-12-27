@@ -27,7 +27,7 @@ export default function ChessGame({ isAuthenticated, onGameEnd }: ChessGameProps
     const initialBoard: Board = Array(64).fill(null);
 
     // Piezas negras (minúsculas) - filas 0-1
-    const blackPieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+    const blackPieces: Piece[] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
     for (let i = 0; i < 8; i++) {
       initialBoard[i] = blackPieces[i];
       initialBoard[8 + i] = 'p';
