@@ -125,6 +125,21 @@ def get_public_cv(slug: str, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/public/{slug}/visit")
+def record_visit_by_slug(
+    slug: str,
+    visitor_ip: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Registra visita usando slug en lugar de cv_id"""
+    cv = db.query(CV).filter_by(slug=slug, is_published=True).first()
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV no encontrado")
+
+    GamificationService.record_visit(db, cv.id, visitor_ip)
+    return {"message": "Visita registrada"}
+
+
 @router.post("/{cv_id}/visit")
 def record_visit(
     cv_id: str,
@@ -134,7 +149,7 @@ def record_visit(
     cv = db.query(CV).filter_by(id=cv_id).first()
     if not cv:
         raise HTTPException(status_code=404, detail="CV no encontrado")
-    
+
     GamificationService.record_visit(db, cv_id, visitor_ip)
     return {"message": "Visita registrada"}
 
