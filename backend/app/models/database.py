@@ -394,6 +394,12 @@ POINT_VALUES = {
     'game_completed': 25,  # completar circuito (4x4)
     'game_collector': 40,  # coleccionar dots (Pac-Man)
     'game_hunter': 60,  # comer fantasmas (Pac-Man)
+    # Prince of Persia
+    'game_score_princeofpersia': 2,  # por tesoro recolectado
+    'game_treasure_hunter': 50,  # recolectar todos los tesoros
+    'game_level_cleared': 30,  # completar nivel
+    'game_no_damage': 40,  # completar nivel sin recibir daño
+    'game_guard_defeated': 15,  # por guardar derrotado
 }
 
 BADGES = {

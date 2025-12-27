@@ -21,6 +21,7 @@ const BreakoutGame = dynamic(() => import('../../../components/games/BreakoutGam
 const Game2048 = dynamic(() => import('../../../components/games/Game2048'), { ssr: false });
 const TetrisGame = dynamic(() => import('../../../components/games/TetrisGame'), { ssr: false });
 const SpaceInvaders = dynamic(() => import('../../../components/games/SpaceInvaders'), { ssr: false });
+const PrinceOfPersia = dynamic(() => import('../../../components/games/PrinceOfPersia'), { ssr: false });
 
 const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any }> = {
   pong: { name: 'Pong', icon: '🏓', component: PongGame },
@@ -37,6 +38,7 @@ const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any 
   '2048': { name: '2048', icon: '🔢', component: Game2048 },
   tetris: { name: 'Tetris', icon: '🧩', component: TetrisGame },
   spaceinvaders: { name: 'Space Invaders', icon: '👾', component: SpaceInvaders },
+  princeofpersia: { name: 'Príncipe de Persia', icon: '👑', component: PrinceOfPersia },
 };
 
 export default function GamePage() {

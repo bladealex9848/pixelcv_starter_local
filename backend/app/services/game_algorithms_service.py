@@ -1107,6 +1107,94 @@ class GameAlgorithmService:
             'strategy': 'multi_agent'
         }
 
+    # ==================== PRÍNCIPE DE PERSIA ====================
+
+    PRINCE_OF_PERSIA_PARAMETERS = {
+        'easy': {
+            'base_error': 0.25,
+            'reaction_delay_chance': 0.20,
+            'enemy_aggression': 0.3,
+            'jump_accuracy': 0.7,
+            'patrol_range': 100,
+        },
+        'medium': {
+            'base_error': 0.15,
+            'reaction_delay_chance': 0.10,
+            'enemy_aggression': 0.5,
+            'jump_accuracy': 0.85,
+            'patrol_range': 150,
+        },
+        'hard': {
+            'base_error': 0.08,
+            'reaction_delay_chance': 0.05,
+            'enemy_aggression': 0.7,
+            'jump_accuracy': 0.95,
+            'patrol_range': 200,
+        },
+        'expert': {
+            'base_error': 0.03,
+            'reaction_delay_chance': 0.02,
+            'enemy_aggression': 0.9,
+            'jump_accuracy': 0.99,
+            'patrol_range': 250,
+        }
+    }
+
+    @staticmethod
+    def get_prince_of_persia_move(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+        """
+        IA para Príncipe de Persia - Platformer con physics
+        Enemigos con state machine (patrol/chase/attack)
+        """
+        if parameters is None:
+            parameters = GameAlgorithmService.PRINCE_OF_PERSIA_PARAMETERS.get(difficulty, {})
+
+        # Extraer estado del juego
+        player = game_state.get('player', {})
+        enemies = game_state.get('enemies', [])
+        grid = game_state.get('grid', [])
+        treasures = game_state.get('treasures_collected', 0)
+
+        # Estrategia: calcular movimiento de enemigos basado en IA
+        enemy_moves = []
+
+        for enemy in enemies:
+            # Calcular distancia al jugador
+            dx = player.get('x', 0) - enemy.get('x', 0)
+            dy = player.get('y', 0) - enemy.get('y', 0)
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+
+            # Determinar estado del enemigo
+            if distance < parameters.get('patrol_range', 150):
+                state = 'chase'
+                direction = 1 if dx > 0 else -1
+            else:
+                state = 'patrol'
+                direction = enemy.get('direction', 1)
+
+            # Aplicar errores basados en dificultad
+            if random.random() < parameters.get('base_error', 0.15):
+                direction *= -1
+
+            enemy_moves.append({
+                'x': enemy.get('x', 0),
+                'y': enemy.get('y', 0),
+                'state': state,
+                'direction': direction
+            })
+
+        return {
+            'enemy_moves': enemy_moves,
+            'strategy': 'state_machine',
+            'difficulty': difficulty,
+            'aggression_level': parameters.get('enemy_aggression', 0.5)
+        }
+
+    @staticmethod
+    def get_prince_of_persia_parameters(difficulty: str = 'medium') -> dict:
+        """Obtiene parámetros de IA para Príncipe de Persia"""
+        return GameAlgorithmService.PRINCE_OF_PERSIA_PARAMETERS.get(difficulty, {})
+
 
 # Funciones de conveniencia para compatibilidad con código existente
 def get_pong_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
@@ -1134,3 +1222,7 @@ def get_offroad4x4_move_local(game_state: dict, difficulty: str = 'medium', para
 def get_pacman_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
     """Wrapper para get_pacman_move (compatibilidad)"""
     return GameAlgorithmService.get_pacman_move(game_state, difficulty, parameters)
+
+def get_prince_of_persia_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+    """Wrapper para get_prince_of_persia_move (compatibilidad)"""
+    return GameAlgorithmService.get_prince_of_persia_move(game_state, difficulty, parameters)

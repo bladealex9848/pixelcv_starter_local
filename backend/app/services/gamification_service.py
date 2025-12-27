@@ -485,6 +485,9 @@ class GamificationService:
         elif game_id == 'spaceinvaders':
             # 10 puntos por enemigo
             return score * base_point
+        elif game_id == 'princeofpersia':
+            # 2 puntos por tesoro recolectado
+            return score * base_point
         else:
             return 0
 
@@ -662,6 +665,34 @@ class GamificationService:
                     'description': f'¡Nuevo récord en Pac-Man: {score}!'
                 })
 
+        elif game_id == 'princeofpersia':
+            # Treasure Hunter: recolectar todos los tesoros
+            treasures_collected = game_data.get('treasures_collected', 0)
+            total_treasures = game_data.get('total_treasures', 0)
+            if treasures_collected >= total_treasures and total_treasures > 0:
+                achievements.append({
+                    'action': 'game_treasure_hunter',
+                    'description': '¡Cazador de Tesoros! Recolectaste todos los tesoros'
+                })
+            # Level Cleared: completar nivel
+            if won:
+                achievements.append({
+                    'action': 'game_level_cleared',
+                    'description': '¡Nivel completado! Avanzas en tu aventura'
+                })
+            # No Damage: completar nivel sin recibir daño
+            if won and game_data.get('final_health', 100) >= 100:
+                achievements.append({
+                    'action': 'game_no_damage',
+                    'description': '¡Sin un rasguño! Completaste sin recibir daño'
+                })
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en Príncipe de Persia: {score}!'
+                })
+
         return achievements
 
     @staticmethod
@@ -823,6 +854,15 @@ class GamificationService:
                 'description': 'Defiende la Tierra de los invasores',
                 'icon': '👾',
                 'category': 'Arcade',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'princeofpersia',
+                'name': 'Príncipe de Persia',
+                'description': 'Recorre los niveles, evita trampas y derrota a los guardias',
+                'icon': '👑',
+                'category': 'Platformer',
                 'has_ai': True,
                 'multiplayer': False
             },
