@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import CVPreview from '../../../components/CVPreview';
+import Toast from '../../../components/Toast';
 
 export default function PublicCVPage() {
   const params = useParams();
@@ -10,6 +11,7 @@ export default function PublicCVPage() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [viewMode, setViewMode] = useState<'render' | 'yaml'>('render');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/public/${slug}`)
@@ -29,7 +31,7 @@ export default function PublicCVPage() {
   const handleLike = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Debes iniciar sesión para dar like');
+      setToast({ message: 'Debes iniciar sesión para dar like', type: 'error' });
       return;
     }
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/${cv?.id}/like`, {
@@ -41,13 +43,14 @@ export default function PublicCVPage() {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/community/public/${slug}`)
         .then(res => res.json())
         .then(setCv);
+      setToast({ message: '¡Like agregado!', type: 'success' });
     }
   };
 
   const handleShare = async () => {
     const url = window.location.href;
     await navigator.clipboard.writeText(url);
-    alert('¡Link copiado al portapapeles!');
+    setToast({ message: '¡Link copiado al portapapeles!', type: 'success' });
   };
 
   if (loading) {
@@ -298,6 +301,15 @@ export default function PublicCVPage() {
           50% { transform: translateY(-15px) rotate(3deg); }
         }
       `}</style>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
