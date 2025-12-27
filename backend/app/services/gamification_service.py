@@ -488,6 +488,9 @@ class GamificationService:
         elif game_id == 'princeofpersia':
             # 2 puntos por tesoro recolectado
             return score * base_point
+        elif game_id == 'rts':
+            # 1 punto por punto de recurso
+            return score * base_point
         else:
             return 0
 
@@ -693,6 +696,41 @@ class GamificationService:
                     'description': f'¡Nuevo récord en Príncipe de Persia: {score}!'
                 })
 
+        elif game_id == 'rts':
+            # Territory Conquered: conquistar territorios
+            territories = game_data.get('territories_control', 0)
+            if territories >= 5:
+                achievements.append({
+                    'action': 'game_territory_conquered',
+                    'description': f'¡Conquistador! Controlas {territories} territorios'
+                })
+            # Resource Collector: recolectar muchos recursos
+            resources = game_data.get('resources_collected', 0)
+            if resources >= 1000:
+                achievements.append({
+                    'action': 'game_resource_collector',
+                    'description': f'¡Recolector! Recolectaste {resources} recursos'
+                })
+            # Commander: crear muchas unidades
+            units = game_data.get('units_created', 0)
+            if units >= 20:
+                achievements.append({
+                    'action': 'game_commander',
+                    'description': f'¡Comandante! Creaste {units} unidades'
+                })
+            # Victory RTS
+            if won:
+                achievements.append({
+                    'action': 'game_victory_rts',
+                    'description': '¡Victoria! Dominaste el campo de batalla'
+                })
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en RTS: {score}!'
+                })
+
         return achievements
 
     @staticmethod
@@ -863,6 +901,15 @@ class GamificationService:
                 'description': 'Recorre los niveles, evita trampas y derrota a los guardias',
                 'icon': '👑',
                 'category': 'Platformer',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'rts',
+                'name': 'RTS Strategy',
+                'description': 'Construye tu base, recolecta recursos y conquista territorios',
+                'icon': '⚔️',
+                'category': 'Strategy',
                 'has_ai': True,
                 'multiplayer': False
             },

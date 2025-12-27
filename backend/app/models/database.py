@@ -400,6 +400,12 @@ POINT_VALUES = {
     'game_level_cleared': 30,  # completar nivel
     'game_no_damage': 40,  # completar nivel sin recibir daño
     'game_guard_defeated': 15,  # por guardar derrotado
+    # RTS Strategy
+    'game_score_rts': 1,  # por punto de recurso
+    'game_territory_conquered': 20,  # por territorio conquistado
+    'game_resource_collector': 30,  # recolectar 1000+ recursos
+    'game_commander': 50,  # crear 20+ unidades
+    'game_victory_rts': 100,  # victoria en RTS
 }
 
 BADGES = {

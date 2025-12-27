@@ -1195,6 +1195,130 @@ class GameAlgorithmService:
         """Obtiene parámetros de IA para Príncipe de Persia"""
         return GameAlgorithmService.PRINCE_OF_PERSIA_PARAMETERS.get(difficulty, {})
 
+    # ==================== RTS (REAL-TIME STRATEGY) ====================
+
+    RTS_PARAMETERS = {
+        'easy': {
+            'base_error': 0.30,
+            'resource_priority': 0.8,
+            'production_delay': 3.0,
+            'attack_threshold': 5,
+            'unit_aggression': 0.4,
+            'territory_expansion': 0.3,
+        },
+        'medium': {
+            'base_error': 0.20,
+            'resource_priority': 0.9,
+            'production_delay': 2.0,
+            'attack_threshold': 7,
+            'unit_aggression': 0.6,
+            'territory_expansion': 0.5,
+        },
+        'hard': {
+            'base_error': 0.10,
+            'resource_priority': 0.95,
+            'production_delay': 1.5,
+            'attack_threshold': 10,
+            'unit_aggression': 0.8,
+            'territory_expansion': 0.7,
+        },
+        'expert': {
+            'base_error': 0.05,
+            'resource_priority': 0.99,
+            'production_delay': 1.0,
+            'attack_threshold': 15,
+            'unit_aggression': 0.95,
+            'territory_expansion': 0.9,
+        }
+    }
+
+    @staticmethod
+    def get_rts_move(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+        """
+        IA para RTS - Estrategia en tiempo real
+        Manejo de múltiples entidades, recursos y territorios
+        """
+        if parameters is None:
+            parameters = GameAlgorithmService.RTS_PARAMETERS.get(difficulty, {})
+
+        # Extraer estado del juego
+        entities = game_state.get('entities', [])
+        ai_resources = game_state.get('ai_resources', {})
+        game_phase = game_state.get('game_phase', 'early')
+
+        # Separar entidades por tipo y owner
+        ai_entities = [e for e in entities if e.get('owner') == 'ai']
+        ai_base = next((e for e in ai_entities if e.get('type') == 'base'), None)
+        ai_workers = [e for e in ai_entities if e.get('type') == 'worker']
+        ai_soldiers = [e for e in ai_entities if e.get('type') == 'soldier']
+
+        # Decisiones de producción basadas en recursos y fase
+        production_queue = []
+
+        # Estrategia: producir unidades según la fase del juego
+        if game_phase == 'early':
+            # Fase temprana: enfocar en workers
+            if ai_resources.get('gold', 0) >= 50 and ai_resources.get('wood', 0) >= 100:
+                production_queue.append({'type': 'worker', 'priority': 1.0})
+        elif game_phase == 'mid':
+            # Fase media: balance entre workers y soldiers
+            if len(ai_workers) < 5:
+                if ai_resources.get('gold', 0) >= 50 and ai_resources.get('wood', 0) >= 100:
+                    production_queue.append({'type': 'worker', 'priority': 0.7})
+            if ai_resources.get('gold', 0) >= 100 and ai_resources.get('stone', 0) >= 50:
+                production_queue.append({'type': 'soldier', 'priority': 0.8})
+        else:
+            # Fase tardía: producción masiva de soldiers
+            if ai_resources.get('gold', 0) >= 100 and ai_resources.get('stone', 0) >= 50:
+                production_queue.append({'type': 'soldier', 'priority': 1.0})
+
+        # Comportamiento de unidades
+        unit_behaviors = []
+
+        # Workers: recolectar recursos
+        for worker in ai_workers:
+            if worker.get('state') == 'idle':
+                # Verificar si hay recursos disponibles
+                unit_behaviors.append({
+                    'entity_id': worker.get('id'),
+                    'action': 'gather',
+                    'priority': parameters.get('resource_priority', 0.8)
+                })
+
+        # Soldiers: atacar o defender
+        for soldier in ai_soldiers:
+            player_entities = [e for e in entities if e.get('owner') == 'player']
+            player_base = next((e for e in player_entities if e.get('type') == 'base'), None)
+
+            if player_base and len(ai_soldiers) >= parameters.get('attack_threshold', 5):
+                # Atacar base enemiga
+                unit_behaviors.append({
+                    'entity_id': soldier.get('id'),
+                    'action': 'attack',
+                    'target_id': player_base.get('id'),
+                    'priority': parameters.get('unit_aggression', 0.6)
+                })
+            else:
+                # Patrullar/defender
+                unit_behaviors.append({
+                    'entity_id': soldier.get('id'),
+                    'action': 'patrol',
+                    'priority': 0.5
+                })
+
+        return {
+            'production_queue': production_queue,
+            'unit_behaviors': unit_behaviors,
+            'strategy': 'resource_management',
+            'game_phase': game_phase,
+            'difficulty': difficulty
+        }
+
+    @staticmethod
+    def get_rts_parameters(difficulty: str = 'medium') -> dict:
+        """Obtiene parámetros de IA para RTS"""
+        return GameAlgorithmService.RTS_PARAMETERS.get(difficulty, {})
+
 
 # Funciones de conveniencia para compatibilidad con código existente
 def get_pong_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
@@ -1226,3 +1350,7 @@ def get_pacman_move_local(game_state: dict, difficulty: str = 'medium', paramete
 def get_prince_of_persia_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
     """Wrapper para get_prince_of_persia_move (compatibilidad)"""
     return GameAlgorithmService.get_prince_of_persia_move(game_state, difficulty, parameters)
+
+def get_rts_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+    """Wrapper para get_rts_move (compatibilidad)"""
+    return GameAlgorithmService.get_rts_move(game_state, difficulty, parameters)
