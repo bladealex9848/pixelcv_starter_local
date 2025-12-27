@@ -126,15 +126,15 @@ export default function TronGame({ isAuthenticated, onGameEnd }: TronGameProps) 
 
   // IA: calcular mejor dirección usando A* pathfinding
   const getAIDirection = useCallback((state: GameState): Direction => {
-    const { playerPos, aiPos, grid } = state;
+    const { playerPos, aiPos, grid, aiDir } = state;
 
     // Verificar movimientos posibles
-    const possibleMoves: { dir: Direction; newPos: Position | null }[] = [
-      { dir: 'UP', newPos: checkCollision(aiPos, 'UP', grid) },
-      { dir: 'DOWN', newPos: checkCollision(aiPos, 'DOWN', grid) },
-      { dir: 'LEFT', newPos: checkCollision(aiPos, 'LEFT', grid) },
-      { dir: 'RIGHT', newPos: checkCollision(aiPos, 'RIGHT', grid) }
-    ].filter(move => move.newPos !== null);
+    const possibleMoves = [
+      { dir: 'UP' as Direction, newPos: checkCollision(aiPos, 'UP', grid) },
+      { dir: 'DOWN' as Direction, newPos: checkCollision(aiPos, 'DOWN', grid) },
+      { dir: 'LEFT' as Direction, newPos: checkCollision(aiPos, 'LEFT', grid) },
+      { dir: 'RIGHT' as Direction, newPos: checkCollision(aiPos, 'RIGHT', grid) }
+    ].filter((move): move is { dir: Direction; newPos: Position } => move.newPos !== null);
 
     if (possibleMoves.length === 0) {
       // Sin movimientos posibles - continuar en la misma dirección

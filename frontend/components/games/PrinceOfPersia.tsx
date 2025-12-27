@@ -117,7 +117,7 @@ export default function PrinceOfPersia({ isAuthenticated, onGameEnd }: PrinceOfP
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const lastTimeRef = useRef<number>(0);
   const gameStartTimeRef = useRef<number>(0);
   const trainingDataRef = useRef<TrainingMove[]>([]);

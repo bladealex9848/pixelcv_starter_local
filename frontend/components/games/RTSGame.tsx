@@ -85,7 +85,7 @@ export default function RTSGame({ isAuthenticated, onGameEnd }: RTSGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const lastTimeRef = useRef<number>(0);
   const gameStartTimeRef = useRef<number>(0);
   const trainingDataRef = useRef<TrainingMove[]>([]);
@@ -412,7 +412,7 @@ export default function RTSGame({ isAuthenticated, onGameEnd }: RTSGameProps) {
 
     // Recolectar datos de entrenamiento cada 500ms
     if (currentTime % 500 < deltaTime) {
-      collectTrainingData(newState, 'idle');
+      collectTrainingData(newState, 'move');
     }
 
     setGameState(newState);

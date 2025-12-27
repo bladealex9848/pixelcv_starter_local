@@ -36,7 +36,10 @@ export default function ChessGame({ isAuthenticated, onGameEnd }: ChessGameProps
     // Piezas blancas (mayúsculas) - filas 6-7
     for (let i = 0; i < 8; i++) {
       initialBoard[48 + i] = 'P';
-      initialBoard[56 + i] = blackPieces[i].toUpperCase();
+      const piece = blackPieces[i];
+      if (piece) {
+        initialBoard[56 + i] = piece.toUpperCase() as Piece;
+      }
     }
 
     return initialBoard;
@@ -437,12 +440,15 @@ export default function ChessGame({ isAuthenticated, onGameEnd }: ChessGameProps
 
   const startNewGame = () => {
     const initialBoard: Board = Array(64).fill(null);
-    const blackPieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+    const blackPieces: Piece[] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
     for (let i = 0; i < 8; i++) {
       initialBoard[i] = blackPieces[i];
       initialBoard[8 + i] = 'p';
       initialBoard[48 + i] = 'P';
-      initialBoard[56 + i] = blackPieces[i].toUpperCase();
+      const piece = blackPieces[i];
+      if (piece) {
+        initialBoard[56 + i] = piece.toUpperCase() as Piece;
+      }
     }
     setBoard(initialBoard);
     setIsPlayerTurn(true);
