@@ -147,6 +147,36 @@ DEFAULT_PARAMETERS = {
             'avoidance_sensitivity': 1.2
         },
     },
+    'pacman': {
+        'easy': {
+            'error_chance': 0.3,
+            'ghost_speed': 0.7,
+            'frightened_duration': 10000,
+            'chase_aggression': 0.5,
+            'random_movement': 0.4
+        },
+        'medium': {
+            'error_chance': 0.15,
+            'ghost_speed': 0.8,
+            'frightened_duration': 8000,
+            'chase_aggression': 0.7,
+            'random_movement': 0.2
+        },
+        'hard': {
+            'error_chance': 0.05,
+            'ghost_speed': 0.9,
+            'frightened_duration': 6000,
+            'chase_aggression': 0.9,
+            'random_movement': 0.1
+        },
+        'expert': {
+            'error_chance': 0.0,
+            'ghost_speed': 1.0,
+            'frightened_duration': 5000,
+            'chase_aggression': 1.0,
+            'random_movement': 0.0
+        },
+    },
 }
 
 
@@ -954,6 +984,129 @@ class GameAlgorithmService:
 
         return False
 
+    @staticmethod
+    def get_pacman_move(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+        """
+        Algoritmo multi-agent para Pac-Man con IA para fantasmas.
+
+        Args:
+            game_state: {
+                grid: [[0-5]] (0=empty, 1=wall, 2=dot, 3=power_pellet, 4=ghost, 5=pacman),
+                pacman: {'x': int, 'y': int, 'direction': str},
+                ghosts: [{'x': int, 'y': int, 'mode': str, 'color': str}],
+                power_pellet_active: bool
+            }
+            difficulty: easy, medium, hard, expert
+            parameters: Parámetros personalizados (opcional)
+
+        Returns:
+            {
+                ghost_moves: [{'x': int, 'y': int, 'direction': str}],
+                strategy: 'multi_agent' | 'simple'
+            }
+        """
+        # Obtener parámetros
+        if parameters is None:
+            parameters = GameAlgorithmService.get_default_parameters('pacman', difficulty)
+
+        grid = game_state.get('grid', [])
+        pacman = game_state.get('pacman', {'x': 0, 'y': 0, 'direction': 'NONE'})
+        ghosts = game_state.get('ghosts', [])
+
+        if not grid or not ghosts:
+            return {'ghost_moves': [], 'strategy': 'simple'}
+
+        # Recolectar movimientos de IA
+        movesRef = game_state.get('moves_ref', [])
+        if movesRef is not None:
+            import time
+            movesRef.append({
+                'position': {'x': pacman['x'], 'y': pacman['y']},
+                'timestamp': int(time.time() * 1000),
+                'terrain_state': grid,
+                'ghost_positions': [{'x': g['x'], 'y': g['y']} for g in ghosts],
+                'power_pellet_active': game_state.get('power_pellet_active', False)
+            })
+
+        # Calcular movimientos para cada fantasma
+        ghost_moves = []
+        chase_aggression = parameters.get('chase_aggression', 0.7)
+        random_movement = parameters.get('random_movement', 0.2)
+
+        for i, ghost in enumerate(ghosts):
+            # Determinar objetivo del fantasma
+            target_x = pacman['x']
+            target_y = pacman['y']
+
+            # En modo frightened, huir de Pac-Man
+            if ghost.get('mode') == 'frightened':
+                # Calcular dirección opuesta a Pac-Man
+                dx = ghost['x'] - pacman['x']
+                dy = ghost['y'] - pacman['y']
+                if abs(dx) > abs(dy):
+                    target_x = ghost['x'] + (1 if dx > 0 else -1) * 5
+                else:
+                    target_y = ghost['y'] + (1 if dy > 0 else -1) * 5
+
+            # Verificar movimientos posibles
+            possible_moves = []
+            directions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+            for direction in directions:
+                dx = 0
+                dy = 0
+                if direction == 'UP':
+                    dy = -1
+                elif direction == 'DOWN':
+                    dy = 1
+                elif direction == 'LEFT':
+                    dx = -1
+                elif direction == 'RIGHT':
+                    dx = 1
+
+                new_x = ghost['x'] + dx
+                new_y = ghost['y'] + dy
+
+                if (0 <= new_x < len(grid[0]) and 0 <= new_y < len(grid) and
+                    grid[new_y][new_x] != 1):  # No es pared
+                    possible_moves.append({
+                        'direction': direction,
+                        'x': new_x,
+                        'y': new_y
+                    })
+
+            # Elegir mejor movimiento
+            if possible_moves:
+                if random.random() < random_movement:
+                    # Movimiento aleatorio
+                    best_move = possible_moves[random.randint(0, len(possible_moves) - 1)]
+                else:
+                    # Buscar el movimiento que minimize la distancia al objetivo
+                    best_move = possible_moves[0]
+                    best_distance = abs(best_move['x'] - target_x) + abs(best_move['y'] - target_y)
+
+                    for move in possible_moves:
+                        distance = abs(move['x'] - target_x) + abs(move['y'] - target_y)
+                        if distance < best_distance:
+                            best_distance = distance
+                            best_move = move
+
+                ghost_moves.append({
+                    'x': best_move['x'],
+                    'y': best_move['y'],
+                    'direction': best_move['direction']
+                })
+            else:
+                ghost_moves.append({
+                    'x': ghost['x'],
+                    'y': ghost['y'],
+                    'direction': 'NONE'
+                })
+
+        return {
+            'ghost_moves': ghost_moves,
+            'strategy': 'multi_agent'
+        }
+
 
 # Funciones de conveniencia para compatibilidad con código existente
 def get_pong_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
@@ -977,3 +1130,7 @@ def get_tron_move_local(game_state: dict, difficulty: str = 'medium', parameters
 def get_offroad4x4_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
     """Wrapper para get_offroad4x4_move (compatibilidad)"""
     return GameAlgorithmService.get_offroad4x4_move(game_state, difficulty, parameters)
+
+def get_pacman_move_local(game_state: dict, difficulty: str = 'medium', parameters: Optional[dict] = None) -> dict:
+    """Wrapper para get_pacman_move (compatibilidad)"""
+    return GameAlgorithmService.get_pacman_move(game_state, difficulty, parameters)

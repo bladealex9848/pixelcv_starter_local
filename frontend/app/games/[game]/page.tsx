@@ -14,6 +14,7 @@ const DominoGame = dynamic(() => import('../../../components/games/DominoGame'),
 const ChessGame = dynamic(() => import('../../../components/games/ChessGame'), { ssr: false });
 const TronGame = dynamic(() => import('../../../components/games/TronGame'), { ssr: false });
 const OffRoad4x4 = dynamic(() => import('../../../components/games/OffRoad4x4'), { ssr: false });
+const PacManGame = dynamic(() => import('../../../components/games/PacManGame'), { ssr: false });
 const MemoryMatch = dynamic(() => import('../../../components/games/MemoryMatch'), { ssr: false });
 const SnakeGame = dynamic(() => import('../../../components/games/SnakeGame'), { ssr: false });
 const BreakoutGame = dynamic(() => import('../../../components/games/BreakoutGame'), { ssr: false });
@@ -29,6 +30,7 @@ const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any 
   chess: { name: 'Ajedrez', icon: '♔', component: ChessGame },
   tron: { name: 'Tron', icon: '⚡', component: TronGame },
   offroad4x4: { name: '4x4 Off-Road', icon: '🚙', component: OffRoad4x4 },
+  pacman: { name: 'Pac-Man', icon: '👾', component: PacManGame },
   memory: { name: 'Memory Match', icon: '🃏', component: MemoryMatch },
   snake: { name: 'Snake', icon: '🐍', component: SnakeGame },
   breakout: { name: 'Breakout', icon: '🧱', component: BreakoutGame },

@@ -464,6 +464,9 @@ class GamificationService:
         elif game_id == 'offroad4x4':
             # Puntos por distancia recorrida
             return score * base_point
+        elif game_id == 'pacman':
+            # Puntos por score (dots + fantasmas comidos)
+            return score * base_point
         elif game_id == 'memory':
             # 1000 - (moves × 10), mínimo 0
             return max(0, min(1000, (1000 - moves * 10))) * base_point // 10
@@ -631,6 +634,34 @@ class GamificationService:
                     'description': f'¡Mejor distancia en 4x4: {Math.floor(score)}m!'
                 })
 
+        elif game_id == 'pacman':
+            # Coleccionista: comer muchos dots
+            dots_eaten = game_data.get('dots_eaten', 0)
+            if dots_eaten >= 100:
+                achievements.append({
+                    'action': 'game_collector',
+                    'description': '¡Coleccionista! Comiste 100+ dots'
+                })
+            # Cazador: comer fantasmas
+            power_pellets = game_data.get('power_pellets_eaten', 0)
+            if power_pellets >= 5:
+                achievements.append({
+                    'action': 'game_hunter',
+                    'description': '¡Cazador! Comiste 5+ fantasmas'
+                })
+            # Superviviente: completar nivel
+            if won:
+                achievements.append({
+                    'action': 'game_survivor',
+                    'description': '¡Superviviente! Completaste el nivel'
+                })
+            # High score
+            if score > previous_best:
+                achievements.append({
+                    'action': 'game_high_score',
+                    'description': f'¡Nuevo récord en Pac-Man: {score}!'
+                })
+
         return achievements
 
     @staticmethod
@@ -729,6 +760,15 @@ class GamificationService:
                 'description': 'Completa el circuito evitando obstáculos',
                 'icon': '🚙',
                 'category': 'Racing',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'pacman',
+                'name': 'Pac-Man',
+                'description': 'Come todos los dots evitando a los fantasmas',
+                'icon': '👾',
+                'category': 'Arcade',
                 'has_ai': True,
                 'multiplayer': False
             },

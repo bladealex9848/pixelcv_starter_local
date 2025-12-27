@@ -379,6 +379,7 @@ POINT_VALUES = {
     'game_score_chess': 0,  # Sin puntos por rendimiento
     'game_score_tron': 1,  # por segundo de supervivencia
     'game_score_offroad4x4': 1,  # por distancia recorrida
+    'game_score_pacman': 1,  # por punto (dots + fantasmas)
     'game_score_memory': 10,  # (1000 - moves×10)
     'game_score_snake': 10,  # por manzana
     'game_score_breakout': 10,  # por bloque
@@ -391,6 +392,8 @@ POINT_VALUES = {
     'game_win_2048': 200,  # alcanzar 2048
     'game_survivor': 50,  # supervivencia (Tron)
     'game_completed': 25,  # completar circuito (4x4)
+    'game_collector': 40,  # coleccionar dots (Pac-Man)
+    'game_hunter': 60,  # comer fantasmas (Pac-Man)
 
 
 BADGES = {
