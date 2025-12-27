@@ -511,9 +511,9 @@ class GameAlgorithmService:
             {
                 from: Posición de origen,
                 to: Posición de destino,
-                strategy: 'minimax' o            }
+                strategy: 'minimax' o 'heuristic'
+            }
         """
- 'heuristic'
         # Obtener parámetros
         if parameters is None:
             parameters = GameAlgorithmService.get_default_parameters('chinese_checkers', difficulty)
