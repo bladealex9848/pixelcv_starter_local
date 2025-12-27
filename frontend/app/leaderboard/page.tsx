@@ -190,8 +190,8 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {/* Full Rankings - Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        {/* Mobile: Card Layout */}
+        <div className="md:hidden grid grid-cols-1 gap-3">
           {users.map((user, index) => {
             const style = getRankStyle(index + 1);
             const rank = index + 1;
@@ -201,18 +201,18 @@ export default function LeaderboardPage() {
                 className={`bg-black border-2 ${style.border} p-1 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)] ${style.glow} group`}
                 style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
               >
-                <div className="bg-[#0a0a0a] p-3 md:p-4">
+                <div className="bg-[#0a0a0a] p-3">
                   {/* Rank Badge - Top 3突出显示 */}
                   <div className="flex items-start justify-between mb-3">
                     <div className={`flex items-center gap-2 px-2 py-1 rounded-sm ${style.bg} border ${style.border}`}>
-                      <span className={`text-lg md:text-xl font-black ${style.color}`}>
+                      <span className={`text-lg font-black ${style.color}`}>
                         {rank <= 3 ? getRankIcon(rank) : `#${rank}`}
                       </span>
                     </div>
                     {/* Badges */}
                     <div className="flex gap-0.5">
                       {user.badges.slice(0, 3).map((badge) => (
-                        <span key={badge} title={badge} className="text-xs sm:text-sm hover:scale-125 transition-transform cursor-pointer">
+                        <span key={badge} title={badge} className="text-sm hover:scale-125 transition-transform cursor-pointer">
                           {getBadgeIcon(badge)}
                         </span>
                       ))}
@@ -225,12 +225,12 @@ export default function LeaderboardPage() {
                       <img
                         src={user.avatar_url}
                         alt={user.username}
-                        className={`w-10 h-10 md:w-12 md:h-12 rounded-sm border-2 ${style.border} group-hover:scale-110 transition-transform`}
+                        className={`w-10 h-10 rounded-sm border-2 ${style.border} group-hover:scale-110 transition-transform`}
                       />
                       <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-white font-bold text-sm md:text-base truncate">{user.full_name || user.username}</div>
+                      <div className="text-white font-bold text-sm truncate">{user.full_name || user.username}</div>
                       <div className="text-gray-500 text-xs">@{user.username}</div>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export default function LeaderboardPage() {
                     {/* Rango */}
                     <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
                       <div className="text-[10px] uppercase tracking-wider text-gray-400">Rango</div>
-                      <div className={`text-xs md:text-sm font-bold ${style.color} mt-0.5 truncate`}>
+                      <div className={`text-xs font-bold ${style.color} mt-0.5 truncate`}>
                         {user.rank_title}
                       </div>
                     </div>
@@ -248,7 +248,7 @@ export default function LeaderboardPage() {
                     {/* Level */}
                     <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
                       <div className="text-[10px] uppercase tracking-wider text-gray-400">Nivel</div>
-                      <div className={`text-xs md:text-sm font-bold ${style.color} mt-0.5`}>
+                      <div className={`text-xs font-bold ${style.color} mt-0.5`}>
                         {user.level}
                       </div>
                     </div>
@@ -256,7 +256,7 @@ export default function LeaderboardPage() {
                     {/* Points - Más prominente */}
                     <div className={`${style.bg} border ${style.border} rounded-sm p-2`}>
                       <div className="text-[10px] uppercase tracking-wider text-gray-400">Puntos</div>
-                      <div className={`text-sm md:text-base font-black ${style.color} mt-0.5`}>
+                      <div className={`text-sm font-black ${style.color} mt-0.5`}>
                         {user.total_points.toLocaleString()}
                       </div>
                     </div>
@@ -271,6 +271,95 @@ export default function LeaderboardPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden md:block">
+          <div
+            className="bg-black border-2 border-yellow-900 p-1"
+            style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+          >
+            <div className="bg-[#0a0a0a]">
+              {/* Table Header */}
+              <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 bg-yellow-900/30 border-b border-yellow-900/50 text-xs uppercase tracking-wider text-yellow-400 font-bold">
+                <div className="col-span-1">Rank</div>
+                <div className="col-span-4">Player</div>
+                <div className="col-span-3">Rango</div>
+                <div className="col-span-2">Level</div>
+                <div className="col-span-2 text-right">Points</div>
+                <div className="col-span-1 text-right">CVs</div>
+              </div>
+
+              {/* Table Body */}
+              {users.map((user, index) => {
+                const style = getRankStyle(index + 1);
+                return (
+                  <div
+                    key={user.user_id}
+                    className={`grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 border-b border-gray-800/50 hover:bg-yellow-900/10 transition-all duration-300 ${style.glow} group`}
+                  >
+                    {/* Rank */}
+                    <div className={`col-span-1 font-black text-lg ${style.color}`}>
+                      {index < 3 ? (
+                        <span className="text-xl">{getRankIcon(index + 1)}</span>
+                      ) : (
+                        <span className="text-gray-500">#{index + 1}</span>
+                      )}
+                    </div>
+
+                    {/* Player Info */}
+                    <div className="col-span-4 flex items-center gap-3">
+                      <div className="relative">
+                        <img
+                          src={user.avatar_url}
+                          alt={user.username}
+                          className={`w-10 h-10 rounded-sm border-2 ${style.border} group-hover:scale-110 transition-transform`}
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-black"></div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-white font-bold truncate">{user.full_name || user.username}</div>
+                        <div className="text-gray-500 text-xs">@{user.username}</div>
+                      </div>
+                      <div className="flex gap-1 ml-auto">
+                        {user.badges.slice(0, 3).map((badge) => (
+                          <span key={badge} title={badge} className="text-sm hover:scale-125 transition-transform cursor-pointer">
+                            {getBadgeIcon(badge)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Rango (Rank Title) */}
+                    <div className="col-span-3 flex items-center">
+                      <span className={`${style.bg} ${style.color} border ${style.border} px-3 py-1 text-xs font-bold truncate`}>
+                        {user.rank_title}
+                      </span>
+                    </div>
+
+                    {/* Level */}
+                    <div className="col-span-2 flex items-center">
+                      <span className={`${style.bg} ${style.color} border ${style.border} px-2 py-1 text-xs font-bold`}>
+                        LVL {user.level}
+                      </span>
+                    </div>
+
+                    {/* Points */}
+                    <div className={`col-span-2 text-right font-bold ${style.color} flex items-center justify-end gap-1`}>
+                      <span>{user.total_points.toLocaleString()}</span>
+                      <span className="text-gray-500 text-xs">pts</span>
+                    </div>
+
+                    {/* CVs */}
+                    <div className="col-span-1 text-right text-gray-400 flex items-center justify-end gap-1">
+                      <span className="text-sm">📄</span>
+                      <span className="text-xs">{user.cvs_published}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Empty State */}
