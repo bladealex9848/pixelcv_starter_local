@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PrivateRoute from '../../components/PrivateRoute';
+import Modal from '../../components/Modal';
 
 function DashboardContent() {
   const router = useRouter();
@@ -10,6 +11,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [showPointsModal, setShowPointsModal] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -169,9 +171,18 @@ function DashboardContent() {
 
           {/* Points */}
           <div
-            className="bg-black border-2 border-blue-900 p-1 transition-all duration-300 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+            className="bg-black border-2 border-blue-900 p-1 transition-all duration-300 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] relative"
             style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
           >
+            {/* Info button */}
+            <button
+              onClick={() => setShowPointsModal(true)}
+              className="absolute top-2 right-2 w-6 h-6 bg-blue-900/50 hover:bg-blue-700 border border-blue-500/50 rounded flex items-center justify-center text-blue-300 text-xs font-bold transition-all hover:scale-110"
+              title="¿Cómo ganar puntos?"
+            >
+              ?
+            </button>
+
             <div className="bg-[#0a0a0a] p-5 text-center">
               <div className="text-3xl mb-2">⭐</div>
               <h3 className="text-3xl font-black text-blue-400">{stats?.total_points || 0}</h3>
@@ -317,6 +328,125 @@ function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* Points Explanation Modal */}
+      <Modal
+        isOpen={showPointsModal}
+        onClose={() => setShowPointsModal(false)}
+        title="¿Cómo ganar puntos?"
+      >
+        <div className="space-y-6 text-gray-300">
+          {/* Points per action */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-cyan-400 uppercase tracking-wider">🎯 Acciones que dan puntos</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📄</span>
+                  <span>Crear un CV</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+10</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🌐</span>
+                  <span>Publicar CV</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+50</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👁️</span>
+                  <span>Visita recibida</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+5</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">❤️</span>
+                  <span>Like dado</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+2</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💝</span>
+                  <span>Like recibido</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+20</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-cyan-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💬</span>
+                  <span>Comentar</span>
+                </div>
+                <span className="text-cyan-400 font-bold text-lg">+15</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Levels */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-teal-400 uppercase tracking-wider">🏅 Niveles</h3>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between bg-black/50 border border-teal-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span>🌱</span>
+                  <span>Novato</span>
+                </div>
+                <span className="text-gray-500">0-99 pts</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-teal-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span>📚</span>
+                  <span>Aprendiz</span>
+                </div>
+                <span className="text-teal-400">100-499 pts</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-teal-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span>🎓</span>
+                  <span>Maestro</span>
+                </div>
+                <span className="text-teal-300">500-1499 pts</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-teal-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span>💎</span>
+                  <span>Experto</span>
+                </div>
+                <span className="text-teal-200">1500-4999 pts</span>
+              </div>
+              <div className="flex items-center justify-between bg-black/50 border border-teal-900 p-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <span>👑</span>
+                  <span>Leyenda</span>
+                </div>
+                <span className="text-yellow-400 font-bold">5000+ pts</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div className="bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-700 p-4 rounded-sm">
+            <h4 className="font-bold text-cyan-300 mb-2">💡 Tips para subir de nivel rápido</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">▸</span>
+                <span>Publica tus CVs para ganar +50 puntos extra</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">▸</span>
+                <span>Comparte en redes sociales para obtener visitas y likes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">▸</span>
+                <span>Interactúa con la comunidad: comenta y da likes</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

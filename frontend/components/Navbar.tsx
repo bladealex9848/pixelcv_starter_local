@@ -78,6 +78,9 @@ export default function Navbar() {
                 <button onClick={() => router.push('/community')} className="text-purple-200 hover:text-white transition-all duration-200 hover:scale-105">
                   <span className="text-lg">👥</span> Comunidad
                 </button>
+                <button onClick={() => router.push('/leaderboard')} className="text-purple-200 hover:text-white transition-all duration-200 hover:scale-105">
+                  <span className="text-lg">🏆</span> Ranking
+                </button>
                 <div className="flex items-center space-x-3 border-l border-purple-500/30 pl-6">
                   <div className="flex items-center space-x-2">
                     <img src={user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'} alt="Avatar" className="w-8 h-8 rounded-full" />
@@ -124,6 +127,9 @@ export default function Navbar() {
                 </button>
                 <button onClick={() => {router.push('/community'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2 flex items-center gap-2 transition-all duration-200 hover:bg-purple-600/20 hover:pl-4">
                   <span className="text-lg">👥</span> Comunidad
+                </button>
+                <button onClick={() => {router.push('/leaderboard'); setMenuOpen(false);}} className="block w-full text-left text-purple-200 py-2 flex items-center gap-2 transition-all duration-200 hover:bg-purple-600/20 hover:pl-4">
+                  <span className="text-lg">🏆</span> Ranking
                 </button>
                 <button onClick={handleLogout} className="block w-full text-left text-red-400 py-2 border-t border-purple-500/20 pt-3 mt-3">Cerrar Sesión</button>
               </>
