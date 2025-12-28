@@ -164,7 +164,7 @@ function DashboardContent() {
           >
             <div className="bg-[#0a0a0a] p-5 text-center">
               <div className="text-3xl mb-2">📄</div>
-              <h3 className="text-3xl font-black text-cyan-400">{stats?.total_cvs || 0}</h3>
+              <h3 className="text-3xl font-black text-cyan-400">{stats?.cvs_created || 0}</h3>
               <p className="text-gray-500 text-xs uppercase tracking-wider mt-1">CVs Creados</p>
             </div>
           </div>
