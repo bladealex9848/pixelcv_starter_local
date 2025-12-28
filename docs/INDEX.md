@@ -13,6 +13,13 @@ La documentación se ha reorganizado para una mejor navegabilidad:
 
 - **[Generador de Logo SVG](scripts/generate_svg_logo.py)**: Herramienta para regenerar el logo retrofuturista del proyecto.
 
+## Repositorios de Juegos
+
+- **[Repositorios de Juegos](game-repositories/)**: Documentación y despliegue de repositorios de juegos integrados con PixelCV
+  - **[PyZelda RPG](game-repositories/pyzelda-rpg/)**: Implementación Python de un juego RPG estilo Zelda
+  - **[Python AI Platform Game](game-repositories/python-ai-platform-game/)**: Juego de plataformas con IA
+  - **[Python AI Missiles Game](game-repositories/python-ai-missiles-game/)**: Juego estratégico de misiles con IA
+
 ## Archivos Principales
 
 -   **[README.md](README.md)**: Visión general del proyecto.
