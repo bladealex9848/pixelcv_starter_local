@@ -210,6 +210,29 @@ export default function GamePage() {
                   <span>Si el juego se bloquea (nadie puede mover), gana quien sume menos puntos en sus fichas restantes.</span>
                 </li>
               </ul>
+            ) : gameId === 'chinese_checkers' ? (
+              <ul className="text-gray-400 text-xs space-y-3">
+                <li className="flex gap-2">
+                  <span className="text-orange-500">1.</span>
+                  <span>El objetivo es capturar todas las fichas de la IA o llegar con al menos una ficha al extremo opuesto.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-orange-500">2.</span>
+                  <span><b>Movimiento Normal:</b> Puedes mover una ficha a un espacio adyacente vacío (arriba, abajo, izquierda o derecha).</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-orange-500">3.</span>
+                  <span><b>Captura por Salto:</b> Si hay una ficha enemiga en una posición adyacente y el espacio siguiente está vacío, puedes saltar sobre ella.</span>
+                </li>
+                <li className="flex gap-2 bg-orange-900/20 p-2 rounded border border-orange-700/20">
+                  <span className="text-orange-400 font-bold">Importante:</span>
+                  <span>Al saltar sobre una ficha enemiga, esta <b>desaparece</b> del tablero y se suma a tu marcador de capturas.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-orange-500">4.</span>
+                  <span>Ganas si la IA se queda sin fichas o si logras posicionar una de tus fichas rojas en la fila superior del oponente.</span>
+                </li>
+              </ul>
             ) : (
               <p className="text-gray-400 text-xs">
                 {isAuthenticated
