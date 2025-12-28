@@ -147,7 +147,7 @@ export default function GamesPage() {
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <div className="flex items-center gap-2 bg-orange-900/30 border border-orange-500/50 px-4 py-1 rounded-sm">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
-              <span className="text-orange-300 text-xs font-bold uppercase tracking-wider">8 Games Available</span>
+              <span className="text-orange-300 text-xs font-bold uppercase tracking-wider">{games.length} Games Available</span>
             </div>
             {isAuthenticated ? (
               <div className="bg-yellow-900/30 border border-yellow-500/50 px-3 py-1 rounded-sm">
