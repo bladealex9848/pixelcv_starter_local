@@ -22,7 +22,8 @@ export default function CVWizard() {
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [models, setModels] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState('phi3.5:latest');
+  const [selectedModel, setSelectedModel] = useState('gemma3:1b');
+  const [fallbackModel, setFallbackModel] = useState('qwen3:0.6b');
   const [cvId, setCvId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
@@ -124,28 +125,68 @@ export default function CVWizard() {
     setError('');
 
     try {
-      let improvedContent: Array<{ highlights: string; company: string; position: string }> = [];
+      // Intentar con modelo principal
+      let improvedContent = await tryModelImprove(type, index, instruction, selectedModel);
 
-      if (type === 'experience' && typeof index === 'number') {
-        const exp = formData.experience[index];
-        const improvedBullets = await analyzeContent(exp.highlights, instruction);
-        improvedContent = [{ ...exp, highlights: improvedBullets.join('\n') }] as Array<{ highlights: string; company: string; position: string }>;
-      } else if (type === 'summary') {
-        const text = formData.summary;
-        const improvedBullets = await analyzeContent([text], instruction || "Mejora este resumen profesional para que sea impactante y conciso.");
-        improvedContent = [{ highlights: improvedBullets.join('\n'), company: 'Resumen Profesional', position: '' }];
-      } else if (type === 'skills') {
-        const text = formData.skills;
-        const improvedBullets = await analyzeContent([text], instruction || "Formatea y agrupa estas habilidades técnicas de forma profesional.");
-        improvedContent = [{ highlights: improvedBullets.join(', '), company: 'Habilidades', position: '' }];
+      // Fallback si es necesario
+      if (!improvedContent) {
+        improvedContent = await tryModelImprove(type, index, instruction, fallbackModel);
+        if (improvedContent) {
+          setSelectedModel(fallbackModel);
+        }
       }
 
-      setImprovedExperience(improvedContent);
-      setShowAIModal(true);
+      if (improvedContent) {
+        setImprovedExperience(improvedContent);
+        setShowAIModal(true);
+      } else {
+        setError('Error: Ambos modelos fallaron');
+      }
     } catch (e: any) {
       setError('Error al analizar con IA: ' + e.message);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const tryModelImprove = async (type: 'experience' | 'skills' | 'summary', index?: number, instruction?: string, model: string) => {
+    try {
+      let improvedContent: Array<{ highlights: string; company: string; position: string }> = [];
+
+      const analyzeWithModel = async (text: string | string[], instruction?: string) => {
+        const bulletsArray = Array.isArray(text) ? text : text.split('\n').filter(t => t.trim());
+        if (bulletsArray.length === 0) return [];
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/improve-bullets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bullets: bulletsArray, model: model, instruction })
+        });
+
+        if (!res.ok) throw new Error(`Model ${model} failed`);
+
+        const data = await res.json();
+        return data.improved || [];
+      };
+
+      if (type === 'experience' && typeof index === 'number') {
+        const exp = formData.experience[index];
+        const improvedBullets = await analyzeWithModel(exp.highlights, instruction);
+        improvedContent = [{ ...exp, highlights: improvedBullets.join('\n') }];
+      } else if (type === 'summary') {
+        const text = formData.summary;
+        const improvedBullets = await analyzeWithModel([text], instruction || "Mejora este resumen profesional para que sea impactante y conciso.");
+        improvedContent = [{ highlights: improvedBullets.join('\n'), company: 'Resumen Profesional', position: '' }];
+      } else if (type === 'skills') {
+        const text = formData.skills;
+        const improvedBullets = await analyzeWithModel([text], instruction || "Formatea y agrupa estas habilidades técnicas de forma profesional.");
+        improvedContent = [{ highlights: improvedBullets.join(', '), company: 'Habilidades', position: '' }];
+      }
+
+      return improvedContent;
+    } catch (error) {
+      console.error(`Model ${model} failed for improvement:`, error);
+      return null;
     }
   };
 
@@ -173,21 +214,57 @@ export default function CVWizard() {
   };
 
   const handleFullReview = async () => {
+    // Esta función ahora usa handleFullReviewWithFallback
+    return handleFullReviewWithFallback();
+  };
+
+  const handleFullReviewWithFallback = async () => {
     setIsReviewing(true);
     setReviewContent('');
     setShowReviewModal(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/review-cv`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cv_data: formData, model: selectedModel })
-      });
-      const data = await res.json();
-      setReviewContent(data.review);
+      // Intentar con el modelo principal primero
+      let reviewResult = await tryModelReview(selectedModel);
+
+      // Si falla, probar con el modelo de fallback
+      if (!reviewResult) {
+        console.log(`Fallback: ${selectedModel} failed, trying ${fallbackModel}`);
+        reviewResult = await tryModelReview(fallbackModel);
+
+        if (reviewResult) {
+          setSelectedModel(fallbackModel); // Actualizar al modelo que funcionó
+        }
+      }
+
+      if (reviewResult) {
+        setReviewContent(reviewResult);
+      } else {
+        setReviewContent('Error: Ambos modelos fallaron. Por favor intente más tarde.');
+      }
     } catch (e: any) {
       setReviewContent('Error al realizar la revisión: ' + e.message);
     } finally {
       setIsReviewing(false);
+    }
+  };
+
+  const tryModelReview = async (model: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/review-cv`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_data: formData, model: model })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Model ${model} failed`);
+      }
+
+      const data = await res.json();
+      return data.review;
+    } catch (error) {
+      console.error(`Model ${model} failed:`, error);
+      return null;
     }
   };
 
@@ -387,7 +464,7 @@ export default function CVWizard() {
                     />
                     <AIButton 
                       onClick={() => handleAnalyzeClick('experience', idx)} 
-                      visible={exp.highlights.length > 20} 
+                      visible={exp.highlights.length > 10} 
                       isActive={isAnalyzing && activeField?.type === 'experience' && activeField?.index === idx}
                     />
                   </div>
@@ -427,7 +504,7 @@ export default function CVWizard() {
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('skills')} 
-                  visible={formData.skills.length > 10} 
+                  visible={formData.skills.length > 5} 
                   isActive={isAnalyzing && activeField?.type === 'skills'}
                 />
               </div>
@@ -446,7 +523,7 @@ export default function CVWizard() {
                 />
                 <AIButton 
                   onClick={() => handleAnalyzeClick('summary')} 
-                  visible={formData.summary.length > 20} 
+                  visible={formData.summary.length > 10} 
                   isActive={isAnalyzing && activeField?.type === 'summary'}
                 />
               </div>
@@ -482,26 +559,20 @@ export default function CVWizard() {
               {models.length > 0 && (
                 <div className="bg-purple-600/20 border border-purple-500/30 p-6 rounded-lg space-y-4">
                   <h3 className="text-white font-semibold text-lg text-center">🤖 Asistente Final</h3>
-                  <div className="flex gap-4">
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="flex-1 p-2 bg-black border-2 border-purple-900 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors font-mono text-sm"
-                    >
-                      {models.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <button
-                      onClick={handleFullReview}
-                      disabled={isReviewing}
-                      className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 shadow-lg ${
-                        isReviewing 
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                          : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:opacity-90 shadow-cyan-500/20'
-                      }`}
-                    >
-                      <span>{isReviewing ? '⏳' : '🔍'}</span> {isReviewing ? 'Analizando...' : 'Revisión Integral'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleFullReviewWithFallback}
+                    disabled={isReviewing}
+                    className={`w-full px-4 py-2 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg ${
+                      isReviewing 
+                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:opacity-90 shadow-cyan-500/20'
+                    }`}
+                  >
+                    <span>{isReviewing ? '⏳' : '🔍'}</span> {isReviewing ? 'Analizando...' : 'Revisión Integral'}
+                  </button>
+                  <p className="text-xs text-purple-300 text-center mt-2">
+                    Usando: {selectedModel} (fallback: {fallbackModel})
+                  </p>
                 </div>
               )}
 
