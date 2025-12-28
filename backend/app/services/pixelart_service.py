@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models.database import PixelArt, PixelArtLike, PixelArtComment, User, UserProfile
 from app.services.gamification_service import GamificationService
-from app.services.ollama_service import OllamaService
+from app.services.ollama_service import generate_text
 
 class PixelArtService:
     @staticmethod
@@ -58,7 +58,7 @@ class PixelArtService:
         4. No incluyas explicaciones ni texto fuera del JSON.
         """
         
-        response = OllamaService.generate_response(improved_prompt)
+        response = generate_text(improved_prompt)
         try:
             # Intentar extraer JSON de la respuesta
             start = response.find('{')
