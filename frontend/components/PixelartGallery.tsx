@@ -35,6 +35,8 @@ export default function PixelartGallery() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSettingAvatar, setIsSettingAvatar] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -57,39 +59,57 @@ export default function PixelartGallery() {
     if (!piece) return;
 
     setIsSettingAvatar(true);
+    setErrorMessage(null);
 
-    // Generar DataURL desde los píxeles para el avatar
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
+    try {
+      // Generar DataURL desde los píxeles para el avatar
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        setIsSettingAvatar(false);
+        setErrorMessage('Error al procesar la imagen');
+        return;
+      }
+
+      piece.pixels.pixels.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(i % 32, Math.floor(i / 32), 1, 1);
+      });
+
+      const dataUrl = canvas.toDataURL();
+      const token = localStorage.getItem('token');
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ avatar_url: dataUrl })
+      });
+
       setIsSettingAvatar(false);
-      return;
-    }
 
-    piece.pixels.pixels.forEach((color, i) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(i % 32, Math.floor(i / 32), 1, 1);
-    });
-
-    const dataUrl = canvas.toDataURL();
-    const token = localStorage.getItem('token');
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ avatar_url: dataUrl })
-    });
-
-    setIsSettingAvatar(false);
-
-    if (res.ok) {
-      setAvatarModal({ isOpen: false, piece: null });
-      window.location.reload();
+      if (res.ok) {
+        setAvatarModal({ isOpen: false, piece: null });
+        setSuccessMessage('¡Avatar actualizado con éxito!');
+        // Actualizar localStorage con el nuevo avatar
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.avatar_url = dataUrl;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setErrorMessage(errorData.detail || 'Error al actualizar el avatar');
+      }
+    } catch (error) {
+      setIsSettingAvatar(false);
+      setErrorMessage('Error de conexión al servidor');
     }
   };
 
@@ -153,10 +173,42 @@ export default function PixelartGallery() {
     }
   };
 
+  // Auto-cerrar mensajes después de 5 segundos
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   if (loading) return <div className="text-center text-orange-400 font-mono animate-pulse">CARGANDO GALERÍA...</div>;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="relative">
+      {/* Mensajes de notificación */}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-red-900 border-2 border-red-500 text-white px-6 py-3 font-mono text-sm animate-pulse flex items-center gap-3">
+          <span>❌</span>
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="ml-2 hover:text-red-300">✕</button>
+        </div>
+      )}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-900 border-2 border-green-500 text-white px-6 py-3 font-mono text-sm flex items-center gap-3">
+          <span>✅</span>
+          <span>{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)} className="ml-2 hover:text-green-300">✕</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {pieces.map((piece) => (
         <div key={piece.id} className="bg-black border-2 border-orange-900/50 p-4 hover:border-orange-500 transition-all group">
           {/* Preview */}
@@ -214,6 +266,7 @@ export default function PixelartGallery() {
           </div>
         </div>
       ))}
+      </div>
 
       {/* Modal de confirmación para borrar */}
       <ConfirmModal

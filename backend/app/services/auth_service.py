@@ -104,3 +104,46 @@ class AuthService:
         if not user_id:
             return None
         return db.query(User).filter(User.id == user_id).first()
+
+    @staticmethod
+    def update_user(
+        db: Session,
+        user_id: str,
+        full_name: str = None,
+        bio: str = None,
+        avatar_url: str = None
+    ) -> User:
+        """Actualiza el perfil del usuario"""
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise ValueError("Usuario no encontrado")
+
+        if full_name is not None:
+            user.full_name = full_name
+        if bio is not None:
+            user.bio = bio
+        if avatar_url is not None:
+            user.avatar_url = avatar_url
+
+        db.commit()
+        db.refresh(user)
+        return user
+
+    @staticmethod
+    def change_password(
+        db: Session,
+        user_id: str,
+        current_password: str,
+        new_password: str
+    ) -> bool:
+        """Cambia la contraseña del usuario"""
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise ValueError("Usuario no encontrado")
+
+        if not AuthService.verify_password(current_password, user.hashed_password):
+            raise ValueError("Contraseña actual incorrecta")
+
+        user.hashed_password = AuthService.hash_password(new_password)
+        db.commit()
+        return True
