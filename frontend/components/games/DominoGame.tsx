@@ -56,133 +56,114 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     setCurrentRight(null);
   };
 
-  // Verificar si una ficha puede colocarse
-  const canPlacePiece = (piece: PlayerPiece, position: 'left' | 'right'): boolean => {
+  // Verificar si una ficha puede colocarse (y opcionalmente retornarla rotada)
+  const getPlayableRotation = (piece: PlayerPiece, position: 'left' | 'right'): PlayerPiece | null => {
+    // Si el tablero está vacío, se puede poner cualquier ficha
+    if (currentLeft === null || currentRight === null) return piece;
+
     if (position === 'left') {
-      if (currentLeft === null) return true;
-      return piece.right === currentLeft;
+      if (piece.right === currentLeft) return piece;
+      if (piece.left === currentLeft) return { left: piece.right, right: piece.left, id: piece.id };
     } else {
-      if (currentRight === null) return true;
-      return piece.left === currentRight;
+      if (piece.left === currentRight) return piece;
+      if (piece.right === currentRight) return { left: piece.right, right: piece.left, id: piece.id };
     }
+    return null;
   };
 
   // Colocar ficha en el tablero
   const placePiece = (piece: PlayerPiece, position: 'left' | 'right') => {
+    const rotatedPiece = getPlayableRotation(piece, position);
+    if (!rotatedPiece) return false;
+
     const newBoard = [...board];
 
-    if (position === 'left') {
-      if (currentLeft === null) {
-        newBoard.unshift({ piece, position: 'left' });
-        setCurrentLeft(piece.left);
-      } else {
-        newBoard.unshift({ piece, position: 'left' });
-        setCurrentLeft(piece.right);
-      }
+    if (currentLeft === null || currentRight === null) {
+      // Primera ficha: inicializa ambos extremos
+      newBoard.push({ piece: rotatedPiece, position: 'right' });
+      setCurrentLeft(rotatedPiece.left);
+      setCurrentRight(rotatedPiece.right);
+    } else if (position === 'left') {
+      newBoard.unshift({ piece: rotatedPiece, position: 'left' });
+      setCurrentLeft(rotatedPiece.left);
     } else {
-      if (currentRight === null) {
-        newBoard.push({ piece, position: 'right' });
-        setCurrentRight(piece.right);
-      } else {
-        newBoard.push({ piece, position: 'right' });
-        setCurrentRight(piece.left);
-      }
+      newBoard.push({ piece: rotatedPiece, position: 'right' });
+      setCurrentRight(rotatedPiece.right);
     }
 
     setBoard(newBoard);
+    return true;
   };
 
-  // Verificar ganador
-  const checkWinner = (): 'player' | 'ai' | null => {
+  // Verificar ganador o bloqueo
+  const checkWinner = useCallback((): 'player' | 'ai' | null => {
     if (playerPieces.length === 0) return 'player';
     if (aiPieces.length === 0) return 'ai';
 
-    // Bloqueo - sin movimientos posibles
     const playerHasMove = playerPieces.some(p =>
-      canPlacePiece(p, 'left') || canPlacePiece(p, 'right')
+      getPlayableRotation(p, 'left') || getPlayableRotation(p, 'right')
     );
 
     const aiHasMove = aiPieces.some(p =>
-      canPlacePiece(p, 'left') || canPlacePiece(p, 'right')
+      getPlayableRotation(p, 'left') || getPlayableRotation(p, 'right')
     );
 
-    if (!playerHasMove && !aiHasMove) {
-      // Calcular puntos restantes
+    if (!playerHasMove && !aiHasMove && board.length > 0) {
       const playerPiecesSum = playerPieces.reduce((sum, p) => sum + p.left + p.right, 0);
       const aiPiecesSum = aiPieces.reduce((sum, p) => sum + p.left + p.right, 0);
       return playerPiecesSum < aiPiecesSum ? 'player' : 'ai';
     }
 
     return null;
-  };
+  }, [playerPieces, aiPieces, board, currentLeft, currentRight]);
 
   // IA: calcular mejor movimiento
-  const getAIMove = useCallback(() => {
-    // Buscar movimientos posibles
+  const getAIMove = useCallback(async () => {
     const possibleMoves: { piece: PlayerPiece; position: 'left' | 'right' }[] = [];
 
     for (const piece of aiPieces) {
-      if (canPlacePiece(piece, 'left')) {
-        possibleMoves.push({ piece, position: 'left' });
-      }
-      if (canPlacePiece(piece, 'right')) {
-        possibleMoves.push({ piece, position: 'right' });
-      }
+      if (getPlayableRotation(piece, 'left')) possibleMoves.push({ piece, position: 'left' });
+      if (getPlayableRotation(piece, 'right')) possibleMoves.push({ piece, position: 'right' });
     }
 
     if (possibleMoves.length === 0) {
-      // Pasar turno
       setIsPlayerTurn(true);
       return;
     }
 
-    // Estrategia simple: priorizar fichas que sumen más puntos
     let bestMove = possibleMoves[0];
-    let bestScore = -1;
+    let maxWeight = -1;
 
     for (const move of possibleMoves) {
-      const score = move.piece.left + move.piece.right;
-      if (score > bestScore) {
-        bestScore = score;
+      let weight = move.piece.left + move.piece.right;
+      if (move.piece.left === move.piece.right) weight += 10;
+      if (weight > maxWeight) {
+        maxWeight = weight;
         bestMove = move;
       }
     }
 
-    // Recolectar movimiento de IA
-    movesRef.current.push({
-      piece_id: bestMove.piece.id,
-      position: bestMove.position,
-      timestamp: Date.now() - gameStartTimeRef.current,
-      board_state: { board, aiPieces }
-    });
+    if (placePiece(bestMove.piece, bestMove.position)) {
+      setAiPieces(prev => prev.filter(p => p.id !== bestMove.piece.id));
+      setMoves(m => m + 1);
 
-    // Aplicar movimiento
-    placePiece(bestMove.piece, bestMove.position);
-    setAiPieces(prev => prev.filter(p => p.id !== bestMove.piece.id));
-    setMoves(m => m + 1);
-
-    // Verificar ganador
-    const gameWinner = checkWinner();
-    if (gameWinner) {
-      setWinner(gameWinner);
-      setGameState('ended');
-      const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-      onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
-        training_data: {
-          game_id: 'domino',
-          moves_sequence: movesRef.current,
-          final_board_state: { board, playerPieces, aiPieces },
-          player_won: gameWinner === 'player'
-        }
-      });
-    } else {
-      setIsPlayerTurn(true);
+      const gameWinner = checkWinner();
+      if (gameWinner) {
+        setWinner(gameWinner);
+        setGameState('ended');
+        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+        onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
+          training_data: { game_id: 'domino', moves_sequence: movesRef.current, player_won: gameWinner === 'player' }
+        });
+      } else {
+        setIsPlayerTurn(true);
+      }
     }
-  }, [aiPieces, board, currentLeft, currentRight, moves, onGameEnd]);
+  }, [aiPieces, board, currentLeft, currentRight, moves, onGameEnd, checkWinner]);
 
   useEffect(() => {
     if (gameState === 'playing' && !isPlayerTurn) {
-      const timer = setTimeout(getAIMove, 500);
+      const timer = setTimeout(getAIMove, 800);
       return () => clearTimeout(timer);
     }
   }, [gameState, isPlayerTurn, getAIMove]);
@@ -190,64 +171,25 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
   const handlePieceClick = (piece: PlayerPiece) => {
     if (gameState !== 'playing' || !isPlayerTurn) return;
 
-    // Intentar colocar en la izquierda
-    if (canPlacePiece(piece, 'left')) {
-      // Recolectar movimiento del jugador
-      movesRef.current.push({
-        piece_id: piece.id,
-        position: 'left',
-        timestamp: Date.now() - gameStartTimeRef.current,
-        board_state: { board, playerPieces }
-      });
+    const rotatedLeft = getPlayableRotation(piece, 'left');
+    const rotatedRight = getPlayableRotation(piece, 'right');
 
-      placePiece(piece, 'left');
-      setPlayerPieces(prev => prev.filter(p => p.id !== piece.id));
-      setMoves(m => m + 1);
-      setIsPlayerTurn(false);
+    if (rotatedLeft || rotatedRight) {
+      const position = rotatedLeft ? 'left' : 'right';
+      if (placePiece(piece, position)) {
+        setPlayerPieces(prev => prev.filter(p => p.id !== piece.id));
+        setMoves(m => m + 1);
+        setIsPlayerTurn(false);
 
-      const gameWinner = checkWinner();
-      if (gameWinner) {
-        setWinner(gameWinner);
-        setGameState('ended');
-        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
-          training_data: {
-            game_id: 'domino',
-            moves_sequence: movesRef.current,
-            final_board_state: { board, playerPieces, aiPieces },
-            player_won: gameWinner === 'player'
-          }
-        });
-      }
-    }
-    // Intentar colocar en la derecha
-    else if (canPlacePiece(piece, 'right')) {
-      // Recolectar movimiento del jugador
-      movesRef.current.push({
-        piece_id: piece.id,
-        position: 'right',
-        timestamp: Date.now() - gameStartTimeRef.current,
-        board_state: { board, playerPieces }
-      });
-
-      placePiece(piece, 'right');
-      setPlayerPieces(prev => prev.filter(p => p.id !== piece.id));
-      setMoves(m => m + 1);
-      setIsPlayerTurn(false);
-
-      const gameWinner = checkWinner();
-      if (gameWinner) {
-        setWinner(gameWinner);
-        setGameState('ended');
-        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
-          training_data: {
-            game_id: 'domino',
-            moves_sequence: movesRef.current,
-            final_board_state: { board, playerPieces, aiPieces },
-            player_won: gameWinner === 'player'
-          }
-        });
+        const gameWinner = checkWinner();
+        if (gameWinner) {
+          setWinner(gameWinner);
+          setGameState('ended');
+          const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+          onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
+            training_data: { game_id: 'domino', player_won: gameWinner === 'player' }
+          });
+        }
       }
     }
   };
@@ -258,57 +200,54 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     setGameState('playing');
     setMoves(0);
     setWinner(null);
-    setPlayerScore(0);
-    setAiScore(0);
-    movesRef.current = [];
+    setCurrentLeft(null);
+    setCurrentRight(null);
     gameStartTimeRef.current = Date.now();
   };
 
   const handlePassTurn = () => {
-    if (gameState !== 'playing' || !isPlayerTurn || canPlayerMove) return;
+    if (gameState !== 'playing' || !isPlayerTurn) return;
     setIsPlayerTurn(false);
   };
 
   const canPlayerMove = playerPieces.some(p =>
-    canPlacePiece(p, 'left') || canPlacePiece(p, 'right')
+    getPlayableRotation(p, 'left') || getPlayableRotation(p, 'right')
   );
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Game Status */}
       {gameState === 'menu' && (
         <div className="text-center space-y-4">
-          <p className="text-orange-400 text-2xl">Domino</p>
-          <p className="text-gray-400 text-sm">Empareja los números para deshacerte de todas tus fichas</p>
+          <p className="text-orange-400 text-2xl font-bold uppercase tracking-widest">Domino</p>
+          <p className="text-gray-400 text-sm">Empareja los números para deshacerte de tus fichas</p>
           <button
             onClick={startNewGame}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 transition-colors"
-            style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
+            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 py-3 transition-all"
+            style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
           >
-            Comenzar
+            COMENZAR PARTIDA
           </button>
         </div>
       )}
 
       {gameState === 'playing' && (
         <div className="text-center space-y-2">
-          <p className={isPlayerTurn ? 'text-orange-400' : 'text-red-400'}>
-            {isPlayerTurn ? 'Tu turno' : 'Turno de la IA...'}
+          <p className={isPlayerTurn ? 'text-orange-400 font-bold' : 'text-red-400 font-bold'}>
+            {isPlayerTurn ? 'TU TURNO' : 'IA PENSANDO...'}
           </p>
-          <div className="flex items-center justify-center gap-2">
-            <p className="text-gray-500 text-xs">Movimientos: {moves}</p>
-            <div className="flex items-center gap-1 bg-purple-900/30 border border-purple-500/50 px-2 py-0.5 rounded-sm">
-              <span className="text-purple-400 text-[10px]">🤖 Probabilistic AI</span>
+          <div className="flex items-center justify-center gap-3">
+            <p className="text-gray-500 text-xs font-mono">MOVIMIENTOS: {moves}</p>
+            <div className="bg-purple-900/20 border border-purple-500/30 px-2 py-0.5 rounded text-[10px] text-purple-400">
+              🤖 OLLAMA AI READY
             </div>
           </div>
           {!canPlayerMove && isPlayerTurn && (
-            <div className="flex flex-col items-center gap-2 mt-2">
-              <p className="text-yellow-400 text-xs">No puedes mover</p>
+            <div className="mt-2 animate-bounce">
               <button
                 onClick={handlePassTurn}
-                className="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold py-1 px-4 rounded-sm transition-colors"
+                className="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold py-2 px-6 rounded-sm shadow-lg"
               >
-                Pasar Turno
+                PASAR TURNO
               </button>
             </div>
           )}
@@ -316,28 +255,27 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
       )}
 
       {gameState === 'ended' && (
-        <div className="text-center space-y-4">
-          <p className={winner === 'player' ? 'text-green-400 text-xl' : 'text-red-400 text-xl'}>
-            {winner === 'player' ? '¡GANASTE!' : 'La IA ganó'}
+        <div className="text-center space-y-4 bg-orange-900/10 p-6 border border-orange-900/20 rounded">
+          <p className={winner === 'player' ? 'text-green-400 text-2xl font-black' : 'text-red-400 text-2xl font-black'}>
+            {winner === 'player' ? '¡VICTORIA!' : 'DERROTA'}
           </p>
-          <p className="text-gray-400 text-sm">Movimientos: {moves}</p>
+          <p className="text-gray-400 text-sm font-mono">PARTIDA FINALIZADA EN {moves} MOVIMIENTOS</p>
           <button
             onClick={startNewGame}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 transition-colors"
+            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 transition-colors uppercase text-sm"
           >
-            Jugar de nuevo
+            Revancha
           </button>
         </div>
       )}
 
-      {/* Board Display */}
       {board.length > 0 && (
-        <div className="bg-black border-2 border-orange-900 p-4 rounded-lg">
-          <div className="flex gap-2 items-center">
+        <div className="bg-black/50 border-2 border-orange-900/30 p-6 rounded-lg overflow-x-auto max-w-full">
+          <div className="flex gap-2 items-center min-w-max">
             {board.map((item, index) => (
-              <div key={index} className="bg-orange-900/30 border border-orange-500/50 p-2 rounded">
-                <div className="text-orange-400 text-2xl font-bold">
-                  {item.piece.left} | {item.piece.right}
+              <div key={index} className="bg-orange-900/20 border border-orange-500/40 p-3 rounded shadow-inner">
+                <div className="text-orange-400 text-2xl font-black font-mono">
+                  {item.piece.left}<span className="opacity-30 mx-1">|</span>{item.piece.right}
                 </div>
               </div>
             ))}
@@ -345,28 +283,32 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
         </div>
       )}
 
-      {/* Player Pieces */}
-      <div className="space-y-4">
-        <p className="text-orange-400 text-sm">Tus fichas ({playerPieces.length}):</p>
-        <div className="grid grid-cols-4 gap-2">
-          {playerPieces.map(piece => (
-            <button
-              key={piece.id}
-              onClick={() => handlePieceClick(piece)}
-              disabled={!isPlayerTurn || gameState !== 'playing'}
-              className={`
-                bg-orange-900/50 border border-orange-500/50 p-3 rounded transition-all duration-200
-                ${canPlacePiece(piece, 'left') || canPlacePiece(piece, 'right')
-                  ? 'hover:bg-orange-900/70 cursor-pointer'
-                  : 'opacity-50 cursor-not-allowed'
-                }
-              `}
-            >
-              <div className="text-orange-400 text-xl font-bold">
-                {piece.left} | {piece.right}
-              </div>
-            </button>
-          ))}
+      <div className="space-y-4 w-full">
+        <div className="flex justify-between items-center border-b border-orange-900/20 pb-2">
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-tighter">Tus Fichas ({playerPieces.length})</p>
+          <p className="text-red-400 text-[10px] font-mono">IA: {aiPieces.length} FICHAS</p>
+        </div>
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+          {playerPieces.map(piece => {
+            const canPlay = getPlayableRotation(piece, 'left') || getPlayableRotation(piece, 'right');
+            return (
+              <button
+                key={piece.id}
+                onClick={() => handlePieceClick(piece)}
+                disabled={!isPlayerTurn || gameState !== 'playing'}
+                className={`
+                  bg-orange-900/40 border-2 p-3 rounded transition-all duration-300
+                  ${canPlay && isPlayerTurn
+                    ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)] hover:scale-105' 
+                    : 'border-transparent opacity-40 grayscale cursor-not-allowed'}
+                `}
+              >
+                <div className="text-orange-400 text-xl font-black font-mono">
+                  {piece.left}<br/><span className="opacity-20">--</span><br/>{piece.right}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
