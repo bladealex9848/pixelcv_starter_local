@@ -46,27 +46,52 @@ class PixelArtService:
     @staticmethod
     def generate_with_ai(prompt: str) -> dict:
         """
-        Usa Ollama para generar una matriz de píxeles (código) basada en el prompt.
-        Mejora el prompt internamente para obtener mejores resultados artísticos.
+        Usa Ollama para generar una cuadrícula de 16x16 basada en caracteres.
+        Luego se mapea a colores y se escala a 32x32 para mayor fidelidad.
         """
+        palette_map = {
+            "0": "#000000", # Fondo / Negro
+            "1": "#FFDAB9", # Piel (Ingeniero)
+            "2": "#4682B4", # Ropa / Azul Acero
+            "3": "#FFFFFF", # Brillo / Gafas
+            "4": "#8B4513", # Cabello / Marrón
+            "5": "#708090", # Metal / Marco Gafas
+            "6": "#FF4500", # Detalle vibrante
+            "7": "#2F4F4F"  # Sombra
+        }
+        
         improved_prompt = f"""
-        Actúa como un experto artista de Pixel Art. Genera una matriz de 32x32 píxeles para: "{prompt}".
-        REGLAS ESTRICTAS:
-        1. Responde ÚNICAMENTE con un objeto JSON válido.
-        2. El formato debe ser: {{"pixels": ["#HEX", "#HEX", ...]}} donde hay exactamente 1024 colores.
-        3. Usa una paleta retro vibrante.
-        4. No incluyas explicaciones ni texto fuera del JSON.
+        TASK: Create a 16x16 Pixel Art representing: "{prompt}".
+        PALETTE:
+        0: Empty/Black, 1: Skin, 2: Clothing, 3: White/Highlights, 4: Hair, 5: Metal/Glasses, 6: Bright Detail, 7: Shadow.
+        
+        RULES:
+        1. Output ONLY a block of 16 lines, each with 16 characters from the palette (0-7).
+        2. No text, no JSON, just the grid.
+        3. Make it centered and recognizable.
+        
+        EXAMPLE OUTPUT:
+        0000444400000000
+        0004444440000000
+        ... (16 lines)
         """
         
-        response = generate_text(improved_prompt)
-        try:
-            # Intentar extraer JSON de la respuesta
-            start = response.find('{')
-            end = response.rfind('}') + 1
-            return json.loads(response[start:end])
-        except Exception as e:
-            print(f"[PixelArt] Error parseando IA: {e}")
+        response = generate_text(improved_prompt).strip()
+        lines = [line.strip() for line in response.split('\n') if any(c in "01234567" for c in line)]
+        
+        if len(lines) < 16:
+            # Fallback if AI fails to produce enough lines
             return {"pixels": ["#000000"] * 1024}
+
+        # Convert 16x16 grid to 32x32 (upscaling)
+        pixels_32x32 = []
+        for r in range(32):
+            row_16 = lines[min(r // 2, 15)]
+            for c in range(32):
+                char = row_16[min(c // 2, len(row_16)-1)]
+                pixels_32x32.append(palette_map.get(char, "#000000"))
+        
+        return {"pixels": pixels_32x32}
 
     @staticmethod
     def get_gallery(db: Session, limit: int = 20, offset: int = 0):
