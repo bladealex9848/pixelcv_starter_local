@@ -637,7 +637,7 @@ class GamificationService:
             if score > previous_best:
                 achievements.append({
                     'action': 'game_high_score',
-                    'description': f'¡Mejor distancia en 4x4: {Math.floor(score)}m!'
+                    'description': f'¡Mejor distancia en 4x4: {int(score)}m!'
                 })
 
         elif game_id == 'pacman':
