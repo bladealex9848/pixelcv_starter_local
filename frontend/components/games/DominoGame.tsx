@@ -264,6 +264,11 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     gameStartTimeRef.current = Date.now();
   };
 
+  const handlePassTurn = () => {
+    if (gameState !== 'playing' || !isPlayerTurn || canPlayerMove) return;
+    setIsPlayerTurn(false);
+  };
+
   const canPlayerMove = playerPieces.some(p =>
     canPlacePiece(p, 'left') || canPlacePiece(p, 'right')
   );
@@ -286,7 +291,7 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
       )}
 
       {gameState === 'playing' && (
-        <div className="text-center space-y-1">
+        <div className="text-center space-y-2">
           <p className={isPlayerTurn ? 'text-orange-400' : 'text-red-400'}>
             {isPlayerTurn ? 'Tu turno' : 'Turno de la IA...'}
           </p>
@@ -297,7 +302,15 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
             </div>
           </div>
           {!canPlayerMove && isPlayerTurn && (
-            <p className="text-yellow-400 text-xs">No puedes mover - pasando turno</p>
+            <div className="flex flex-col items-center gap-2 mt-2">
+              <p className="text-yellow-400 text-xs">No puedes mover</p>
+              <button
+                onClick={handlePassTurn}
+                className="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold py-1 px-4 rounded-sm transition-colors"
+              >
+                Pasar Turno
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -358,11 +371,33 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
       </div>
 
       {/* Instructions */}
-      {gameState === 'menu' && (
-        <p className="text-gray-500 text-xs text-center max-w-md">
-          Haz clic en una ficha para colocarla en el tablero. Empareja los números para continuar. ¡El primero en deshacerse de todas sus fichas gana!
-        </p>
-      )}
+      <div className="bg-gray-900/40 p-6 border border-orange-900/30 rounded-lg max-w-2xl w-full">
+        <h3 className="text-orange-400 font-bold mb-3 flex items-center gap-2">
+          📖 CÓMO JUGAR
+        </h3>
+        <ul className="text-gray-400 text-xs space-y-3 text-left">
+          <li className="flex gap-2">
+            <span className="text-orange-500">1.</span>
+            <span>Se reparten 7 fichas a cada jugador. El objetivo es quedarse sin fichas antes que la IA.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-orange-500">2.</span>
+            <span>Debes colocar una ficha que coincida con uno de los números en los extremos del tablero.</span>
+          </li>
+          <li className="flex gap-2 bg-orange-900/20 p-2 rounded border border-orange-700/20">
+            <span className="text-orange-400 font-bold">Ejemplo:</span>
+            <span>Si en el extremo hay un <b>5</b>, puedes jugar una ficha como <b>5|2</b>. El <b>2</b> será el nuevo número a emparejar en ese extremo.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-orange-500">3.</span>
+            <span>Si no tienes fichas que coincidan con los extremos, aparecerá el botón <b>Pasar Turno</b>.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-orange-500">4.</span>
+            <span>Si el juego se bloquea (nadie puede mover), gana quien sume menos puntos en sus fichas restantes.</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
