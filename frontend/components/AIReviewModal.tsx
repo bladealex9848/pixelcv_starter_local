@@ -88,11 +88,11 @@ export default function AIReviewModal({
           
           {/* Sección de Regeneración */}
           {onRegenerate && (
-            <div className="bg-black/20 p-3 rounded-lg border border-purple-500/10">
+            <div className="bg-black/20 p-3 rounded-lg border border-purple-500/10 md:flex md:gap-2 md:items-center">
               <input 
                 type="text" 
                 placeholder="Ej: Hazlo más corto, enfócate en liderazgo, usa métricas..." 
-                className="w-full bg-transparent border-none text-white text-sm placeholder-gray-500 focus:ring-0 mb-2"
+                className="w-full md:flex-1 bg-transparent border-none text-white text-sm placeholder-gray-500 focus:ring-0 md:mb-0 mb-2"
                 value={instruction}
                 onChange={(e) => setInstruction(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isRegenerating && onRegenerate(instruction)}
@@ -100,7 +100,7 @@ export default function AIReviewModal({
               <button
                 onClick={() => onRegenerate(instruction)}
                 disabled={isRegenerating}
-                className="w-full px-4 py-2 bg-purple-600/20 text-purple-300 text-sm font-semibold rounded hover:bg-purple-600/40 transition disabled:opacity-50"
+                className="w-full md:w-auto px-4 py-2 bg-purple-600/20 text-purple-300 text-sm font-semibold rounded hover:bg-purple-600/40 transition disabled:opacity-50"
               >
                 {isRegenerating ? 'Pensando...' : 'Regenerar'}
               </button>
