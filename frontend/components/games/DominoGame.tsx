@@ -95,6 +95,22 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     return true;
   };
 
+  // Función centralizada para terminar el juego
+  const endGame = useCallback((gameWinner: 'player' | 'ai') => {
+    setWinner(gameWinner);
+    setGameState('ended');
+    const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+    
+    onGameEnd(0, gameWinner === 'player', moves, gameTime, {
+      training_data: { 
+        game_id: 'domino', 
+        player_won: gameWinner === 'player',
+        final_pieces_player: playerPieces.length,
+        final_pieces_ai: aiPieces.length
+      }
+    });
+  }, [moves, playerPieces.length, aiPieces.length, onGameEnd]);
+
   // Verificar ganador o bloqueo
   const checkWinner = useCallback((): 'player' | 'ai' | null => {
     if (playerPieces.length === 0) return 'player';
@@ -111,11 +127,13 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     if (!playerHasMove && !aiHasMove && board.length > 0) {
       const playerPiecesSum = playerPieces.reduce((sum, p) => sum + p.left + p.right, 0);
       const aiPiecesSum = aiPieces.reduce((sum, p) => sum + p.left + p.right, 0);
-      return playerPiecesSum < aiPiecesSum ? 'player' : 'ai';
+      
+      // En caso de empate en puntos, gana el jugador
+      return playerPiecesSum <= aiPiecesSum ? 'player' : 'ai';
     }
 
     return null;
-  }, [playerPieces, aiPieces, board, currentLeft, currentRight]);
+  }, [playerPieces, aiPieces, board.length]);
 
   // IA: calcular mejor movimiento
   const getAIMove = useCallback(async () => {
@@ -127,7 +145,18 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
     }
 
     if (possibleMoves.length === 0) {
-      setIsPlayerTurn(true);
+      // La IA no puede mover. ¿Puede mover el jugador?
+      const playerHasMove = playerPieces.some(p =>
+        getPlayableRotation(p, 'left') || getPlayableRotation(p, 'right')
+      );
+
+      if (!playerHasMove) {
+        // Bloqueo mutuo detectado por la IA
+        const gameWinner = checkWinner();
+        if (gameWinner) endGame(gameWinner);
+      } else {
+        setIsPlayerTurn(true);
+      }
       return;
     }
 
@@ -149,17 +178,12 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
 
       const gameWinner = checkWinner();
       if (gameWinner) {
-        setWinner(gameWinner);
-        setGameState('ended');
-        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
-          training_data: { game_id: 'domino', moves_sequence: movesRef.current, player_won: gameWinner === 'player' }
-        });
+        endGame(gameWinner);
       } else {
         setIsPlayerTurn(true);
       }
     }
-  }, [aiPieces, board, currentLeft, currentRight, moves, onGameEnd, checkWinner]);
+  }, [aiPieces, playerPieces, checkWinner, endGame, placePiece]);
 
   useEffect(() => {
     if (gameState === 'playing' && !isPlayerTurn) {
@@ -183,12 +207,7 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
 
         const gameWinner = checkWinner();
         if (gameWinner) {
-          setWinner(gameWinner);
-          setGameState('ended');
-          const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-          onGameEnd(0, gameWinner === 'player', moves + 1, gameTime, {
-            training_data: { game_id: 'domino', player_won: gameWinner === 'player' }
-          });
+          endGame(gameWinner);
         }
       }
     }
@@ -207,7 +226,19 @@ export default function DominoGame({ isAuthenticated, onGameEnd }: DominoGamePro
 
   const handlePassTurn = () => {
     if (gameState !== 'playing' || !isPlayerTurn) return;
-    setIsPlayerTurn(false);
+    
+    // El jugador pasa. ¿Puede mover la IA?
+    const aiHasMove = aiPieces.some(p =>
+      getPlayableRotation(p, 'left') || getPlayableRotation(p, 'right')
+    );
+
+    if (!aiHasMove) {
+      // Bloqueo mutuo detectado al pasar el jugador
+      const gameWinner = checkWinner();
+      if (gameWinner) endGame(gameWinner);
+    } else {
+      setIsPlayerTurn(false);
+    }
   };
 
   const canPlayerMove = playerPieces.some(p =>

@@ -6,11 +6,12 @@
 ## Mejoras Implementadas
 
 ### 1. Lógica de Turno y 'Pasar Turno'
-- **Problema:** Cuando el jugador no tenía fichas válidas para colocar, se mostraba un mensaje estático pero no había forma de ceder el turno a la IA, bloqueando el juego.
+- **Problema:** Cuando el jugador no tenía fichas válidas para colocar, se mostraba un mensaje estático pero no había forma de ceder el turno a la IA, bloqueando el juego. Además, si ambos jugadores quedaban bloqueados, el juego no terminaba automáticamente.
 - **Solución:** 
     - Se implementó la función `handlePassTurn` que permite al jugador ceder el turno cuando no tiene movimientos posibles.
     - Se añadió un botón visual **"Pasar Turno"** que aparece dinámicamente solo cuando el jugador está bloqueado.
     - Se validó que la IA también pase su turno correctamente si no puede mover.
+    - **Detección de Bloqueo Mutuo (Deadlock):** El sistema ahora detecta cuando ni el jugador ni la IA pueden realizar movimientos. En este caso, la partida termina inmediatamente y se aplica la regla de suma de puntos para determinar el ganador.
 
 ### 2. Instrucciones de Juego (CÓMO JUGAR)
 - **Problema:** Las reglas eran demasiado breves y no explicaban la mecánica de emparejamiento.
