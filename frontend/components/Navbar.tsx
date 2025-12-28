@@ -91,7 +91,11 @@ export default function Navbar() {
                 <div className="flex items-center gap-3 border-l-2 border-yellow-900/50 pl-4 ml-2">
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <img src={user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'} alt="Avatar" className="w-8 h-8 rounded-sm border-2 border-yellow-500/50" />
+                      <img 
+                        src={user?.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user?.username || 'user'}`} 
+                        alt="Avatar" 
+                        className="w-8 h-8 rounded-sm border-2 border-yellow-500/50 object-cover bg-black" 
+                      />
                       <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
                     </div>
                     <span className="text-yellow-300 text-xs font-bold uppercase hidden lg:block">{user?.username || 'Usuario'}</span>
@@ -161,7 +165,11 @@ export default function Navbar() {
                 <div className="border-t-2 border-yellow-900/50 pt-3 mt-3 flex items-center justify-between px-3">
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <img src={user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'} alt="Avatar" className="w-8 h-8 rounded-sm border-2 border-yellow-500/50" />
+                      <img 
+                        src={user?.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user?.username || 'user'}`} 
+                        alt="Avatar" 
+                        className="w-8 h-8 rounded-sm border-2 border-yellow-500/50 object-cover bg-black" 
+                      />
                       <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
                     </div>
                     <span className="text-yellow-300 text-xs font-bold uppercase">{user?.username || 'Usuario'}</span>
