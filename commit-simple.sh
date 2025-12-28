@@ -27,13 +27,7 @@ echo ""
 echo "Commit completado con éxito!"
 echo ""
 
-echo "¿Deseas hacer push a GitHub? (s/n)"
-read -r response
-if [[ "$response" =~ ^([sS]|[yY])$ ]]; then
-    echo "Haciendo push a GitHub..."
-    git push origin main
-    echo ""
-    echo "Push completado!"
-else
-    echo "Operación cancelada. Puedes hacer push manualmente más tarde con: git push origin main"
-fi
+echo "Haciendo push a GitHub..."
+git push origin main
+echo ""
+echo "Push completado!"
