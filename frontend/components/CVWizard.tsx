@@ -149,7 +149,7 @@ export default function CVWizard() {
     }
   };
 
-  const tryModelImprove = async (type: 'experience' | 'skills' | 'summary', index?: number, instruction?: string, model: string) => {
+  const tryModelImprove = async (type: 'experience' | 'skills' | 'summary', index?: number, instruction?: string, model?: string) => {
     try {
       let improvedContent: Array<{ highlights: string; company: string; position: string }> = [];
 
