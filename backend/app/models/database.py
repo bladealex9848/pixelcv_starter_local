@@ -229,6 +229,66 @@ class GameSession(Base):
     training_data = relationship("GameTrainingData", back_populates="session", uselist=False)
 
 
+class PixelArt(Base):
+    """Creaciones de Pixel Art de la comunidad"""
+    __tablename__ = "pixel_art"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    
+    # Representación del arte (Matriz de colores o JSON)
+    pixels_json = Column(JSON, nullable=False)
+    width = Column(Integer, default=32)
+    height = Column(Integer, default=32)
+    
+    # Metadatos
+    prompt = Column(Text)  # Prompt usado si fue generado por IA
+    is_ai_generated = Column(Boolean, default=False)
+    is_published = Column(Boolean, default=True)
+    
+    # Estadísticas
+    total_likes = Column(Integer, default=0)
+    total_comments = Column(Integer, default=0)
+    use_count = Column(Integer, default=0)  # Veces usado como avatar
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relaciones
+    user = relationship("User", backref="pixel_arts")
+    comments = relationship("PixelArtComment", backref="pixel_art", cascade="all, delete-orphan")
+    likes = relationship("PixelArtLike", backref="pixel_art", cascade="all, delete-orphan")
+
+
+class PixelArtComment(Base):
+    """Comentarios en piezas de Pixel Art"""
+    __tablename__ = "pixel_art_comments"
+    
+    id = Column(String, primary_key=True)
+    pixel_art_id = Column(String, ForeignKey("pixel_art.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
+
+
+class PixelArtLike(Base):
+    """Likes en piezas de Pixel Art"""
+    __tablename__ = "pixel_art_likes"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    pixel_art_id = Column(String, ForeignKey("pixel_art.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_pixelart_user_like', 'pixel_art_id', 'user_id', unique=True),
+    )
+
+
 class GameAIParameters(Base):
     """Parámetros configurables para IA de juegos (sistema offline)"""
     __tablename__ = "game_ai_parameters"
@@ -406,6 +466,11 @@ POINT_VALUES = {
     'game_resource_collector': 30,  # recolectar 1000+ recursos
     'game_commander': 50,  # crear 20+ unidades
     'game_victory_rts': 100,  # victoria en RTS
+    # PixelArt
+    'pixelart_created': 25,
+    'pixelart_ai_generated': 15,
+    'pixelart_like_received': 10,
+    'pixelart_comment_received': 5,
 }
 
 BADGES = {
