@@ -56,11 +56,21 @@ export default function ChessGame({ isAuthenticated, onGameEnd }: ChessGameProps
   const [blackCaptures, setBlackCaptures] = useState<Piece[]>([]);
   const [enPassant, setEnPassant] = useState<number | null>(null);
 
-  // NUEVO: Recolectar movimientos para entrenamiento
-  const movesRef = useRef<TrainingMove[]>([]);
-  const gameStartTimeRef = useRef<number>(0);
+  const indexToCoord = (index: number): [number, number] => [
+    Math.floor(index / BOARD_SIZE),
+    index % BOARD_SIZE
+  ];
+
+  const coordToIndex = (row: number, col: number): number => row * BOARD_SIZE + col;
+
+  const indexToSquare = (index: number): string => {
+    const col = String.fromCharCode(97 + (index % 8)); // a-h
+    const row = 8 - Math.floor(index / 8); // 1-8
+    return `${col}${row}`;
+  };
 
   const isWhite = (piece: Piece): boolean => piece !== null && piece === piece.toUpperCase();
+
   const isBlack = (piece: Piece): boolean => piece !== null && piece === piece.toLowerCase();
 
   // Tablas de valores por posición (Heurística básica)
