@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import ConfirmModal from './ConfirmModal';
+import EditPixelartModal from './EditPixelartModal';
 
 interface Piece {
   id: string;
@@ -27,8 +28,13 @@ export default function PixelartGallery() {
     isOpen: false,
     piece: null
   });
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; piece: Piece | null }>({
+    isOpen: false,
+    piece: null
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSettingAvatar, setIsSettingAvatar] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -121,6 +127,32 @@ export default function PixelartGallery() {
     }
   };
 
+  const openEditModal = (piece: Piece) => {
+    setEditModal({ isOpen: true, piece });
+  };
+
+  const handleEdit = async (newTitle: string) => {
+    if (!editModal.piece) return;
+
+    setIsEditing(true);
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pixelart/${editModal.piece.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ title: newTitle })
+    });
+
+    setIsEditing(false);
+
+    if (res.ok) {
+      setPieces(pieces.map(p => p.id === editModal.piece?.id ? { ...p, title: newTitle } : p));
+      setEditModal({ isOpen: false, piece: null });
+    }
+  };
+
   if (loading) return <div className="text-center text-orange-400 font-mono animate-pulse">CARGANDO GALERÍA...</div>;
 
   return (
@@ -155,16 +187,24 @@ export default function PixelartGallery() {
               </div>
 
               {currentUser && String(currentUser.id) === String(piece.author_id) && (
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => openAvatarModal(piece)}
-                    className="flex-1 bg-orange-900/30 border border-orange-500/50 text-[10px] font-bold uppercase py-1 hover:bg-orange-500 hover:text-black transition-all"
-                  >
-                    👤 Avatar
-                  </button>
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(piece)}
+                      className="flex-1 bg-blue-900/30 border border-blue-500/50 text-[10px] font-bold uppercase py-1 hover:bg-blue-500 hover:text-white transition-all"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={() => openAvatarModal(piece)}
+                      className="flex-1 bg-orange-900/30 border border-orange-500/50 text-[10px] font-bold uppercase py-1 hover:bg-orange-500 hover:text-black transition-all"
+                    >
+                      👤 Avatar
+                    </button>
+                  </div>
                   <button
                     onClick={() => openDeleteModal(piece)}
-                    className="flex-1 bg-red-900/30 border border-red-500/50 text-[10px] font-bold uppercase py-1 hover:bg-red-500 hover:text-white transition-all"
+                    className="w-full bg-red-900/30 border border-red-500/50 text-[10px] font-bold uppercase py-1 hover:bg-red-500 hover:text-white transition-all"
                   >
                     🗑️ Borrar
                   </button>
@@ -199,6 +239,15 @@ export default function PixelartGallery() {
         cancelText="Cancelar"
         variant="info"
         isLoading={isSettingAvatar}
+      />
+
+      {/* Modal de edición */}
+      <EditPixelartModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, piece: null })}
+        onSave={handleEdit}
+        currentTitle={editModal.piece?.title || ''}
+        isLoading={isEditing}
       />
     </div>
   );
