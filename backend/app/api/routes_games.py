@@ -62,7 +62,7 @@ async def submit_game_result(
         raise HTTPException(status_code=400, detail=f"Juego inválido: {request.game_id}")
 
     # user_id es None para demo mode, el ID del usuario si está autenticado
-    user_id = current_user['user_id'] if current_user else None
+    user_id = current_user.id if current_user else None
 
     try:
         session = GamificationService.record_game_session(
