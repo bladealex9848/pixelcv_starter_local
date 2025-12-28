@@ -68,6 +68,9 @@ export default function Navbar() {
             <button onClick={() => router.push('/games')} className={`${navStyle('/games')} flex items-center gap-2 px-3 py-2 transition-all duration-200 hover:scale-105 border-b-2`}>
               <span className="text-lg">🕹️</span> <span className="text-sm uppercase tracking-wider">Juegos</span>
             </button>
+            <button onClick={() => router.push('/community/pixelart')} className={`${navStyle('/community/pixelart')} flex items-center gap-2 px-3 py-2 transition-all duration-200 hover:scale-105 border-b-2`}>
+              <span className="text-lg">🎨</span> <span className="text-sm uppercase tracking-wider">Pixel Art</span>
+            </button>
 
             {isAuthenticated ? (
               <>
@@ -135,6 +138,9 @@ export default function Navbar() {
             </button>
             <button onClick={() => {router.push('/games'); setMenuOpen(false);}} className="block w-full text-left text-gray-300 py-2 px-3 flex items-center gap-3 transition-all duration-200 hover:bg-yellow-900/20 hover:pl-6 border-l-2 border-transparent hover:border-yellow-500">
               <span className="text-lg">🕹️</span> <span className="text-sm uppercase tracking-wider">Juegos</span>
+            </button>
+            <button onClick={() => {router.push('/community/pixelart'); setMenuOpen(false);}} className="block w-full text-left text-gray-300 py-2 px-3 flex items-center gap-3 transition-all duration-200 hover:bg-yellow-900/20 hover:pl-6 border-l-2 border-transparent hover:border-yellow-500">
+              <span className="text-lg">🎨</span> <span className="text-sm uppercase tracking-wider">Pixel Art</span>
             </button>
 
             {isAuthenticated ? (

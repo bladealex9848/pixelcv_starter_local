@@ -153,7 +153,7 @@ export default function Home() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {/* Feature 1 */}
           <div
             className="group relative bg-black border-2 border-purple-900 hover:border-purple-500 transition-all duration-300 p-1 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]"
@@ -161,53 +161,44 @@ export default function Home() {
           >
             <div className="bg-[#111] p-8 h-full">
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📄</div>
-              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-400 transition-colors">CVs Profesionales</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Usa RenderCV para crear CVs con tipografía perfecta y múltiples diseños LaTeX</p>
-              <div className="mt-4 flex gap-1">
-                <div className="w-2 h-2 bg-purple-500"></div>
-                <div className="w-2 h-2 bg-purple-400"></div>
-                <div className="w-2 h-2 bg-purple-300"></div>
-                <div className="w-2 h-2 bg-gray-700"></div>
-                <div className="w-2 h-2 bg-gray-700"></div>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-400 transition-colors">CVs Pro</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Crea diseños impecables con RenderCV y múltiples plantillas LaTeX profesionales.</p>
             </div>
           </div>
 
-          {/* Feature 2 */}
+          {/* Feature 2: Pixel Art */}
+          <div
+            className="group relative bg-black border-2 border-orange-900 hover:border-orange-500 transition-all duration-300 p-1 hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]"
+            style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
+          >
+            <div className="bg-[#111] p-8 h-full">
+              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🎨</div>
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-orange-400 transition-colors">Pixel Art</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Diseña tus propios assets y avatares con nuestro potente editor de píxeles integrado.</p>
+            </div>
+          </div>
+
+          {/* Feature 3: IA */}
           <div
             className="group relative bg-black border-2 border-cyan-900 hover:border-cyan-500 transition-all duration-300 p-1 hover:shadow-[0_0_30px_rgba(34,211,238,0.2)]"
             style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
           >
             <div className="bg-[#111] p-8 h-full">
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🤖</div>
-              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">Asistente con IA</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Nuestro asistente inteligente te guía paso a paso y mejora tu contenido automáticamente</p>
-              <div className="mt-4 flex gap-1">
-                <div className="w-2 h-2 bg-cyan-500"></div>
-                <div className="w-2 h-2 bg-cyan-400"></div>
-                <div className="w-2 h-2 bg-cyan-300"></div>
-                <div className="w-2 h-2 bg-cyan-200"></div>
-                <div className="w-2 h-2 bg-gray-700"></div>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">Generación IA</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Usa Ollama para generar arte y contenido automáticamente mediante prompts inteligentes.</p>
             </div>
           </div>
 
-          {/* Feature 3 */}
+          {/* Feature 4: Games */}
           <div
             className="group relative bg-black border-2 border-pink-900 hover:border-pink-500 transition-all duration-300 p-1 hover:shadow-[0_0_30px_rgba(236,72,153,0.2)]"
             style={{ clipPath: 'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))' }}
           >
             <div className="bg-[#111] p-8 h-full">
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🎮</div>
-              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-pink-400 transition-colors">Gamificación</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Gana puntos, sube de nivel y desbloquea badges mientras construyes tu perfil profesional</p>
-              <div className="mt-4 flex gap-1">
-                <div className="w-2 h-2 bg-pink-500"></div>
-                <div className="w-2 h-2 bg-pink-400"></div>
-                <div className="w-2 h-2 bg-pink-300"></div>
-                <div className="w-2 h-2 bg-pink-200"></div>
-                <div className="w-2 h-2 bg-pink-100"></div>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-pink-400 transition-colors">Arcade & XP</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Juega, captura capturas y sube de nivel mientras construyes tu perfil profesional.</p>
             </div>
           </div>
         </div>
