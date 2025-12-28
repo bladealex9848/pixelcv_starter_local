@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Servicio para gestión de Pixel Art y generación con Ollama"""
+"""Servicio para gestión de Pixel Art y generación con IA Multi-Proveedor"""
 import uuid
 import json
 import re
+import os
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.database import PixelArt, PixelArtLike, PixelArtComment, User, UserProfile
 from app.services.gamification_service import GamificationService
-from app.services.ollama_service import generate_text
+
+# Usar multi-proveedor si está configurado, sino fallback a Ollama
+try:
+    from app.services.multi_ai_service import get_multi_ai_service, AIProvider
+    MULTI_AI_AVAILABLE = True
+except ImportError:
+    from app.services.ollama_service import generate_text
+    MULTI_AI_AVAILABLE = False
 
 class PixelArtService:
     @staticmethod
@@ -63,7 +71,7 @@ class PixelArtService:
     @staticmethod
     def generate_with_ai(prompt: str) -> dict:
         """
-        Usa Ollama para generar una cuadrícula de 16x16 basada en caracteres.
+        Usa IA multi-proveedor (Groq por defecto) para generar una cuadrícula de 16x16.
         Luego se mapea a colores y se escala a 32x32 para mayor fidelidad.
         """
         palette_map = {
@@ -116,7 +124,29 @@ COMPLETE EXAMPLE (engineer with glasses):
 Now create pixel art for: "{prompt}"
 Output ONLY the 16 lines of 16 digits each:"""
 
-        response = generate_text(improved_prompt).strip()
+        # Usar multi-proveedor si está disponible, sino fallback a Ollama
+        if MULTI_AI_AVAILABLE:
+            service = get_multi_ai_service()
+            # Usar proveedor configurado en .env (PIXELART_AI_PROVIDER)
+            result = service.generate_text(improved_prompt)
+            if result["success"]:
+                response = result["response"].strip()
+                provider_used = f"{result['provider']}/{result['model']}"
+            else:
+                print(f"[PixelArt] Error con proveedor principal: {result['error']}")
+                # Intentar con fallback
+                result = service.generate_with_fallback(improved_prompt)
+                if result["success"]:
+                    response = result["response"].strip()
+                    provider_used = f"{result['provider']}/{result['model']} (fallback)"
+                else:
+                    print(f"[PixelArt] Todos los proveedores fallaron: {result['error']}")
+                    return {"pixels": ["#000000"] * 1024}
+        else:
+            response = generate_text(improved_prompt).strip()
+            provider_used = "ollama (legacy)"
+
+        print(f"[PixelArt] Generado con: {provider_used}")
         lines = PixelArtService._parse_grid_response(response)
 
         if len(lines) < 16:
