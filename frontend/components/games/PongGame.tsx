@@ -220,13 +220,16 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
       ball.y <= playerPaddle.y + playerPaddle.height &&
       ball.vx < 0
     ) {
-      ball.vx *= -1.05; // Increase speed slightly
+      // Aumento de velocidad más progresivo (3% en vez de 5%)
+      ball.vx *= -1.03; 
       ball.x = playerPaddle.width + 10 + BALL_SIZE / 2;
 
       // Add spin based on where ball hits paddle
       const hitPos = (ball.y - playerPaddle.y) / playerPaddle.height;
       ball.vy = (hitPos - 0.5) * ball.speed * 1.5;
-      ball.speed *= 1.02;
+      
+      // Velocidad base aumenta un 1% por rally
+      ball.speed *= 1.01;
 
       currentRalliesRef.current++;
       setRallies(currentRalliesRef.current);
@@ -255,12 +258,15 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
       ball.y <= opponentPaddle.y + opponentPaddle.height &&
       ball.vx > 0
     ) {
-      ball.vx *= -1.05;
+      // Aumento de velocidad más progresivo (3% en vez de 5%)
+      ball.vx *= -1.03;
       ball.x = CANVAS_WIDTH - opponentPaddle.width - 10 - BALL_SIZE / 2;
 
       const hitPos = (ball.y - opponentPaddle.y) / opponentPaddle.height;
       ball.vy = (hitPos - 0.5) * ball.speed * 1.5;
-      ball.speed *= 1.02;
+      
+      // Velocidad base aumenta un 1% por rally
+      ball.speed *= 1.01;
 
       currentRalliesRef.current++;
       setRallies(currentRalliesRef.current);
@@ -556,8 +562,11 @@ export default function PongGame({ isAuthenticated, onGameEnd }: PongGameProps) 
             {playerScore >= WINNING_SCORE ? '¡GANASTE!' : 'PERDISTE'}
           </p>
           <p className="text-gray-400 text-sm">
-            Rallies: {rallies} | Puntos ganados: {playerScore >= WINNING_SCORE ? '55+' : '10+'}
+            Rallies: {rallies} | Puntos totales: {5 + (playerScore >= WINNING_SCORE ? 50 : 10) + rallies}
           </p>
+          <div className="text-[10px] text-gray-500 space-y-1">
+            <p>Desglose: 5 (base) + {playerScore >= WINNING_SCORE ? '50 (victoria)' : '10 (derrota)'} + {rallies} (rallies)</p>
+          </div>
           <button
             onClick={() => {
               setGameState('menu');
