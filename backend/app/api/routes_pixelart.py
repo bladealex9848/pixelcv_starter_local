@@ -19,6 +19,10 @@ class PixelArtCreate(BaseModel):
     is_ai: bool = False
     prompt: Optional[str] = None
 
+class PixelArtUpdate(BaseModel):
+    title: Optional[str] = None
+    pixels: Optional[dict] = None
+
 @router.post("/")
 async def create_pixel_art(
     data: PixelArtCreate, 
@@ -59,9 +63,28 @@ async def like_pixel_art(
 
 @router.post("/{piece_id}/comment")
 async def comment_pixel_art(
-    piece_id: str, 
-    content: str = Body(..., embed=True), 
-    db: Session = Depends(get_db), 
+    piece_id: str,
+    content: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     return PixelArtService.add_comment(db, current_user.id, piece_id, content)
+
+@router.put("/{piece_id}")
+async def update_pixel_art(
+    piece_id: str,
+    data: PixelArtUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Actualiza una pieza de pixel art (solo el propietario puede)"""
+    return PixelArtService.update_piece(db, piece_id, current_user.id, data.title, data.pixels)
+
+@router.delete("/{piece_id}")
+async def delete_pixel_art(
+    piece_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Elimina una pieza de pixel art (solo el propietario puede)"""
+    return PixelArtService.delete_piece(db, piece_id, current_user.id)

@@ -71,6 +71,20 @@ export default function PixelartGallery() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de que quieres borrar esta obra?')) return;
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pixelart/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      setPieces(pieces.filter(p => p.id !== id));
+    } else {
+      alert('Error al borrar la obra');
+    }
+  };
+
   if (loading) return <div className="text-center text-orange-400 font-mono animate-pulse">CARGANDO GALERÍA...</div>;
 
   return (
@@ -104,13 +118,21 @@ export default function PixelartGallery() {
                 </div>
               </div>
 
-              {currentUser && currentUser.id === piece.author_id && (
-                <button 
-                  onClick={() => handleUseAsAvatar(piece)}
-                  className="w-full bg-orange-900/30 border border-orange-500/50 text-[10px] font-bold uppercase py-1 hover:bg-orange-500 hover:text-black transition-all mt-2"
-                >
-                  👤 Usar como Avatar
-                </button>
+              {currentUser && String(currentUser.id) === String(piece.author_id) && (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleUseAsAvatar(piece)}
+                    className="flex-1 bg-orange-900/30 border border-orange-500/50 text-[10px] font-bold uppercase py-1 hover:bg-orange-500 hover:text-black transition-all"
+                  >
+                    👤 Avatar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(piece.id)}
+                    className="flex-1 bg-red-900/30 border border-red-500/50 text-[10px] font-bold uppercase py-1 hover:bg-red-500 hover:text-white transition-all"
+                  >
+                    🗑️ Borrar
+                  </button>
+                </div>
               )}
             </div>
           </div>

@@ -7,6 +7,7 @@ export default function PixelartEditor() {
   const [selectedColor, setSelectedColor] = useState('#000000');
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [prompt, setPrompt] = useState('');
   const router = useRouter();
 
@@ -35,11 +36,13 @@ export default function PixelartEditor() {
   };
 
   const saveArt = async () => {
+    if (isSaving) return; // Prevenir doble click
+    setIsSaving(true);
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pixelart/`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -53,6 +56,8 @@ export default function PixelartEditor() {
       if (res.ok) router.push('/community/pixelart');
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -114,12 +119,13 @@ export default function PixelartEditor() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={saveArt}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 transition-all uppercase tracking-widest mt-4"
+            disabled={isSaving}
+            className={`w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 transition-all uppercase tracking-widest mt-4 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
           >
-            Publicar en Galería
+            {isSaving ? 'Publicando...' : 'Publicar en Galería'}
           </button>
         </div>
       </div>

@@ -2,8 +2,10 @@
 """Servicio para gestión de Pixel Art y generación con Ollama"""
 import uuid
 import json
+import re
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 from app.models.database import PixelArt, PixelArtLike, PixelArtComment, User, UserProfile
 from app.services.gamification_service import GamificationService
 from app.services.ollama_service import generate_text
@@ -44,6 +46,21 @@ class PixelArtService:
         return piece
 
     @staticmethod
+    def _parse_grid_response(response: str) -> list:
+        """Extrae exactamente 16 líneas válidas de la respuesta del modelo"""
+        # Buscar bloque de código entre ```
+        code_block = re.search(r'```\n?([\s\S]*?)\n?```', response)
+        if code_block:
+            response = code_block.group(1)
+
+        # Solo líneas que sean exactamente 16 caracteres de 0-7
+        valid_pattern = re.compile(r'^[0-7]{16}$')
+        lines = [line.strip() for line in response.split('\n')
+                 if valid_pattern.match(line.strip())]
+
+        return lines[:16]
+
+    @staticmethod
     def generate_with_ai(prompt: str) -> dict:
         """
         Usa Ollama para generar una cuadrícula de 16x16 basada en caracteres.
@@ -51,36 +68,60 @@ class PixelArtService:
         """
         palette_map = {
             "0": "#000000", # Fondo / Negro
-            "1": "#FFDAB9", # Piel (Ingeniero)
+            "1": "#FFDAB9", # Piel (tono humano)
             "2": "#4682B4", # Ropa / Azul Acero
-            "3": "#FFFFFF", # Brillo / Gafas
+            "3": "#FFFFFF", # Brillo / Gafas / Blanco
             "4": "#8B4513", # Cabello / Marrón
-            "5": "#708090", # Metal / Marco Gafas
-            "6": "#FF4500", # Detalle vibrante
-            "7": "#2F4F4F"  # Sombra
+            "5": "#708090", # Metal / Marco Gafas / Gris
+            "6": "#FF4500", # Detalle vibrante / Naranja
+            "7": "#2F4F4F"  # Sombra / Gris oscuro
         }
-        
-        improved_prompt = f"""
-        TASK: Create a 16x16 Pixel Art representing: "{prompt}".
-        PALETTE:
-        0: Empty/Black, 1: Skin, 2: Clothing, 3: White/Highlights, 4: Hair, 5: Metal/Glasses, 6: Bright Detail, 7: Shadow.
-        
-        RULES:
-        1. Output ONLY a block of 16 lines, each with 16 characters from the palette (0-7).
-        2. No text, no JSON, just the grid.
-        3. Make it centered and recognizable.
-        
-        EXAMPLE OUTPUT:
-        0000444400000000
-        0004444440000000
-        ... (16 lines)
-        """
-        
+
+        improved_prompt = f"""TASK: Create a 16x16 Pixel Art grid for: "{prompt}".
+
+PALETTE (use ONLY these digits 0-7):
+0=Black/Background  1=Skin  2=Blue/Clothing  3=White/Glasses  4=Brown/Hair  5=Gray/Metal  6=Orange/Accent  7=Shadow
+
+STRUCTURE FOR HUMAN FIGURE:
+- Rows 1-2: Background (mostly 0)
+- Rows 3-5: HEAD (use 4 for hair on top, 1 for face, 5 or 3 for glasses)
+- Rows 6-7: NECK (use 1 for skin)
+- Rows 8-12: TORSO (use 2 for clothing)
+- Rows 13-16: LEGS (use 2 or 7 for pants)
+
+OUTPUT RULES:
+1. Output EXACTLY 16 lines
+2. Each line has EXACTLY 16 characters (only digits 0-7)
+3. NO text, NO JSON, NO explanations before or after
+4. Make figure centered and recognizable
+
+COMPLETE EXAMPLE (engineer with glasses):
+0000044440000000
+0000444444000000
+0003111113000000
+0001111111000000
+0005133315000000
+0000111110000000
+0000011100000000
+0002222222000000
+0022222222200000
+0022222222200000
+0022222222200000
+0022222222200000
+0000222220000000
+0002200022000000
+0002200022000000
+0007700077000000
+
+Now create pixel art for: "{prompt}"
+Output ONLY the 16 lines of 16 digits each:"""
+
         response = generate_text(improved_prompt).strip()
-        lines = [line.strip() for line in response.split('\n') if any(c in "01234567" for c in line)]
-        
+        lines = PixelArtService._parse_grid_response(response)
+
         if len(lines) < 16:
             # Fallback if AI fails to produce enough lines
+            print(f"[PixelArt] Fallback: solo {len(lines)} líneas válidas encontradas")
             return {"pixels": ["#000000"] * 1024}
 
         # Convert 16x16 grid to 32x32 (upscaling)
@@ -90,7 +131,7 @@ class PixelArtService:
             for c in range(32):
                 char = row_16[min(c // 2, len(row_16)-1)]
                 pixels_32x32.append(palette_map.get(char, "#000000"))
-        
+
         return {"pixels": pixels_32x32}
 
     @staticmethod
@@ -120,13 +161,48 @@ class PixelArtService:
         comment_id = str(uuid.uuid4())
         comment = PixelArtComment(id=comment_id, pixel_art_id=piece_id, user_id=user_id, content=content)
         db.add(comment)
-        
+
         piece = db.query(PixelArt).filter_by(id=piece_id).first()
         piece.total_comments += 1
-        
+
         # Puntos para el autor
         GamificationService.add_points(db, piece.user_id, 'pixelart_comment_received', "Comentaron en tu Pixel Art")
-        
+
         db.commit()
         db.refresh(comment)
         return comment
+
+    @staticmethod
+    def update_piece(db: Session, piece_id: str, user_id: str, title: str = None, pixels: dict = None) -> PixelArt:
+        """Actualiza una pieza de pixel art (solo el propietario puede)"""
+        piece = db.query(PixelArt).filter_by(id=piece_id).first()
+        if not piece:
+            raise HTTPException(status_code=404, detail="Obra no encontrada")
+        if piece.user_id != user_id:
+            raise HTTPException(status_code=403, detail="No puedes editar obras de otros usuarios")
+
+        if title:
+            piece.title = title
+        if pixels:
+            piece.pixels_json = pixels
+
+        db.commit()
+        db.refresh(piece)
+        return piece
+
+    @staticmethod
+    def delete_piece(db: Session, piece_id: str, user_id: str) -> dict:
+        """Elimina una pieza de pixel art (solo el propietario puede)"""
+        piece = db.query(PixelArt).filter_by(id=piece_id).first()
+        if not piece:
+            raise HTTPException(status_code=404, detail="Obra no encontrada")
+        if piece.user_id != user_id:
+            raise HTTPException(status_code=403, detail="No puedes borrar obras de otros usuarios")
+
+        # Eliminar likes y comentarios relacionados
+        db.query(PixelArtLike).filter_by(pixel_art_id=piece_id).delete()
+        db.query(PixelArtComment).filter_by(pixel_art_id=piece_id).delete()
+
+        db.delete(piece)
+        db.commit()
+        return {"deleted": True, "id": piece_id}
