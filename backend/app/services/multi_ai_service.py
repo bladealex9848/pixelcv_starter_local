@@ -284,6 +284,63 @@ class MultiAIService:
             "error": f"Todos los proveedores fallaron: {'; '.join(errors)}",
         }
 
+    def generate_with_three_tier_fallback(
+        self,
+        prompt: str,
+        system_prompt: str = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+    ) -> Dict[str, Any]:
+        """
+        Fallback de 3 niveles específicos para operaciones de CV:
+        1. Groq (llama-3.1-8b-instant) - Muy rápido
+        2. DeepSeek (deepseek-chat) - Buen razonamiento
+        3. Ollama (phi3.5:latest) - Local fallback
+
+        Retorna dict con: response, provider, model, tier_used, success, error
+        """
+        tiers = [
+            (AIProvider.GROQ, "llama-3.1-8b-instant"),
+            (AIProvider.DEEPSEEK, "deepseek-chat"),
+            (AIProvider.OLLAMA, "phi3.5:latest"),
+        ]
+
+        last_error = None
+        for tier_idx, (provider, model) in enumerate(tiers, 1):
+            if provider not in self.providers:
+                continue
+
+            try:
+                # Si hay system_prompt, combinarlo con el prompt
+                full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+
+                result = self.generate_text(
+                    prompt=full_prompt,
+                    provider=provider,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+
+                if result["success"]:
+                    result["tier_used"] = tier_idx
+                    return result
+                else:
+                    last_error = result.get("error", "Unknown error")
+                    print(f"[MultiAI] Tier {tier_idx} failed: {provider.value}/{model}: {last_error}")
+            except Exception as e:
+                last_error = str(e)
+                print(f"[MultiAI] Tier {tier_idx} exception: {provider.value}/{model}: {last_error}")
+
+        return {
+            "response": "",
+            "provider": "none",
+            "model": "",
+            "tier_used": 0,
+            "success": False,
+            "error": f"All tiers failed. Last error: {last_error}",
+        }
+
 
 # Instancia global para importar fácilmente
 _service = None

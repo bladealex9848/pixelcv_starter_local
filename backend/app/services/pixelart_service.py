@@ -69,10 +69,146 @@ class PixelArtService:
         return lines[:16]
 
     @staticmethod
+    def _detect_object_type(prompt: str) -> str:
+        """Detecta si el prompt pide humano, personaje, naturaleza u objeto"""
+        prompt_lower = prompt.lower()
+        keywords = {
+            'human': ['persona', 'human', 'gente', 'person', 'character', 'personaje',
+                      'ingeniero', 'doctor', 'medico', 'niño', 'niña', 'mujer', 'hombre',
+                      'avatar', 'gente', 'chico', 'chica', 'bebé', 'bebe', 'caballero', 'dama'],
+            'character': ['pac-man', 'pacman', 'mario', 'sonic', 'fantasma', 'ghost',
+                          'monster', 'monstruo', 'poke', 'dragon', 'dino', 'dinosaurio',
+                          'zombie', 'alien', 'robot', 'ninja', 'pirata'],
+            'nature': ['flor', 'flower', 'árbol', 'arbol', 'tree', 'planta', 'plant',
+                       'atardecer', 'sunset', 'amanecer', 'sunrise', 'sol', 'sun',
+                       'luna', 'moon', 'estrella', 'star', 'montaña', 'mountain', 'mar', 'sea'],
+            'object': ['coche', 'car', 'auto', 'carro', 'casa', 'house', 'mesa', 'table',
+                       'silla', 'chair', 'computadora', 'computer', 'laptop', 'teléfono', 'phone',
+                       'libro', 'book', 'reloj', 'watch', 'gafas', 'lentes']
+        }
+        for obj_type, words in keywords.items():
+            if any(word in prompt_lower for word in words):
+                return obj_type
+        return 'human'  # Default
+
+    @staticmethod
+    def _get_structure_prompt(object_type: str) -> str:
+        """Retorna la estructura específica según el tipo de objeto"""
+        structures = {
+            'human': """
+HUMAN FIGURE STRUCTURE:
+- Rows 1-2: Background/sky (mostly 0)
+- Rows 3-5: HEAD (use 4 for hair on top, 1 for face, 5 or 3 for glasses/accessories)
+- Rows 6-7: NECK (use 1 for skin)
+- Rows 8-12: TORSO (use 2 for clothing)
+- Rows 13-16: LEGS (use 2 or 7 for pants/shoes)""",
+            'character': """
+CHARACTER/SPRITE STRUCTURE:
+- Center the character in the middle
+- Use pixels efficiently for recognizable shape
+- Focus on distinctive features (eyes, mouth, props)
+- Leave appropriate background space
+- Make it look like a game character""",
+            'nature': """
+NATURE/SCENE STRUCTURE:
+- Top rows: Sky/background gradient (0 for dark, 3/6 for bright)
+- Middle rows: Main subject (flower, sun, tree, etc.)
+- Bottom rows: Ground/stem/frame
+- Use natural colors from palette creatively""",
+            'object': """
+OBJECT STRUCTURE:
+- Center the object prominently
+- Use clear outlines with contrasting colors
+- Show recognizable shape and key details
+- Keep background minimal (mostly 0)"""
+        }
+        return structures.get(object_type, structures['human'])
+
+    @staticmethod
+    def _get_example_for_type(object_type: str) -> list:
+        """Retorna un ejemplo de 16 líneas según el tipo de objeto"""
+        examples = {
+            'human': [
+                "0000044440000000",
+                "0000444444000000",
+                "0003111113000000",
+                "0001111111000000",
+                "0005111115000000",
+                "0000111110000000",
+                "0000011100000000",
+                "0002222222000000",
+                "0022222222200000",
+                "0022222222200000",
+                "0022222222200000",
+                "0022222222200000",
+                "0000222220000000",
+                "0002200022000000",
+                "0002200022000000",
+                "0007700077000000"
+            ],
+            'character': [
+                "0000000000000000",
+                "0000000000000000",
+                "0000066000000000",
+                "0000666666000000",
+                "0006633336600000",
+                "0066333333660000",
+                "0063311113360000",
+                "0063111111360000",
+                "0063111111360000",
+                "0003111111300000",
+                "0003113331300000",
+                "0000313331000000",
+                "0000313331000000",
+                "0000001100000000",
+                "0000001100000000",
+                "0000000000000000"
+            ],
+            'nature': [
+                "3333330000666666",
+                "3333000000666660",
+                "3333000000666600",
+                "3300000000666000",
+                "3000000000660000",
+                "0000000006600000",
+                "0044444440000000",
+                "0044111444000000",
+                "0044111444000000",
+                "0004111400000000",
+                "0000414000000000",
+                "0000770000000000",
+                "0000700000000000",
+                "0007000000000000",
+                "0070000000000000",
+                "0000000000000000"
+            ],
+            'object': [
+                "0000000000000000",
+                "0000000000000000",
+                "0000444400000000",
+                "0004422440000000",
+                "0044222244000000",
+                "0042211224000000",
+                "0042211224000000",
+                "0042211224000000",
+                "0042211224000000",
+                "0042222224000000",
+                "0042222224000000",
+                "0004222240000000",
+                "0004422440000000",
+                "0000444400000000",
+                "0000000000000000",
+                "0000000000000000"
+            ]
+        }
+        return examples.get(object_type, examples['human'])
+
+    @staticmethod
     def generate_with_ai(prompt: str) -> dict:
         """
         Usa IA multi-proveedor (Groq por defecto) para generar una cuadrícula de 16x16.
-        Luego se mapea a colores y se escala a 32x32 para mayor fidelidad.
+        Detecta automáticamente el tipo de objeto y adapta la estructura.
+        Luego se escala a 32x32 para mayor fidelidad.
         """
         palette_map = {
             "0": "#000000", # Fondo / Negro
@@ -85,41 +221,33 @@ class PixelArtService:
             "7": "#2F4F4F"  # Sombra / Gris oscuro
         }
 
-        improved_prompt = f"""TASK: Create a 16x16 Pixel Art grid for: "{prompt}".
+        # Detectar tipo de objeto y obtener estructura/ejemplo correspondientes
+        object_type = PixelArtService._detect_object_type(prompt)
+        structure_prompt = PixelArtService._get_structure_prompt(object_type)
+        example_lines = PixelArtService._get_example_for_type(object_type)
+
+        type_names = {
+            'human': 'person/human',
+            'character': 'game character',
+            'nature': 'nature/scene',
+            'object': 'object'
+        }
+
+        improved_prompt = f"""TASK: Create a 16x16 Pixel Art grid for: "{prompt}"
 
 PALETTE (use ONLY these digits 0-7):
-0=Black/Background  1=Skin  2=Blue/Clothing  3=White/Glasses  4=Brown/Hair  5=Gray/Metal  6=Orange/Accent  7=Shadow
+0=Black/Background  1=Skin/Light  2=Blue/Cool  3=White/Bright  4=Brown/Dark  5=Gray/Metal  6=Orange/Accent  7=Shadow
 
-STRUCTURE FOR HUMAN FIGURE:
-- Rows 1-2: Background (mostly 0)
-- Rows 3-5: HEAD (use 4 for hair on top, 1 for face, 5 or 3 for glasses)
-- Rows 6-7: NECK (use 1 for skin)
-- Rows 8-12: TORSO (use 2 for clothing)
-- Rows 13-16: LEGS (use 2 or 7 for pants)
+{structure_prompt}
 
 OUTPUT RULES:
 1. Output EXACTLY 16 lines
 2. Each line has EXACTLY 16 characters (only digits 0-7)
 3. NO text, NO JSON, NO explanations before or after
-4. Make figure centered and recognizable
+4. Make the {type_names[object_type]} recognizable and well-centered
 
-COMPLETE EXAMPLE (engineer with glasses):
-0000044440000000
-0000444444000000
-0003111113000000
-0001111111000000
-0005133315000000
-0000111110000000
-0000011100000000
-0002222222000000
-0022222222200000
-0022222222200000
-0022222222200000
-0022222222200000
-0000222220000000
-0002200022000000
-0002200022000000
-0007700077000000
+EXAMPLE ({type_names[object_type]}):
+{chr(10).join(example_lines)}
 
 Now create pixel art for: "{prompt}"
 Output ONLY the 16 lines of 16 digits each:"""

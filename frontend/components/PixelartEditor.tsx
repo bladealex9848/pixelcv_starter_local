@@ -65,10 +65,11 @@ export default function PixelartEditor() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Canvas */}
-        <div 
-          className="grid grid-cols-32 gap-0 border-4 border-orange-900 shadow-2xl overflow-hidden cursor-crosshair"
-          style={{ width: '512px', height: '512px', gridTemplateColumns: 'repeat(32, 1fr)' }}
-        >
+        <div className="w-full max-w-[512px] mx-auto">
+          <div
+            className="grid grid-cols-32 gap-0 border-4 border-orange-900 shadow-2xl overflow-hidden cursor-crosshair aspect-square w-full"
+            style={{ gridTemplateColumns: 'repeat(32, 1fr)' }}
+          >
           {pixels.map((color, i) => (
             <div 
               key={i} 
@@ -77,6 +78,7 @@ export default function PixelartEditor() {
               className="w-full h-full border-[0.1px] border-gray-200/10 hover:opacity-80"
             />
           ))}
+          </div>
         </div>
 
         {/* Tools */}
@@ -103,7 +105,7 @@ export default function PixelartEditor() {
           </div>
 
           <div className="pt-4 border-t border-gray-800">
-            <label className="text-purple-400 text-xs font-bold uppercase block mb-2">🤖 Generación por IA (Ollama)</label>
+            <label className="text-purple-400 text-xs font-bold uppercase block mb-2">🤖 Generación por IA</label>
             <textarea 
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}

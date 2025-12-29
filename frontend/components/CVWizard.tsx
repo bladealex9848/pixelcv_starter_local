@@ -157,15 +157,17 @@ export default function CVWizard() {
         const bulletsArray = Array.isArray(text) ? text : text.split('\n').filter(t => t.trim());
         if (bulletsArray.length === 0) return [];
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/improve-bullets`, {
+        // Usar nuevo endpoint con multi-proveedor (Groq → DeepSeek → Ollama)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/improve-bullets-multi`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bullets: bulletsArray, model: model, instruction })
+          body: JSON.stringify({ bullets: bulletsArray, instruction })
         });
 
-        if (!res.ok) throw new Error(`Model ${model} failed`);
+        if (!res.ok) throw new Error(`Multi-provider AI failed`);
 
         const data = await res.json();
+        console.log(`[CVWizard] Mejorado con ${data.provider}/${data.model} (tier ${data.tier_used})`);
         return data.improved || [];
       };
 
@@ -223,24 +225,21 @@ export default function CVWizard() {
     setReviewContent('');
     setShowReviewModal(true);
     try {
-      // Intentar con el modelo principal primero
-      let reviewResult = await tryModelReview(selectedModel);
+      // Usar nuevo endpoint con multi-proveedor (Groq → DeepSeek → Ollama)
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ollama/review-cv-multi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_data: formData })
+      });
 
-      // Si falla, probar con el modelo de fallback
-      if (!reviewResult) {
-        console.log(`Fallback: ${selectedModel} failed, trying ${fallbackModel}`);
-        reviewResult = await tryModelReview(fallbackModel);
-
-        if (reviewResult) {
-          setSelectedModel(fallbackModel); // Actualizar al modelo que funcionó
-        }
+      if (!res.ok) {
+        throw new Error('Multi-provider review failed');
       }
 
-      if (reviewResult) {
-        setReviewContent(reviewResult);
-      } else {
-        setReviewContent('Error: Ambos modelos fallaron. Por favor intente más tarde.');
-      }
+      const data = await res.json();
+      console.log(`[CVWizard] Revisión completada con ${data.provider}/${data.model} (tier ${data.tier_used})`);
+
+      setReviewContent(data.review);
     } catch (e: any) {
       setReviewContent('Error al realizar la revisión: ' + e.message);
     } finally {
