@@ -96,8 +96,7 @@ class PixelArtService:
         Retorna sugerencias de composición (NO reglas estrictas).
         El objetivo es guiar sin limitar la creatividad.
         """
-        if object_type == 'general':
-            return """
+        general_hint = """
 COMPOSITION TIPS:
 - Center the main subject
 - Use the 16x16 space efficiently
@@ -105,6 +104,7 @@ COMPOSITION TIPS:
 - Be creative with the palette"""
 
         hints = {
+            'general': general_hint,
             'portrait': """
 PORTRAIT COMPOSITION:
 - Focus on the face/upper body
@@ -126,7 +126,7 @@ OBJECT COMPOSITION:
 - Make shape clear and recognizable
 - Use contrasting colors for outline"""
         }
-        return hints.get(object_type, hints['general'])
+        return hints.get(object_type, general_hint)
 
     @staticmethod
     def _get_example_for_type(object_type: str) -> list:
@@ -186,38 +186,31 @@ OBJECT COMPOSITION:
             "robot": "robot", "casa": "house", "coche": "car", "mesa": "table",
             "gato": "cat", "perro": "dog", "pájaro": "bird", "pez": "fish",
             "pizza": "pizza", "manzana": "apple", "café": "coffee",
+            "rio": "river", "río": "river", "azul": "blue", "arboles": "trees", "árboles": "trees",
+            "verde": "green", "rojo": "red", "amarillo": "yellow",
         }
 
         prompt_en = prompt
         for es, en in prompt_translations.items():
             prompt_en = prompt_en.replace(es, en)
 
-        # Ultra-minimalist prompt - models struggle with long instructions
-        improved_prompt = f"""Generate a 16x16 pixel art grid using digits 0-7.
+        # Prompt directo y específico
+        improved_prompt = f"""You are a pixel artist. Create a 16x16 pixel art image of: {prompt_en}
 
-Subject: {prompt_en}
+IMPORTANT: Draw the actual object described in the prompt. For example:
+- If the prompt says "cat", draw a cat shape
+- If it says "house", draw a house shape
+- If it says "river", draw flowing water
 
-Output format (16 lines, 16 digits each):
-```
-0000000000000000
-0000111100000000
-0001122110000000
-0011122221000000
-0011122222110000
-0001122222210000
-0000111111100000
-0000111111100000
-0000011111000000
-0000011111000000
-0000001110000000
-0000001110000000
-0000001100000000
-0000000000000000
-0000000000000000
-0000000000000000
-```
+Color rules:
+- Use digit 0 for empty/black background
+- Use digits 1-7 to draw the object with different shades
+- Example: for a black cat on black background, use digits 1-7 for the cat's features
+- Use white (3) for highlights, dark gray (7) for shadows
 
-Your task: Create the 16x16 grid for "{prompt_en}". Output ONLY the grid."""
+Output format: 16 lines of 16 digits each (only 0-7), no other text
+
+Draw this: {prompt_en}"""
 
         # Usar multi-proveedor si está disponible, sino fallback a Ollama
         response = None
@@ -276,9 +269,9 @@ Your task: Create the 16x16 grid for "{prompt_en}". Output ONLY the grid."""
         # Convert 16x16 grid to 32x32 (upscaling)
         pixels_32x32 = []
         for r in range(32):
-            row_16 = lines[min(r // 2, 15)]
+            row_16 = lines[r // 2]  # Duplicate each row 2x
             for c in range(32):
-                char = row_16[min(c // 2, len(row_16)-1)]
+                char = row_16[c // 2]  # Duplicate each pixel 2x
                 pixels_32x32.append(palette_map.get(char, "#000000"))
 
         return {"pixels": pixels_32x32}
