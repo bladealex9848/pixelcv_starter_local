@@ -159,56 +159,66 @@ OBJECT COMPOSITION:
     def _optimize_prompt(user_prompt: str) -> str:
         """
         Optimiza el prompt del usuario para mejor generación de pixel art.
-        Traduce, simplifica y estructura el prompt para máxima claridad.
+        Usa IA para traducir español a inglés y luego estructura el prompt.
         """
-        # Traducciones básicas español → inglés
-        translations = {
-            # Colores
-            "rojo": "red", "roja": "red", "azul": "blue", "verde": "green",
-            "amarillo": "yellow", "negro": "black", "blanco": "white",
-            "marrón": "brown", "gris": "gray", "rosa": "pink", "púrpura": "purple",
+        # Paso 1: Traducir a inglés usando IA
+        try:
+            translation_prompt = f"""Translate the following Spanish text to English.
+Keep it natural and clear for generating pixel art.
+Focus on the main subject, colors, and spatial relationships.
 
-            # Objetos
-            "flor": "flower", "casa": "house", "gato": "cat", "perro": "dog",
-            "sol": "sun", "luna": "moon", "árbol": "tree", "arbol": "tree",
-            "coche": "car", "pájaro": "bird", "pez": "fish",
-            "personaje": "character", "caballero": "knight",
+Spanish: {user_prompt}
+English:"""
 
-            # Preposiciones y posición
-            "al lado de": "next to", "junto a": "beside", "cerca de": "near",
-            "encima de": "on top of", "debajo de": "under", "dentro de": "inside",
-            "fuera de": "outside", "entre": "between", "con": "with", "sin": "without",
+            if MULTI_AI_AVAILABLE:
+                service = get_multi_ai_service()
+                result = service.generate_text(translation_prompt, model="gpt-4.1-nano", temperature=0.3)
+                if result["success"]:
+                    prompt_en = result["response"].strip()
+                    # Limpiar respuesta
+                    prompt_en = prompt_en.replace("English:", "").strip()
+                    print(f"[PixelArt] Traducción IA: '{user_prompt}' → '{prompt_en}'")
+                else:
+                    # Fallback a traducción básica
+                    prompt_en = user_prompt
+            else:
+                prompt_en = user_prompt
+        except Exception as e:
+            print(f"[PixelArt] Error en traducción: {e}, usando prompt original")
+            prompt_en = user_prompt
 
-            # Verbos y acciones
-            "sentado": "sitting", "parado": "standing", "caminando": "walking",
-            "volando": "flying", "corriendo": "running",
-        }
+        # Paso 2: Estructurar prompt para pixel art
+        # Extraer elementos clave del prompt en inglés
+        found_colors = []
+        found_objects = []
+        found_position = None
 
-        # Traducir a inglés
-        prompt_en = user_prompt.lower()
-        for es, en in translations.items():
-            prompt_en = prompt_en.replace(es, en)
+        # Detectar colores (lista más completa)
+        color_keywords = ["red", "blue", "green", "yellow", "black", "white", "brown", "gray", "grey", "pink", "purple", "orange", "violet"]
+        for color in color_keywords:
+            if color in prompt_en.lower():
+                found_colors.append(color)
 
-        # Extraer elementos clave
-        elements = []
+        # Detectar objetos comunes
+        object_keywords = ["flower", "house", "cat", "dog", "sun", "moon", "tree", "car", "bird", "fish", "character", "knight", "flower", "rose", "tulip", "car", "tree"]
+        prompt_lower = prompt_en.lower()
+        for obj in object_keywords:
+            if obj in prompt_lower:
+                found_objects.append(obj)
 
-        # Detectar colores
-        colors = ["red", "blue", "green", "yellow", "black", "white", "brown", "gray", "pink", "purple"]
-        found_colors = [c for c in colors if c in prompt_en]
+        # Detectar preposiciones
+        position_keywords = ["next to", "beside", "near", "with", "without", "on top of", "under", "between"]
+        for pos in position_keywords:
+            if pos in prompt_lower:
+                found_position = pos
+                break
 
-        # Detectar objetos
-        objects = ["flower", "house", "cat", "dog", "sun", "moon", "tree", "car", "bird", "fish", "character", "knight"]
-        found_objects = [o for o in objects if o in prompt_en]
-
-        # Detectar posición
-        positions = ["next to", "beside", "near", "on top of", "under", "inside", "outside", "between", "with", "without"]
-        found_position = next((p for p in positions if p in prompt_en), None)
-
-        # Construir prompt optimizado
+        # Paso 3: Construir prompt optimizado
         if found_objects:
+            # Tomar el primer objeto como sujeto principal
             main_subject = found_objects[0]
 
-            # Si hay múltiples objetos, crear composición
+            # Si hay múltiples objetos
             if len(found_objects) > 1:
                 second_object = found_objects[1]
                 if found_position:
@@ -218,21 +228,21 @@ OBJECT COMPOSITION:
             else:
                 optimized = f"A {main_subject}"
 
-            # Agregar colores si existen (específico para cada objeto)
+            # Agregar colores si existen
             if found_colors:
                 colors_str = " and ".join(found_colors)
-                # Si hay un objeto principal y color, especificar cuál es de qué color
                 if len(found_objects) > 1:
-                    optimized = f"A {found_colors[0]} {main_subject} {found_position} a {second_object}"
+                    # Intentar asignar color al primer objeto
+                    optimized = f"A {colors_str} {main_subject} {found_position} a {second_object}"
                 else:
-                    optimized = f"A {found_colors[0]} {main_subject}"
+                    optimized = f"A {colors_str} {main_subject}"
 
-            # Agregar contexto para mejor interpretación
-            optimized += ". Make it clearly visible and centered in the 16x16 grid. Use different shades (digits 1-7) to show details."
+            # Agregar contexto para pixel art
+            optimized += ". Make it clearly visible and centered in the 16x16 grid. Use different shades (digits 1-7) to show depth and details."
 
             return optimized
 
-        # Fallback: usar prompt traducido directamente
+        # Si no podemos extraer objetos, devolver la traducción completa
         return prompt_en
 
     @staticmethod
