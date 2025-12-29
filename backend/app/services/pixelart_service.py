@@ -199,26 +199,50 @@ Now CREATE the pixel art for: "{prompt}"
 Output ONLY the 16 lines of 16 digits each:"""
 
         # Usar multi-proveedor si está disponible, sino fallback a Ollama
-        if MULTI_AI_AVAILABLE:
-            service = get_multi_ai_service()
-            # Usar proveedor configurado en .env (PIXELART_AI_PROVIDER)
-            result = service.generate_text(improved_prompt)
-            if result["success"]:
-                response = result["response"].strip()
-                provider_used = f"{result['provider']}/{result['model']}"
-            else:
-                print(f"[PixelArt] Error con proveedor principal: {result['error']}")
-                # Intentar con fallback
-                result = service.generate_with_fallback(improved_prompt)
-                if result["success"]:
-                    response = result["response"].strip()
-                    provider_used = f"{result['provider']}/{result['model']} (fallback)"
-                else:
-                    print(f"[PixelArt] Todos los proveedores fallaron: {result['error']}")
-                    return {"pixels": ["#000000"] * 1024}
-        else:
-            response = generate_text(improved_prompt).strip()
-            provider_used = "ollama (legacy)"
+        response = None
+        provider_used = "unknown"
+        try:
+            if MULTI_AI_AVAILABLE:
+                service = get_multi_ai_service()
+                # Verificar que haya al menos un proveedor disponible
+                available = service.get_available_providers()
+                has_providers = len(available) > 0
+
+                if has_providers:
+                    # Usar proveedor configurado en .env (PIXELART_AI_PROVIDER)
+                    result = service.generate_text(improved_prompt)
+                    if result["success"]:
+                        response = result["response"].strip()
+                        provider_used = f"{result['provider']}/{result['model']}"
+                    else:
+                        print(f"[PixelArt] Error con proveedor principal: {result['error']}")
+                        # Intentar con fallback
+                        result = service.generate_with_fallback(improved_prompt)
+                        if result["success"]:
+                            response = result["response"].strip()
+                            provider_used = f"{result['provider']}/{result['model']} (fallback)"
+                        else:
+                            print(f"[PixelArt] Todos los proveedores fallaron: {result['error']}")
+
+            # Si multi-AI no disponible o falló, intentar con Ollama
+            if response is None:
+                from app.services.ollama_service import generate_text
+                response = generate_text(improved_prompt).strip()
+                provider_used = "ollama (fallback)"
+
+        except Exception as e:
+            print(f"[PixelArt] Error en generación IA: {e}, intentando Ollama")
+            try:
+                from app.services.ollama_service import generate_text
+                response = generate_text(improved_prompt).strip()
+                provider_used = "ollama (exception fallback)"
+            except Exception as e2:
+                print(f"[PixelArt] Error crítico: {e2}")
+                return {"pixels": ["#000000"] * 1024}
+
+        if response is None:
+            print("[PixelArt] No se pudo generar respuesta, retornando fallback")
+            return {"pixels": ["#000000"] * 1024}
 
         print(f"[PixelArt] Generado con: {provider_used}")
         lines = PixelArtService._parse_grid_response(response)
