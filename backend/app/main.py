@@ -45,13 +45,13 @@ def startup_event():
     print("✅ Base de datos inicializada")
 
 # Rutas
-app.include_router(cv_router, prefix="/api")
-app.include_router(auth_router, prefix="/api")
-app.include_router(cv_community_router, prefix="/api")
-app.include_router(gamification_router, prefix="/api")
-app.include_router(ollama_router, prefix="/api")
-app.include_router(games_router, prefix="/api")
-app.include_router(pixelart_router, prefix="/api")
+app.include_router(cv_router)
+app.include_router(auth_router)
+app.include_router(cv_community_router)
+app.include_router(gamification_router)
+app.include_router(ollama_router)
+app.include_router(games_router)
+app.include_router(pixelart_router)
 
 @app.get("/")
 def root():
