@@ -11,7 +11,8 @@ from fastapi import Depends
 from typing import Optional
 
 # Cargar variables de entorno
-load_dotenv()
+# override=True asegura que las variables del .env sobrescriban variables de entorno existentes
+load_dotenv(override=True)
 
 from app.api.routes_cv import router as cv_router
 from app.api.routes_auth import router as auth_router, get_current_user
