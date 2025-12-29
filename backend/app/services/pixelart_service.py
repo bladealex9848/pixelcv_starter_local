@@ -177,26 +177,47 @@ OBJECT COMPOSITION:
         structure_prompt = PixelArtService._get_structure_prompt(object_type)
         example_lines = PixelArtService._get_example_for_type(object_type)
 
-        improved_prompt = f"""You are creating a 16x16 Pixel Art grid. The user wants: "{prompt}"
+        # Translate Spanish prompts to English for better model compliance
+        prompt_translations = {
+            "retrato": "portrait", "rostro": "face", "cara": "face",
+            "atardecer": "sunset", "amanecer": "sunrise", "paisaje": "landscape",
+            "montaña": "mountain", "mar": "sea", "sol": "sun", "luna": "moon",
+            "caballero": "knight", "personaje": "character", "alien": "alien",
+            "robot": "robot", "casa": "house", "coche": "car", "mesa": "table",
+            "gato": "cat", "perro": "dog", "pájaro": "bird", "pez": "fish",
+            "pizza": "pizza", "manzana": "apple", "café": "coffee",
+        }
 
-COLOR PALETTE (use ONLY digits 0-7):
-0=Black/Background  1=Skin/Light tones  2=Blue/Cool colors  3=White/Bright
-4=Brown/Dark tones  5=Gray/Metal  6=Orange/Accent  7=Shadow
+        prompt_en = prompt
+        for es, en in prompt_translations.items():
+            prompt_en = prompt_en.replace(es, en)
 
-{structure_prompt}
+        # Ultra-minimalist prompt - models struggle with long instructions
+        improved_prompt = f"""Generate a 16x16 pixel art grid using digits 0-7.
 
-CRITICAL OUTPUT RULES:
-1. Output EXACTLY 16 lines
-2. Each line MUST have EXACTLY 16 characters
-3. Use ONLY digits 0-7, nothing else
-4. NO explanations, NO text before or after
-5. Make it recognizable as: {prompt}
+Subject: {prompt_en}
 
-FORMAT EXAMPLE (abstract, showing 16x16 structure):
-{chr(10).join(example_lines)}
+Output format (16 lines, 16 digits each):
+```
+0000000000000000
+0000111100000000
+0001122110000000
+0011122221000000
+0011122222110000
+0001122222210000
+0000111111100000
+0000111111100000
+0000011111000000
+0000011111000000
+0000001110000000
+0000001110000000
+0000001100000000
+0000000000000000
+0000000000000000
+0000000000000000
+```
 
-Now CREATE the pixel art for: "{prompt}"
-Output ONLY the 16 lines of 16 digits each:"""
+Your task: Create the 16x16 grid for "{prompt_en}". Output ONLY the grid."""
 
         # Usar multi-proveedor si está disponible, sino fallback a Ollama
         response = None

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Servicio Multi-Proveedor de IA para PixelCV
-Soporta: Ollama, OpenRouter, Groq, DeepSeek, Together, DeepInfra, Mistral
+Soporta: Ollama, OpenRouter, Groq, DeepSeek, Together, DeepInfra, Mistral, OpenAI
 """
 import os
 import requests
@@ -18,6 +18,7 @@ class AIProvider(Enum):
     TOGETHER = "together"
     DEEPINFRA = "deepinfra"
     MISTRAL = "mistral"
+    OPENAI = "openai"
 
 
 @dataclass
@@ -34,6 +35,8 @@ class MultiAIService:
     """Servicio unificado para múltiples proveedores de IA"""
 
     # Modelos recomendados por proveedor para tareas de formato estructurado
+    # NOTA: gpt-5-nano es un modelo de razonamiento que consume todos los tokens en pensamiento interno.
+    # Para Pixel Art y tareas de formato estructurado, usar gpt-4.1-nano en su lugar.
     RECOMMENDED_MODELS = {
         AIProvider.OLLAMA: ["phi3.5:latest", "gemma3:1b", "qwen3:1.7b"],
         AIProvider.OPENROUTER: [
@@ -48,6 +51,7 @@ class MultiAIService:
         ],
         AIProvider.DEEPINFRA: ["nvidia/Llama-3.3-Nemotron-Super-49B-v1.5"],
         AIProvider.MISTRAL: ["mistral-small-latest"],
+        AIProvider.OPENAI: ["gpt-4.1-nano", "gpt-4o-mini"],  # gpt-5-nano NO recomendado para Pixel Art
     }
 
     def __init__(self):
@@ -124,6 +128,16 @@ class MultiAIService:
                 base_url=os.getenv("MISTRAL_BASE_URL", "https://api.mistral.ai/v1"),
                 api_key=os.getenv("MISTRAL_API_KEY"),
                 default_model="mistral-small-latest",
+                timeout=60,
+            )
+
+        # OpenAI
+        if os.getenv("OPENAI_API_KEY"):
+            providers[AIProvider.OPENAI] = ProviderConfig(
+                name="OpenAI",
+                base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                api_key=os.getenv("OPENAI_API_KEY"),
+                default_model="gpt-4.1-nano",  # gpt-5-nano NO recomendado para Pixel Art
                 timeout=60,
             )
 
@@ -229,10 +243,25 @@ class MultiAIService:
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": temperature,
-            "max_tokens": max_tokens,
             "stream": False,
         }
+
+        # GPT-5, o1 y o3 tienen restricciones especiales:
+        # - Usan max_completion_tokens en lugar de max_tokens
+        # - No soportan temperature diferente de 1
+        is_restricted_model = (
+            model.startswith("gpt-5") or
+            model.startswith("o1") or
+            model.startswith("o3") or
+            model.startswith("o3-")
+        )
+
+        if is_restricted_model:
+            payload["max_completion_tokens"] = max_tokens
+            # No agregar temperature (usa default=1)
+        else:
+            payload["max_tokens"] = max_tokens
+            payload["temperature"] = temperature
 
         resp = requests.post(url, json=payload, headers=headers, timeout=config.timeout)
         resp.raise_for_status()
