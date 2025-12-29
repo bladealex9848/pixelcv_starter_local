@@ -10,12 +10,40 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (token && userData) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
-    }
+    const loadUser = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      if (token && userData) {
+        setIsAuthenticated(true);
+        setUser(JSON.parse(userData));
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    // Cargar usuario inicial
+    loadUser();
+
+    // Escuchar cambios en localStorage (cuando se actualiza desde otra pestaña/componente)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'token') {
+        loadUser();
+      }
+    };
+
+    // También escuchar eventos personalizados para actualizaciones locales
+    const handleUserUpdate = () => {
+      loadUser();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('user-updated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('user-updated', handleUserUpdate);
+    };
   }, [pathname]);
 
   const handleLogout = () => {

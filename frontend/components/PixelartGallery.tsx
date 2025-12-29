@@ -102,7 +102,10 @@ export default function PixelartGallery() {
           user.avatar_url = dataUrl;
           localStorage.setItem('user', JSON.stringify(user));
         }
-        setTimeout(() => window.location.reload(), 1500);
+        // Disparar evento personalizado para actualizar el Navbar
+        window.dispatchEvent(new Event('user-updated'));
+        // Cerrar el mensaje de éxito después de 2 segundos
+        setTimeout(() => setSuccessMessage(null), 2000);
       } else {
         const errorData = await res.json().catch(() => ({}));
         setErrorMessage(errorData.detail || 'Error al actualizar el avatar');
