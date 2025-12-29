@@ -156,10 +156,90 @@ OBJECT COMPOSITION:
         return abstract_example
 
     @staticmethod
+    def _optimize_prompt(user_prompt: str) -> str:
+        """
+        Optimiza el prompt del usuario para mejor generación de pixel art.
+        Traduce, simplifica y estructura el prompt para máxima claridad.
+        """
+        # Traducciones básicas español → inglés
+        translations = {
+            # Colores
+            "rojo": "red", "roja": "red", "azul": "blue", "verde": "green",
+            "amarillo": "yellow", "negro": "black", "blanco": "white",
+            "marrón": "brown", "gris": "gray", "rosa": "pink", "púrpura": "purple",
+
+            # Objetos
+            "flor": "flower", "casa": "house", "gato": "cat", "perro": "dog",
+            "sol": "sun", "luna": "moon", "árbol": "tree", "arbol": "tree",
+            "coche": "car", "pájaro": "bird", "pez": "fish",
+            "personaje": "character", "caballero": "knight",
+
+            # Preposiciones y posición
+            "al lado de": "next to", "junto a": "beside", "cerca de": "near",
+            "encima de": "on top of", "debajo de": "under", "dentro de": "inside",
+            "fuera de": "outside", "entre": "between", "con": "with", "sin": "without",
+
+            # Verbos y acciones
+            "sentado": "sitting", "parado": "standing", "caminando": "walking",
+            "volando": "flying", "corriendo": "running",
+        }
+
+        # Traducir a inglés
+        prompt_en = user_prompt.lower()
+        for es, en in translations.items():
+            prompt_en = prompt_en.replace(es, en)
+
+        # Extraer elementos clave
+        elements = []
+
+        # Detectar colores
+        colors = ["red", "blue", "green", "yellow", "black", "white", "brown", "gray", "pink", "purple"]
+        found_colors = [c for c in colors if c in prompt_en]
+
+        # Detectar objetos
+        objects = ["flower", "house", "cat", "dog", "sun", "moon", "tree", "car", "bird", "fish", "character", "knight"]
+        found_objects = [o for o in objects if o in prompt_en]
+
+        # Detectar posición
+        positions = ["next to", "beside", "near", "on top of", "under", "inside", "outside", "between", "with", "without"]
+        found_position = next((p for p in positions if p in prompt_en), None)
+
+        # Construir prompt optimizado
+        if found_objects:
+            main_subject = found_objects[0]
+
+            # Si hay múltiples objetos, crear composición
+            if len(found_objects) > 1:
+                second_object = found_objects[1]
+                if found_position:
+                    optimized = f"A {main_subject} {found_position} a {second_object}"
+                else:
+                    optimized = f"A {main_subject} and a {second_object}"
+            else:
+                optimized = f"A {main_subject}"
+
+            # Agregar colores si existen (específico para cada objeto)
+            if found_colors:
+                colors_str = " and ".join(found_colors)
+                # Si hay un objeto principal y color, especificar cuál es de qué color
+                if len(found_objects) > 1:
+                    optimized = f"A {found_colors[0]} {main_subject} {found_position} a {second_object}"
+                else:
+                    optimized = f"A {found_colors[0]} {main_subject}"
+
+            # Agregar contexto para mejor interpretación
+            optimized += ". Make it clearly visible and centered in the 16x16 grid. Use different shades (digits 1-7) to show details."
+
+            return optimized
+
+        # Fallback: usar prompt traducido directamente
+        return prompt_en
+
+    @staticmethod
     def generate_with_ai(prompt: str) -> dict:
         """
-        Usa IA multi-proveedor (Groq por defecto) para generar una cuadrícula de 16x16.
-        Permite TOTAL libertad creativa - solo define formato y paleta.
+        Usa IA multi-proveedor para generar una cuadrícula de 16x16.
+        Optimiza automáticamente el prompt del usuario para mejor resultado.
         """
         palette_map = {
             "0": "#000000", # Fondo / Negro
@@ -172,12 +252,17 @@ OBJECT COMPOSITION:
             "7": "#2F4F4F"  # Sombra / Gris oscuro
         }
 
+        # Optimizar prompt del usuario (traducir, simplificar, estructurar)
+        print(f"[PixelArt] Prompt original: {prompt}")
+        optimized_prompt = PixelArtService._optimize_prompt(prompt)
+        print(f"[PixelArt] Prompt optimizado: {optimized_prompt}")
+
         # Obtener sugerencias leves de composición (NO reglas)
-        object_type = PixelArtService._detect_object_type(prompt)
+        object_type = PixelArtService._detect_object_type(optimized_prompt)
         structure_prompt = PixelArtService._get_structure_prompt(object_type)
         example_lines = PixelArtService._get_example_for_type(object_type)
 
-        # Translate Spanish prompts to English for better model compliance
+        # Translate Spanish prompts to English for better model compliance (como fallback)
         prompt_translations = {
             "retrato": "portrait", "rostro": "face", "cara": "face",
             "atardecer": "sunset", "amanecer": "sunrise", "paisaje": "landscape",
@@ -190,7 +275,8 @@ OBJECT COMPOSITION:
             "verde": "green", "rojo": "red", "amarillo": "yellow",
         }
 
-        prompt_en = prompt
+        # Aplicar traducciones restantes como fallback
+        prompt_en = optimized_prompt
         for es, en in prompt_translations.items():
             prompt_en = prompt_en.replace(es, en)
 
