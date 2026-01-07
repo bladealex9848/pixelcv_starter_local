@@ -17,8 +17,11 @@ pytest                               # Ejecutar tests
 cd frontend
 npm install                          # Instalar dependencias
 npm run dev                          # Iniciar servidor (puerto 3000)
-npm run build                        # Build producción
+npm run build                        # Build producción (puede fallar con Turbopack)
+npx next build --webpack             # Build con Webpack (recomendado en producción)
 ```
+
+**Nota importante**: En Next.js 16.x, Turbopack puede tener bugs. Usar `--webpack` para builds estables.
 
 ### Scripts de Utilidad
 ```bash
@@ -91,6 +94,39 @@ Frontend (`frontend/.env.local`):
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
+
+## Producción (VPS)
+
+### URLs de Producción
+- **Frontend**: https://pixelcv.alexanderoviedofadul.dev (puerto 5180)
+- **Backend API**: https://pixelcv.alexanderoviedofadul.dev/api (puerto 8000)
+- **Documentación API**: https://pixelcv.alexanderoviedofadul.dev/docs
+
+### Gestión del Servicio
+```bash
+systemctl start pixelcv-backend      # Iniciar
+systemctl stop pixelcv-backend       # Detener
+systemctl restart pixelcv-backend    # Reiniciar
+systemctl status pixelcv-backend     # Estado
+```
+
+### Logs
+```bash
+tail -f /root/logs/pixelcv-backend.log   # Logs del backend
+tail -f /root/logs/pixelcv-frontend.log  # Logs del frontend
+```
+
+### Restricciones Importantes
+
+1. **NO usar `output: 'standalone'`** en `next.config.js` a menos que se modifique el script de inicio para usar `node .next/standalone/server.js`
+
+2. **Build con Webpack**: Turbopack tiene bugs en Next.js 16.x. Usar siempre:
+   ```bash
+   npx next build --webpack
+   ```
+
+3. **Variables de entorno en producción**:
+   - Frontend: `.env.local` con `NEXT_PUBLIC_API_URL=https://pixelcv.alexanderoviedofadul.dev/api`
 
 ## Convenciones
 

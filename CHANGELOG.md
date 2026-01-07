@@ -2,6 +2,23 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
+## [2.4.7] - 2026-01-07
+
+### Corregido
+
+- **Frontend - Internal Server Error en Rutas Dinámicas:** Solucionado error crítico que causaba HTTP 500 en todas las rutas dinámicas:
+  - **Problema:** `next.config.js` tenía `output: 'standalone'` pero el servidor se iniciaba con `next start`, lo cual es incompatible en Next.js 16.1.1
+  - **Síntomas:** Las URLs `/cv/[slug]` y `/games/[game]` devolvían "Internal Server Error"
+  - **Solución:** Eliminada configuración `output: 'standalone'` de `next.config.js`
+  - **Build:** Usado `--webpack` en lugar de Turbopack debido a bug de panic
+  - **Resultado:** Todas las rutas dinámicas funcionan correctamente
+
+### Documentación
+
+- Añadido reporte de incidente en `docs/incidents/2026-01-07-NEXTJS-STANDALONE-ERROR.md`
+
+---
+
 ## [2.4.6] - 2024-12-24
 
 ### Añadido 🆕

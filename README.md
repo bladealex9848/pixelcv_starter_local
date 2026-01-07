@@ -6,7 +6,7 @@
 
 > 🚀 Plataforma moderna para crear, compartir y gamificar CVs con RenderCV e Inteligencia Artificial Local (Ollama).
 
-![PixelCV](https://img.shields.io/badge/Version-2.4.0-purple)
+![PixelCV](https://img.shields.io/badge/Version-2.4.7-purple)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Node](https://img.shields.io/badge/Node.js-18+-green)
