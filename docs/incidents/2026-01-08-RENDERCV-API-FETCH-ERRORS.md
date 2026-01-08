@@ -72,6 +72,59 @@ TurbopackInternalError: Dependency tracking is disabled so invalidation is not a
 
 ---
 
+## Problema 3: Error 404/500 en Páginas Dinámicas (SSR)
+
+### Síntomas
+- Error 404 al acceder a `/community/pixelart/[id]`
+- Error 500 después de primera corrección (contenido se renderizaba pero con código de error)
+- Las páginas de CVs públicos también afectadas
+
+### Causa Raíz
+
+**Problema A - URL Relativa en SSR**:
+- `process.env.NEXT_PUBLIC_API_URL` estaba configurado como `/api` (relativo)
+- En Server-Side Rendering, las URLs relativas no tienen host base
+- El fetch a `/api/pixelart/` fallaba silenciosamente → `null` → `notFound()` → 404
+
+**Problema B - onClick en Server Component**:
+- El botón "Compartir" tenía un `onClick` handler en un Server Component
+- Los event handlers no son serializables en RSC
+- Next.js lanzaba error interno → 500 (aunque renderizaba el contenido)
+
+### Solución
+
+1. **URLs absolutas en SSR**:
+   ```typescript
+   // En Server Components, usar URL interna directa
+   const isServer = typeof window === 'undefined'
+   const baseUrl = isServer
+     ? 'http://localhost:8000'
+     : (process.env.NEXT_PUBLIC_API_URL || '/api')
+   ```
+
+2. **Extraer interactividad a Client Component**:
+   ```typescript
+   // ShareButton.tsx - Nuevo archivo con "use client"
+   'use client'
+   export default function ShareButton({ title, author, id }) {
+     const handleShare = () => { /* ... */ }
+     return <button onClick={handleShare}>Compartir</button>
+   }
+   ```
+
+### Archivos Modificados
+- `frontend/app/community/pixelart/[id]/page.tsx` - Usar URL absoluta en SSR
+- `frontend/app/community/pixelart/[id]/ShareButton.tsx` - Nuevo Client Component
+- `frontend/app/cv/[slug]/page.tsx` - Usar URL absoluta en SSR
+
+### Lección Clave
+**En Next.js App Router**:
+- Server Components NO pueden tener event handlers (`onClick`, `onChange`, etc.)
+- Las URLs relativas NO funcionan en SSR (no hay host de referencia)
+- Usar `"use client"` solo para la interactividad mínima necesaria
+
+---
+
 ## Verificación Post-Resolución
 
 ### Backend
@@ -109,7 +162,9 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5180/
 1. **Dependencias explícitas**: Todas las dependencias deben estar en `pyproject.toml`, no solo en scripts de instalación manual
 2. **Validación temprana**: Agregar verificaciones al inicio de funciones críticas con mensajes de error claros
 3. **Turbopack**: Evitar en producción hasta que Next.js 16.x sea más estable
-4. **Multi-dominio**: La URL relativa `/api` funciona correctamente para todos los dominios gracias al proxy de Caddy
+4. **Multi-dominio**: La URL relativa `/api` funciona en cliente pero NO en SSR
+5. **SSR y URLs**: Usar URLs absolutas (`http://localhost:8000`) en Server Components
+6. **RSC y Eventos**: Nunca poner `onClick`/`onChange` en Server Components - extraer a Client Components
 
 ---
 
@@ -137,8 +192,15 @@ journalctl -u pixelcv -f
 
 | Hora (UTC) | Evento |
 |------------|--------|
-| ~23:00 | Usuario reporta errores en pixelcv.fundetec.cloud |
+| ~23:00 | Usuario reporta error RenderCV en pixelcv.fundetec.cloud |
 | 23:25 | Investigación completada, causa raíz identificada |
 | 23:30 | Dependencia RenderCV agregada, backend reiniciado |
 | 23:31 | Frontend rebuildeado con Webpack y reiniciado |
-| 23:32 | Verificación exitosa, incidente cerrado |
+| 23:32 | Verificación inicial exitosa |
+| 23:45 | Usuario reporta error 404 en página de pixelart |
+| 23:48 | Identificado problema de URL relativa en SSR |
+| 23:50 | Primera corrección (URL absoluta en SSR) - Error cambia a 500 |
+| 23:52 | Identificado onClick en Server Component como causa del 500 |
+| 23:55 | Creado ShareButton Client Component |
+| 23:57 | Rebuild y verificación final - 200 OK |
+| 23:58 | Incidente cerrado, documentación actualizada

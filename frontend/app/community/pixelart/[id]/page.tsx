@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import ShareButton from './ShareButton'
 
 interface PixelartData {
   id: string
@@ -21,7 +22,11 @@ interface PixelartData {
  */
 async function getPixelart(id: string): Promise<PixelartData | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    // En SSR usamos URL interna directa (localhost), en cliente usamos la relativa
+    const isServer = typeof window === 'undefined'
+    const baseUrl = isServer
+      ? 'http://localhost:8000'
+      : (process.env.NEXT_PUBLIC_API_URL || '/api')
     const res = await fetch(`${baseUrl}/pixelart/`, { cache: 'no-store' })
     if (!res.ok) return null
 
@@ -163,20 +168,7 @@ export default async function PixelartPage({
           >
             ← Volver a Galería
           </a>
-          <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: pixelart.title,
-                  text: `Mira este PixelArt de ${pixelart.author}`,
-                  url: `${typeof window !== 'undefined' ? window.location.origin : ''}/community/pixelart/${id}`
-                })
-              }
-            }}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-3 uppercase text-sm transition-all"
-          >
-            Compartir
-          </button>
+          <ShareButton title={pixelart.title} author={pixelart.author} id={id} />
         </div>
       </div>
     </div>

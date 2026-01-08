@@ -4,7 +4,9 @@ import CVClientWrapper from './CVClientWrapper'
 
 // Función para obtener datos del CV
 async function getCV(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  // En SSR usamos URL interna directa (localhost)
+  // Esta función solo se ejecuta en el servidor (Server Component)
+  const baseUrl = 'http://localhost:8000'
   const res = await fetch(`${baseUrl}/community/public/${slug}`, {
     cache: 'no-store'
   })
