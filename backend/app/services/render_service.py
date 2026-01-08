@@ -5,6 +5,14 @@ import os, subprocess, pathlib, shutil
 ART_DIR = os.getenv("PIXELCV_STORAGE", "./backend/app/static/artefactos")
 
 def render_cv(yaml_text: str, cv_id: str, formats=("pdf",)) -> dict:
+    # Verificar que rendercv está instalado en el sistema
+    if not shutil.which("rendercv"):
+        raise RuntimeError(
+            "RenderCV no está instalado en el sistema. "
+            "Ejecute: uv add 'rendercv[full]' && uv sync en el directorio backend. "
+            "Más info: https://docs.rendercv.com/user_guide/installation/"
+        )
+
     # Usar path absoluto
     base_dir = pathlib.Path(ART_DIR).resolve() / cv_id
     base_dir.mkdir(parents=True, exist_ok=True)

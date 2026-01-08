@@ -16,6 +16,7 @@ dependencies = [
   "requests",
   "email-validator",
   "pillow",
+  "rendercv[full]>=1.0.0",
 ]
 
 [tool.uv]
