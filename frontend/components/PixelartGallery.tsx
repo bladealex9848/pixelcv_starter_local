@@ -214,15 +214,17 @@ export default function PixelartGallery() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {pieces.map((piece) => (
         <div key={piece.id} className="bg-black border-2 border-orange-900/50 p-4 hover:border-orange-500 transition-all group">
-          {/* Preview */}
-          <div 
-            className="grid grid-cols-32 gap-0 w-full aspect-square border border-gray-800"
-            style={{ gridTemplateColumns: 'repeat(32, 1fr)' }}
-          >
-            {piece.pixels.pixels.map((color, i) => (
-              <div key={i} style={{ backgroundColor: color }} className="w-full h-full" />
-            ))}
-          </div>
+          {/* Preview - Clickable */}
+          <a href={`/community/pixelart/${piece.id}`}>
+            <div
+              className="grid grid-cols-32 gap-0 w-full aspect-square border border-gray-800 hover:border-orange-500 transition-colors cursor-pointer"
+              style={{ gridTemplateColumns: 'repeat(32, 1fr)' }}
+            >
+              {piece.pixels.pixels.map((color, i) => (
+                <div key={i} style={{ backgroundColor: color }} className="w-full h-full" />
+              ))}
+            </div>
+          </a>
           
           <div className="mt-4 space-y-2">
             <h3 className="text-orange-400 font-black uppercase truncate">{piece.title}</h3>

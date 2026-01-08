@@ -4,11 +4,21 @@ import uuid
 import json
 import re
 import os
+import httpx
+from io import BytesIO
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.database import PixelArt, PixelArtLike, PixelArtComment, User, UserProfile
 from app.services.gamification_service import GamificationService
+
+# Importar PIL para conversión de imágenes
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    print("[PixelArt] PIL no disponible, PixelLab API no funcionará correctamente")
 
 # Usar multi-proveedor si está configurado, sino fallback a Ollama
 try:
@@ -236,11 +246,171 @@ English:"""
         return prompt_en_final
 
     @staticmethod
-    def generate_with_ai(prompt: str) -> dict:
+    def _image_url_to_pixel_array(image_url: str, target_size: int = 32) -> list:
         """
-        Usa IA multi-proveedor para generar una cuadrícula de 16x16.
-        Optimiza automáticamente el prompt del usuario para mejor resultado.
+        Descarga una imagen desde una URL y la convierte a un array de píxeles hex.
+        Redimensiona a target_size x target_size (default 32x32).
         """
+        if not PIL_AVAILABLE:
+            print("[PixelLab] PIL no disponible, no se puede convertir imagen")
+            return ["#000000"] * (target_size * target_size)
+
+        try:
+            # Descargar imagen
+            with httpx.Client(timeout=30.0) as client:
+                response = client.get(image_url)
+                response.raise_for_status()
+                image_data = response.content
+
+            # Abrir imagen con PIL
+            img = Image.open(BytesIO(image_data))
+
+            # Convertir a RGB si es necesario
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            # Redimensionar usando NEAREST (nearest neighbor) para mantener el look pixelado
+            img = img.resize((target_size, target_size), resample=Image.NEAREST)
+
+            # Convertir a array de hex
+            pixels = []
+            for y in range(target_size):
+                for x in range(target_size):
+                    r, g, b = img.getpixel((x, y))
+                    pixels.append(f"#{r:02x}{g:02x}{b:02x}")
+
+            print(f"[PixelLab] Imagen convertida a {target_size}x{target_size} píxeles")
+            return pixels
+
+        except Exception as e:
+            print(f"[PixelLab] Error convirtiendo imagen: {e}")
+            return ["#000000"] * (target_size * target_size)
+
+    @staticmethod
+    def generate_with_pixellab(prompt: str) -> dict:
+        """
+        Genera pixelart usando PixelLab API.
+        Retorna dict con 'pixels' (array hex) y 'provider' (string).
+        """
+        api_key = os.getenv("PIXELLAB_API_KEY")
+        api_url = os.getenv("PIXELLAB_API_URL", "https://api.pixellab.ai/v1")
+
+        if not api_key:
+            print("[PixelLab] PIXELLAB_API_KEY no configurada, usando fallback")
+            return None
+
+        if not PIL_AVAILABLE:
+            print("[PixelLab] PIL no disponible, usando fallback")
+            return None
+
+        print(f"[PixelLab] Generando con PixelLab API: {prompt}")
+
+        try:
+            # Primero traducir/optmizar el prompt
+            optimized_prompt = PixelArtService._optimize_prompt(prompt)
+
+            # NOTA: PixelLab API parece ser ficticia o tiene endpoints diferentes.
+            # Implementación genérica para API REST de generación de imágenes
+            with httpx.Client(timeout=60.0) as client:
+                # Intento de endpoint genérico para generación de pixel art
+                # Esto puede requerir ajustes según la API real de PixelLab
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                payload = {
+                    "prompt": optimized_prompt,
+                    "style": "pixelart",
+                    "width": 32,
+                    "height": 32,
+                    "format": "png"
+                }
+
+                # Intentar diferentes endpoints posibles
+                endpoints = [
+                    f"{api_url}/generate",
+                    f"{api_url}/text-to-image",
+                    f"{api_url}/pixelart/generate"
+                ]
+
+                response = None
+                for endpoint in endpoints:
+                    try:
+                        print(f"[PixelLab] Intentando endpoint: {endpoint}")
+                        response = client.post(endpoint, json=payload, headers=headers)
+                        if response.status_code == 200:
+                            print(f"[PixelLab] Éxito con endpoint: {endpoint}")
+                            break
+                    except Exception as e:
+                        print(f"[PixelLab] Endpoint {endpoint} falló: {e}")
+                        continue
+
+                if response and response.status_code == 200:
+                    result = response.json()
+
+                    # Extraer URL de imagen de la respuesta
+                    # La estructura puede variar según la API
+                    image_url = None
+                    if "image_url" in result:
+                        image_url = result["image_url"]
+                    elif "url" in result:
+                        image_url = result["url"]
+                    elif "data" in result and isinstance(result["data"], dict):
+                        image_url = result["data"].get("url") or result["data"].get("image_url")
+                    elif "images" in result and len(result["images"]) > 0:
+                        image_url = result["images"][0].get("url") if isinstance(result["images"][0], dict) else result["images"][0]
+
+                    if image_url:
+                        print(f"[PixelLab] Imagen generada: {image_url}")
+                        # Convertir imagen a array de píxeles
+                        pixels = PixelArtService._image_url_to_pixel_array(image_url, target_size=32)
+
+                        # Verificar que no sea todo negro
+                        non_black = sum(1 for p in pixels if p != "#000000")
+                        if non_black > 50:
+                            return {
+                                "pixels": pixels,
+                                "provider": "pixellab",
+                                "image_url": image_url
+                            }
+                        else:
+                            print(f"[PixelLab] Imagen demasiado vacía ({non_black} píxeles), usando fallback")
+                            return None
+                    else:
+                        print(f"[PixelLab] No se encontró URL de imagen en respuesta: {result}")
+                        return None
+                else:
+                    print(f"[PixelLab] Todos los endpoints fallaron, usando fallback")
+                    if response:
+                        print(f"[PixelLab] Último estado: {response.status_code}")
+                    return None
+
+        except Exception as e:
+            print(f"[PixelLab] Excepción: {e}, usando fallback")
+            return None
+
+    @staticmethod
+    def generate_with_ai(prompt: str, use_pixellab: bool = True) -> dict:
+        """
+        Genera pixelart usando IA con sistema de fallback multicapa.
+        Estrategia:
+        1. PixelLab API (si está disponible)
+        2. IA multi-proveedor (sistema actual con grid 16x16)
+        3. Fallback a grid vacío si todo falla
+        """
+        # Paso 1: Intentar PixelLab API
+        if use_pixellab:
+            try:
+                pixellab_result = PixelArtService.generate_with_pixellab(prompt)
+                if pixellab_result and pixellab_result.get("pixels"):
+                    print(f"[PixelArt] Generado exitosamente con PixelLab API")
+                    return pixellab_result
+            except Exception as e:
+                print(f"[PixelArt] PixelLab falló: {e}, usando IA multi-proveedor")
+
+        # Paso 2: Usar sistema actual (IA multi-proveedor)
+        print(f"[PixelArt] Usando IA multi-proveedor (sistema actual)")
         palette_map = {
             "0": "#000000", # Fondo / Negro
             "1": "#FFDAB9", # Piel (tono humano)

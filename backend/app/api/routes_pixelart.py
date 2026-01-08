@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 
 from app.models.database import get_db, PixelArt
 from app.services.pixelart_service import PixelArtService
+from app.services.pixelart_og_service import PixelArtOGService
 from app.api.routes_auth import get_current_user
 
 router = APIRouter(prefix="/pixelart", tags=["pixelart"])
@@ -88,3 +90,31 @@ async def delete_pixel_art(
 ):
     """Elimina una pieza de pixel art (solo el propietario puede)"""
     return PixelArtService.delete_piece(db, piece_id, current_user.id)
+
+@router.get("/{piece_id}/og")
+async def get_pixelart_og_image(
+    piece_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Genera y retorna una imagen Open Graph (1200x630px) del pixelart.
+
+    Útil para compartir en redes sociales (Facebook, Twitter, LinkedIn, WhatsApp).
+    La imagen muestra el pixelart centrado con título y autor.
+
+    Returns:
+        PNG image (1200x630px)
+    """
+    img_bytes = PixelArtOGService.get_pixelart_og_from_db(db, piece_id)
+
+    if img_bytes is None:
+        raise HTTPException(status_code=404, detail="PixelArt no encontrado")
+
+    return Response(
+        content=img_bytes,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=3600, s-maxage=3600",
+            "Content-Disposition": f"inline; filename=pixelart-{piece_id}-og.png"
+        }
+    )

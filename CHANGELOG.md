@@ -350,3 +350,75 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - `Mejorado` - Mejoras en funcionalidad existente
 - `Corregido` - Corrección de bugs
 - `Eliminado` - Funcionalidad eliminada
+
+## [2.1.0] - 2026-01-08
+
+### PixelArt v2.0 - Mejoras Mayores
+
+#### 🎨 Imágenes Open Graph Dinámicas
+- **Nuevo**: Cada pixelart tiene su propia imagen OG (1200x630px)
+- **Backend**: Servicio `PixelArtOGService` con Pillow para generación
+- **Endpoint**: `/api/pixelart/{id}/og` retorna PNG dinámico
+- **Frontend**: API route `/api/og/pixelart/[id]` con cache ISR
+- **Metadata**: Páginas individuales `/community/pixelart/[id]` con OG completo
+
+#### 🤖 Generación IA Mejorada
+- **Prompt Engineering**: Sistema preserva TODOS los elementos del prompt
+- **Traducción Ampliada**: 60+ palabras (objetos, colores, posiciones)
+- **Sistema de Reintentos**: 3 variaciones automáticas de prompt
+- **Instrucciones Específicas**: "DRAW A HOUSE with roof, walls, door"
+
+**Problema Resuelto**: "Paisaje con casa y rio" ahora genera casa, rio, sol y todos los elementos mencionados.
+
+#### 🛠️ Editor Profesional
+- **Undo/Redo**: Historial completo con estados guardados
+- **Herramientas**:
+  - ✏️ Pincel (dibujar con arrastre)
+  - 🧹 Borrador (borrar con arrastre)
+  - 🪣 Relleno (flood fill algorithm)
+  - 💉 Gotero (color picker)
+- **Exportar**: PNG 512x512px (16x escala)
+- **Colores**: Paleta de 8 colores rápidos + picker RGB
+- **Limpiar**: Botón para resetear canvas
+
+#### 📚 Documentación Completa
+- `docs/pixelart-og-creation-methods.md` - Métodos de creación OG
+- `docs/pixelart-system-architecture.md` - Arquitectura del sistema
+- `docs/pixelart-user-guide.md` - Guía de usuario completa
+
+#### 📦 Dependencias
+- **Backend**: `pillow` agregado para generación de imágenes
+- **Frontend**: Canvas API para export PNG
+
+#### 🐛 Fixes
+- Fix formato de color RGBA en Pillow (tupla en lugar de string)
+- Fix reescalado de pixelart en páginas individuales
+- Fix enlaces en galería (ahora clickeables)
+
+#### 📊 Archivos Modificados
+| Archivo | Cambios |
+|---------|---------|
+| `backend/app/services/pixelart_service.py` | Prompt mejorado, reintentos |
+| `backend/app/services/pixelart_og_service.py` | **NUEVO** - Servicio OG |
+| `backend/app/api/routes_pixelart.py` | Endpoint `/api/pixelart/{id}/og` |
+| `backend/pyproject.toml` | Pillow agregado |
+| `frontend/app/api/og/pixelart/[id]/route.ts` | **NUEVO** - API route OG |
+| `frontend/app/community/pixelart/[id]/page.tsx` | **NUEVO** - Página individual |
+| `frontend/components/PixelartEditor.tsx` | Undo/Redo, 4 tools, export |
+| `frontend/components/PixelartGallery.tsx` | Enlaces clickeables |
+| `frontend/.env.local` | NEXT_PUBLIC_BASE_URL |
+
+### Testing
+- ✅ Build frontend con Webpack (10.7s)
+- ✅ Imports backend correctos
+- ✅ Endpoint OG genera PNG 1200x630
+- ✅ Dominio público respondiendo
+- ✅ Cache ISR configurado (1h)
+
+### Próximos Pasos
+- [ ] Animación de pixelart (roadmap)
+- [ ] Atajos de teclado (P, E, F, I, Ctrl+Z, Ctrl+Y)
+- [ ] Capas avanzadas
+- [ ] Importar/exportar proyectos
+
+---

@@ -1,14 +1,91 @@
 # -*- coding: utf-8 -*-
 """Servicio de traducción con contexto para desambiguación de prompts de Pixel Art."""
 import re
+import os
 from typing import Dict, Optional
+
+# Try to import multi-AI service for LLM-based disambiguation
+try:
+    from app.services.multi_ai_service import get_multi_ai_service
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
 
 
 class PixelArtTranslationService:
     """
     Servicio para traducir prompts de español a inglés con detección de contexto.
     Soluciona problemas de ambigüedad como "rosa" (flor vs color).
+
+    Estrategia:
+    1. Método primario: LLM para detectar contexto y desambiguar
+    2. Método fallback: Diccionario estático de palabras ambiguas
     """
+
+    @staticmethod
+    def disambiguate_with_llm(prompt: str) -> Optional[str]:
+        """
+        Usa el LLM para desambiguar palabras problemáticas en el prompt.
+        Retorna el prompt desambiguado o None si falla.
+        """
+        if not LLM_AVAILABLE:
+            return None
+
+        try:
+            disambiguation_prompt = f"""You are a translation assistant for pixel art generation. Your task is to identify and resolve ambiguous Spanish words in prompts.
+
+Analyze this Spanish prompt: "{prompt}"
+
+Common ambiguities to resolve:
+- "rosa" → "rose" (flower) OR "pink" (color)
+- "naranja" → "orange" (color) OR "orange" (fruit) OR "orange blossom" (flower)
+- "café" → "coffee" (drink) OR "brown" (color) OR "cafe" (place)
+- "vino" → "wine" (drink) OR "red wine color" (color)
+
+Determine the correct translation based on CONTEXT:
+- If mentioning petals, plants, garden, bouquet → flower
+- If mentioning color, paint, tone, shade → color
+- If mentioning eat, sweet, fruit → fruit
+- If mentioning drink, cup, glass → drink
+
+Return ONLY the corrected prompt with ambiguous words translated to their specific English meaning. Preserve all other words in Spanish.
+
+Example:
+Input: "Rosa Roja"
+Output: "rose Roja"
+
+Input: "Color rosa para pintar"
+Output: "Color pink para pintar"
+
+Now analyze: "{prompt}"
+
+Output:"""
+
+
+            service = get_multi_ai_service()
+            result = service.generate_text(disambiguation_prompt, model="gpt-4.1-nano", temperature=0.3)
+
+            if result["success"]:
+                disambiguated = result["response"].strip().strip('"').strip("'")
+                # Limpiar posibles prefijos como "Output:"
+                if ":" in disambiguated and len(disambiguated.split(":")) > 1:
+                    disambiguated = disambiguated.split(":", 1)[1].strip()
+
+                if disambiguated and disambiguated != prompt:
+                    print(f"[TranslationLLM] Prompt desambiguado via LLM")
+                    print(f"[TranslationLLM] Original: {prompt}")
+                    print(f"[TranslationLLM] Desambiguado: {disambiguated}")
+                    return disambiguated
+                else:
+                    print(f"[TranslationLLM] LLM no hizo cambios, usando fallback")
+                    return None
+            else:
+                print(f"[TranslationLLM] Error en LLM: {result.get('error', 'unknown')}")
+                return None
+
+        except Exception as e:
+            print(f"[TranslationLLM] Excepción: {e}, usando diccionario fallback")
+            return None
 
     # Diccionario de palabras ambiguas con sus traducciones según contexto
     AMBIGUOUS_WORDS = {
@@ -105,7 +182,23 @@ class PixelArtTranslationService:
     def disambiguate_translation(prompt: str) -> str:
         """
         Desambigua traducciones problemáticas basándose en el contexto.
-        Retorna el prompt con las palabras ambiguas traducidas correctamente.
+        Estrategia:
+        1. Intenta usar LLM para detectar contexto y desambiguar
+        2. Si LLM falla, usa diccionario estático como fallback
+        """
+        # Paso 1: Intentar desambiguación con LLM
+        llm_result = PixelArtTranslationService.disambiguate_with_llm(prompt)
+        if llm_result:
+            return llm_result
+
+        # Paso 2: Fallback a diccionario estático
+        print(f"[TranslationFallback] Usando diccionario estático")
+        return PixelArtTranslationService._disambiguate_with_dict(prompt)
+
+    @staticmethod
+    def _disambiguate_with_dict(prompt: str) -> str:
+        """
+        Fallback: Desambigua usando diccionario estático de reglas.
         """
         prompt_lower = prompt.lower()
         context = PixelArtTranslationService.detect_context(prompt)
@@ -115,7 +208,6 @@ class PixelArtTranslationService:
         if "rosa" in prompt_lower:
             if context["explicit_flower"] or context["has_flowers"]:
                 # Contexto claro de flor → "rose"
-                # Usar regex con word boundaries y manejo de mayúsculas
                 result = re.sub(
                     r"\b[Rr]osa\b",
                     "rose",

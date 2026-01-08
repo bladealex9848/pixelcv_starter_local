@@ -15,6 +15,7 @@ dependencies = [
   "pyyaml",
   "requests",
   "email-validator",
+  "pillow",
 ]
 
 [tool.uv]
