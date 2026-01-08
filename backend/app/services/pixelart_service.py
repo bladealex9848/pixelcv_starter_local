@@ -18,6 +18,14 @@ except ImportError:
     from app.services.ollama_service import generate_text
     MULTI_AI_AVAILABLE = False
 
+# Importar servicio de traducción con contexto
+try:
+    from app.services.pixelart_translation_service import PixelArtTranslationService
+    TRANSLATION_CONTEXT_AVAILABLE = True
+except ImportError:
+    TRANSLATION_CONTEXT_AVAILABLE = False
+    print("[PixelArt] Servicio de traducción con contexto no disponible")
+
 class PixelArtService:
     @staticmethod
     def create_piece(
@@ -159,13 +167,21 @@ OBJECT COMPOSITION:
     def _optimize_prompt(user_prompt: str) -> str:
         """
         Optimiza el prompt del usuario para mejor generación de pixel art.
-        Usa IA para traducir español a inglés y luego estructura el prompt.
+        Mantiene la intención original del usuario sin simplificar.
         """
-        # Paso 1: Traducir a inglés usando IA
+        # Paso 0: Desambiguar palabras problemáticas (rosa, naranja, café, etc.)
+        if TRANSLATION_CONTEXT_AVAILABLE:
+            user_prompt = PixelArtTranslationService.get_translation_with_context(user_prompt)
+
+        # Paso 1: Traducir a inglés usando IA (mejorado para preservar detalles)
         try:
             translation_prompt = f"""Translate the following Spanish text to English.
-Keep it natural and clear for generating pixel art.
-Focus on the main subject, colors, and spatial relationships.
+Keep ALL details from the original text - every object, color, position, and relationship.
+This is for pixel art generation, so preserve:
+- All objects mentioned (house, river, sun, tree, etc.)
+- All colors (blue, red, green, etc.)
+- All positions (next to, under, above, etc.)
+- All descriptive elements (illuminating, shining, etc.)
 
 Spanish: {user_prompt}
 English:"""
@@ -187,63 +203,37 @@ English:"""
             print(f"[PixelArt] Error en traducción: {e}, usando prompt original")
             prompt_en = user_prompt
 
-        # Paso 2: Estructurar prompt para pixel art
-        # Extraer elementos clave del prompt en inglés
-        found_colors = []
-        found_objects = []
-        found_position = None
+        # Paso 2: Aplicar traducciones directas como fallback (ampliada)
+        prompt_translations = {
+            # Objetos
+            "casa": "house", "árbol": "tree", "arbol": "tree", "sol": "sun", "luna": "moon",
+            "río": "river", "rio": "river", "montaña": "mountain", "montana": "mountain",
+            "cielo": "sky", "nube": "cloud", "colina": "hill", "colina": "hill",
+            "flor": "flower", "gato": "cat", "perro": "dog", "pájaro": "bird", "pajaro": "bird",
+            "coche": "car", "barco": "boat", "persona": "person", "niño": "child",
+            "niña": "girl", "nino": "child", "nina": "girl",
 
-        # Detectar colores (lista más completa)
-        color_keywords = ["red", "blue", "green", "yellow", "black", "white", "brown", "gray", "grey", "pink", "purple", "orange", "violet"]
-        for color in color_keywords:
-            if color in prompt_en.lower():
-                found_colors.append(color)
+            # Colores (NOTA: "rosa" se maneja con contexto, no incluir aquí)
+            "azul": "blue", "rojo": "red", "verde": "green", "amarillo": "yellow",
+            "negro": "black", "blanco": "white", "marrón": "brown", "marron": "brown",
+            "naranja": "orange", "púrpura": "purple", "purpura": "purple",
+            "gris": "gray", "grey": "gray",
 
-        # Detectar objetos comunes
-        object_keywords = ["flower", "house", "cat", "dog", "sun", "moon", "tree", "car", "bird", "fish", "character", "knight", "flower", "rose", "tulip", "car", "tree"]
-        prompt_lower = prompt_en.lower()
-        for obj in object_keywords:
-            if obj in prompt_lower:
-                found_objects.append(obj)
+            # Posiciones y relaciones
+            "con": "with", "sin": "without", "debajo de": "under", "sobre": "above",
+            "al lado de": "next to", "entre": "between", "detrás de": "behind",
+            "delante de": "in front of", "cerca de": "near",
 
-        # Detectar preposiciones
-        position_keywords = ["next to", "beside", "near", "with", "without", "on top of", "under", "between"]
-        for pos in position_keywords:
-            if pos in prompt_lower:
-                found_position = pos
-                break
+            # Adjetivos y acciones
+            "iluminando": "illuminating", "brillando": "shining", "grande": "big",
+            "pequeño": "small", "alto": "tall", "bajo": "short",
+        }
 
-        # Paso 3: Construir prompt optimizado
-        if found_objects:
-            # Tomar el primer objeto como sujeto principal
-            main_subject = found_objects[0]
+        prompt_en_final = prompt_en
+        for es, en in prompt_translations.items():
+            prompt_en_final = prompt_en_final.replace(es, en)
 
-            # Si hay múltiples objetos
-            if len(found_objects) > 1:
-                second_object = found_objects[1]
-                if found_position:
-                    optimized = f"A {main_subject} {found_position} a {second_object}"
-                else:
-                    optimized = f"A {main_subject} and a {second_object}"
-            else:
-                optimized = f"A {main_subject}"
-
-            # Agregar colores si existen
-            if found_colors:
-                colors_str = " and ".join(found_colors)
-                if len(found_objects) > 1:
-                    # Intentar asignar color al primer objeto
-                    optimized = f"A {colors_str} {main_subject} {found_position} a {second_object}"
-                else:
-                    optimized = f"A {colors_str} {main_subject}"
-
-            # Agregar contexto para pixel art
-            optimized += ". Make it clearly visible and centered in the 16x16 grid. Use different shades (digits 1-7) to show depth and details."
-
-            return optimized
-
-        # Si no podemos extraer objetos, devolver la traducción completa
-        return prompt_en
+        return prompt_en_final
 
     @staticmethod
     def generate_with_ai(prompt: str) -> dict:
@@ -290,65 +280,113 @@ English:"""
         for es, en in prompt_translations.items():
             prompt_en = prompt_en.replace(es, en)
 
-        # Prompt directo y específico
-        improved_prompt = f"""You are a pixel artist. Create a 16x16 pixel art image of: {prompt_en}
+        # Prompt mejorado con instrucciones específicas de dibujo
+        improved_prompt = f"""You are a pixel artist. Create a 16x16 pixel art image based on this description: {prompt_en}
 
-IMPORTANT: Draw the actual object described in the prompt. For example:
-- If the prompt says "cat", draw a cat shape
-- If it says "house", draw a house shape
-- If it says "river", draw flowing water
+CRITICAL - YOU MUST DRAW EXACTLY WHAT IS DESCRIBED:
+- Every object mentioned must be visible and recognizable
+- If "house" is mentioned, DRAW A HOUSE with roof, walls, door
+- If "river" is mentioned, DRAW A RIVER with flowing water lines
+- If "sun" is mentioned, DRAW A SUN with rays
+- If "tree" is mentioned, DRAW A TREE with trunk and foliage
+- If "sky" is mentioned, use upper rows for sky
+- Preserve ALL elements from the description
 
-Color rules:
-- Use digit 0 for empty/black background
-- Use digits 1-7 to draw the object with different shades
-- Example: for a black cat on black background, use digits 1-7 for the cat's features
-- Use white (3) for highlights, dark gray (7) for shadows
+COLOR PALETTE (digit → meaning):
+0 = Empty/background (black)
+1 = Main color/base
+2 = Secondary color
+3 = White/highlights
+4 = Brown/earth tones
+5 = Gray/metal
+6 = Orange/accent
+7 = Dark gray/shadows
 
-Output format: 16 lines of 16 digits each (only 0-7), no other text
+COMPOSITION TIPS:
+- Use the FULL 16x16 grid efficiently
+- Place main subject in the center
+- Use different digits (1-7) to show depth and details
+- Make each element clearly visible
 
-Draw this: {prompt_en}"""
+OUTPUT FORMAT (STRICT):
+- Exactly 16 lines
+- Each line exactly 16 digits
+- Only use digits 0-7
+- No explanations, no code blocks, no extra text
 
-        # Usar multi-proveedor si está disponible, sino fallback a Ollama
+Your task: Draw the pixel art for: {prompt_en}
+
+Remember: Draw ALL elements mentioned in the description, make them recognizable and clearly visible."""
+
+        # Sistema de reintentos con variaciones de prompt
+        max_retries = 3
+        prompt_variations = [
+            improved_prompt,  # Intento 1: Prompt mejorado original
+            # Intento 2: Prompt más directo y enfocado
+            f"""Create a 16x16 pixel art. DRAW EXACTLY: {prompt_en}
+
+Requirements:
+- Draw EVERY object mentioned
+- Make each object RECOGNIZABLE by its SHAPE
+- Use digits 1-7 for objects, 0 for background
+- 16 lines, 16 digits per line, NO other text
+
+Objects to draw: {prompt_en}""",
+            # Intento 3: Prompt minimalista con énfasis en formas
+            f"""Pixel art 16x16 grid. Draw: {prompt_en}
+
+Use 0 for background, 1-7 for objects.
+Make shapes CLEAR: house=box+triangle, sun=circle+lines, river=wavy lines.
+
+16 lines x 16 digits. Output only digits."""
+        ]
+
         response = None
         provider_used = "unknown"
-        try:
-            if MULTI_AI_AVAILABLE:
-                service = get_multi_ai_service()
-                # Verificar que haya al menos un proveedor disponible
-                available = service.get_available_providers()
-                has_providers = len(available) > 0
 
-                if has_providers:
-                    # Usar proveedor configurado en .env (PIXELART_AI_PROVIDER)
-                    result = service.generate_text(improved_prompt)
-                    if result["success"]:
-                        response = result["response"].strip()
-                        provider_used = f"{result['provider']}/{result['model']}"
-                    else:
-                        print(f"[PixelArt] Error con proveedor principal: {result['error']}")
-                        # Intentar con fallback
-                        result = service.generate_with_fallback(improved_prompt)
+        for attempt in range(max_retries):
+            if attempt > 0:
+                print(f"[PixelArt] Reintento {attempt + 1}/{max_retries} con variación de prompt...")
+
+            current_prompt = prompt_variations[min(attempt, len(prompt_variations) - 1)]
+
+            try:
+                if MULTI_AI_AVAILABLE:
+                    service = get_multi_ai_service()
+                    available = service.get_available_providers()
+                    has_providers = len(available) > 0
+
+                    if has_providers:
+                        result = service.generate_text(current_prompt)
                         if result["success"]:
                             response = result["response"].strip()
-                            provider_used = f"{result['provider']}/{result['model']} (fallback)"
+                            provider_used = f"{result['provider']}/{result['model']}"
+                            break  # Éxito, salir del loop
                         else:
-                            print(f"[PixelArt] Todos los proveedores fallaron: {result['error']}")
+                            print(f"[PixelArt] Intento {attempt + 1}: {result['error']}")
+                            # Intentar con fallback en este reintento
+                            result = service.generate_with_fallback(current_prompt)
+                            if result["success"]:
+                                response = result["response"].strip()
+                                provider_used = f"{result['provider']}/{result['model']} (fallback)"
+                                break
+                            else:
+                                print(f"[PixelArt] Intento {attempt + 1} fallback también falló")
+                                continue  # Siguiente reintento
 
-            # Si multi-AI no disponible o falló, intentar con Ollama
-            if response is None:
-                from app.services.ollama_service import generate_text
-                response = generate_text(improved_prompt).strip()
-                provider_used = "ollama (fallback)"
+                # Si multi-AI no disponible, intentar Ollama
+                if response is None:
+                    from app.services.ollama_service import generate_text
+                    response = generate_text(current_prompt).strip()
+                    provider_used = "ollama (fallback)"
+                    break
 
-        except Exception as e:
-            print(f"[PixelArt] Error en generación IA: {e}, intentando Ollama")
-            try:
-                from app.services.ollama_service import generate_text
-                response = generate_text(improved_prompt).strip()
-                provider_used = "ollama (exception fallback)"
-            except Exception as e2:
-                print(f"[PixelArt] Error crítico: {e2}")
-                return {"pixels": ["#000000"] * 1024}
+            except Exception as e:
+                print(f"[PixelArt] Error en intento {attempt + 1}: {e}")
+                if attempt == max_retries - 1:
+                    # Último intento falló
+                    print(f"[PixelArt] Todos los reintentos fallaron")
+                    return {"pixels": ["#000000"] * 1024}
 
         if response is None:
             print("[PixelArt] No se pudo generar respuesta, retornando fallback")
