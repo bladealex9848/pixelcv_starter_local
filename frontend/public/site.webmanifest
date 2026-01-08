@@ -1,0 +1,17 @@
+{
+  "name": "PixelCV - Crea CVs Profesionales con IA",
+  "short_name": "PixelCV",
+  "description": "Plataforma para crear CVs profesionales con IA y gamificación",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#14b8a6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
