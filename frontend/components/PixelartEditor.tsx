@@ -1,12 +1,32 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import PixelartVariantSelector from './PixelartVariantSelector';
 
 type Tool = 'pencil' | 'eraser' | 'fill' | 'picker';
 
 interface HistoryState {
   pixels: string[];
   title: string;
+}
+
+interface PixelArtVariant {
+  pixels: string[];
+  provider: string;
+  source?: string;
+  index: number;
+  prompt_used: string;
+  validation?: {
+    is_valid: boolean;
+    confidence: number;
+    metrics: {
+      colored_pixels: number;
+      colored_percentage: number;
+      unique_colors: number;
+      balance: number;
+      complexity: number;
+    };
+  };
 }
 
 export default function PixelartEditor() {
@@ -16,6 +36,8 @@ export default function PixelartEditor() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [prompt, setPrompt] = useState('');
+  const [variants, setVariants] = useState<PixelArtVariant[]>([]);
+  const [showVariantSelector, setShowVariantSelector] = useState(false);
 
   // Nuevos estados
   const [currentTool, setCurrentTool] = useState<Tool>('pencil');
@@ -191,13 +213,31 @@ export default function PixelartEditor() {
     if (!prompt) return;
     setIsGenerating(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pixelart/generate`, {
+      // Usar el endpoint de generación múltiple
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pixelart/generate-multiple`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({
+          prompt,
+          count: 3,
+          select_best: true
+        })
       });
       const data = await res.json();
-      if (data.pixels) {
+
+      if (data.variants && data.variants.length > 0) {
+        // Mostrar selector de variantes
+        setVariants(data.variants);
+        setShowVariantSelector(true);
+
+        // Seleccionar automáticamente la mejor variante
+        const bestVariant = data.variants[data.selected_index];
+        if (bestVariant && bestVariant.pixels) {
+          setPixels(bestVariant.pixels);
+          saveToHistory(bestVariant.pixels);
+        }
+      } else if (data.pixels) {
+        // Fallback a generación simple (si no hay variantes)
         setPixels(data.pixels);
         saveToHistory(data.pixels);
       }
@@ -205,6 +245,14 @@ export default function PixelartEditor() {
       console.error(e);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleVariantSelect = (index: number) => {
+    const variant = variants[index];
+    if (variant && variant.pixels) {
+      setPixels(variant.pixels);
+      saveToHistory(variant.pixels);
     }
   };
 
@@ -420,6 +468,22 @@ export default function PixelartEditor() {
           </button>
         </div>
       </div>
+
+      {/* Selector de Variantes */}
+      {showVariantSelector && variants.length > 0 && (
+        <PixelartVariantSelector
+          variants={variants}
+          selectedIndex={variants.findIndex((_, i) => {
+            const bestPixels = pixels;
+            const bestVariant = variants.find(v =>
+              JSON.stringify(v.pixels) === JSON.stringify(bestPixels)
+            );
+            return bestVariant ? variants.indexOf(bestVariant) : 0;
+          })}
+          onSelect={handleVariantSelect}
+          onClose={() => setShowVariantSelector(false)}
+        />
+      )}
     </div>
   );
 }

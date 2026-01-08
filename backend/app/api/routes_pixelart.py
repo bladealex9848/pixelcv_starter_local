@@ -55,6 +55,25 @@ async def get_pixel_art_gallery(limit: int = 20, offset: int = 0, db: Session = 
 async def generate_ai_art(prompt: str = Body(..., embed=True)):
     return PixelArtService.generate_with_ai(prompt)
 
+@router.post("/generate-multiple")
+async def generate_ai_art_multiple(
+    prompt: str = Body(..., embed=True),
+    count: int = Body(3, embed=True),
+    select_best: bool = Body(True, embed=True)
+):
+    """
+    Genera múltiples variantes de pixelart y retorna la mejor.
+
+    Args:
+        prompt: Prompt del usuario
+        count: Número de variantes (default: 3)
+        select_best: Si True retorna solo la mejor, si False retorna todas
+
+    Returns:
+        Dict con 'pixels', 'variants', 'selected_index', y 'validation'
+    """
+    return PixelArtService.generate_with_ai_multiple(prompt, count=count, select_best=select_best)
+
 @router.post("/{piece_id}/like")
 async def like_pixel_art(
     piece_id: str, 

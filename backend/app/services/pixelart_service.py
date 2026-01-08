@@ -36,6 +36,14 @@ except ImportError:
     TRANSLATION_CONTEXT_AVAILABLE = False
     print("[PixelArt] Servicio de traducción con contexto no disponible")
 
+# Importar servicio de validación
+try:
+    from app.services.pixelart_validation_service import PixelArtValidationService
+    VALIDATION_AVAILABLE = True
+except ImportError:
+    VALIDATION_AVAILABLE = False
+    print("[PixelArt] Servicio de validación no disponible")
+
 class PixelArtService:
     @staticmethod
     def create_piece(
@@ -411,12 +419,22 @@ English:"""
                         # Verificar que no sea todo negro
                         non_black = sum(1 for p in pixels if p != "#000000")
                         if non_black > 50:
-                            print(f"[PixelLab] ✅ Imagen generada exitosamente ({non_black} píxeles coloreados)")
-                            return {
+                            result = {
                                 "pixels": pixels,
                                 "provider": "pixellab",
                                 "source": image_source
                             }
+
+                            # Agregar validación si está disponible
+                            if VALIDATION_AVAILABLE:
+                                try:
+                                    validation = PixelArtValidationService.validate_generation(prompt, pixels)
+                                    result["validation"] = validation
+                                    print(f"[PixelLab] Confidence: {validation['confidence']:.2f} | Valid: {validation['is_valid']}")
+                                except Exception as e:
+                                    print(f"[PixelLab] Error en validación: {e}")
+
+                            return result
                         else:
                             print(f"[PixelLab] ⚠️ Imagen demasiado vacía ({non_black} píxeles), usando fallback")
                             return None
@@ -689,6 +707,116 @@ Make shapes CLEAR: house=box+triangle, sun=circle+lines, river=wavy lines.
         db.commit()
         db.refresh(piece)
         return piece
+
+    @staticmethod
+    def generate_with_ai_multiple(prompt: str, count: int = 3, select_best: bool = True) -> dict:
+        """
+        Genera múltiples variantes de pixelart y retorna la mejor (o todas).
+
+        Args:
+            prompt: Prompt del usuario
+            count: Número de variantes a generar (default: 3)
+            select_best: Si True, retorna solo la mejor; si False, retorna todas
+
+        Returns:
+            Dict con 'variants' (lista), 'selected_index' (int), y optionally 'pixels'
+        """
+        print(f"[PixelArt] Generando {count} variantes para: {prompt}")
+
+        variants = []
+        prompt_variations = [
+            prompt,  # Variante 1: Prompt original
+            f"{prompt}, detailed pixel art",  # Variante 2: Con "detailed"
+            f"{prompt}, cute style"  # Variante 3: Con "cute style"
+        ]
+
+        # Si pide más de 3 variar prompts más
+        if count > 3:
+            for i in range(3, count):
+                prompt_variations.append(f"{prompt}, variation {i}")
+
+        for i in range(min(count, len(prompt_variations))):
+            current_prompt = prompt_variations[i]
+            print(f"[PixelArt] Generando variante {i+1}/{count}...")
+
+            try:
+                # Generar variante
+                result = PixelArtService.generate_with_ai(current_prompt, use_pixellab=True)
+
+                if result and result.get("pixels"):
+                    # Validar resultado
+                    validation = None
+                    if VALIDATION_AVAILABLE and "validation" not in result:
+                        try:
+                            validation = PixelArtValidationService.validate_generation(current_prompt, result["pixels"])
+                            result["validation"] = validation
+                        except Exception as e:
+                            print(f"[PixelArt] Error validando variante {i+1}: {e}")
+
+                    # Agregar información de la variante
+                    variant = {
+                        "pixels": result["pixels"],
+                        "provider": result.get("provider", "unknown"),
+                        "source": result.get("source", "unknown"),
+                        "index": i,
+                        "prompt_used": current_prompt,
+                        "validation": result.get("validation")
+                    }
+
+                    variants.append(variant)
+                    print(f"[PixelArt] Variante {i+1} generada: {variant['provider']} ({len(variant['pixels'])} píxeles)")
+
+            except Exception as e:
+                print(f"[PixelArt] Error generando variante {i+1}: {e}")
+                continue
+
+        if not variants:
+            print(f"[PixelArt] Todas las variantes fallaron, retornando fallback")
+            return {
+                "pixels": ["#000000"] * 1024,
+                "variants": [],
+                "selected_index": 0,
+                "error": "All variants failed"
+            }
+
+        # Seleccionar la mejor variante
+        if select_best and VALIDATION_AVAILABLE:
+            best_index = PixelArtValidationService.compare_variants(prompt, variants)
+            best_variant = variants[best_index]
+
+            print(f"[PixelArt] Mejor variante seleccionada: #{best_index} (confidence: {best_variant.get('validation', {}).get('confidence', 0):.2f})")
+
+            return {
+                "pixels": best_variant["pixels"],
+                "provider": best_variant["provider"],
+                "source": best_variant.get("source", "unknown"),
+                "variants": variants,
+                "selected_index": best_index,
+                "validation": best_variant.get("validation")
+            }
+        elif select_best:
+            # Sin validación, seleccionar la primera (preferiblemente PixelLab)
+            best_index = 0
+            for i, variant in enumerate(variants):
+                if variant.get("provider") == "pixellab":
+                    best_index = i
+                    break
+
+            best_variant = variants[best_index]
+            return {
+                "pixels": best_variant["pixels"],
+                "provider": best_variant["provider"],
+                "source": best_variant.get("source", "unknown"),
+                "variants": variants,
+                "selected_index": best_index
+            }
+        else:
+            # Retornar todas las variantes sin seleccionar
+            return {
+                "variants": variants,
+                "selected_index": 0,
+                "count": len(variants)
+            }
 
     @staticmethod
     def delete_piece(db: Session, piece_id: str, user_id: str) -> dict:
