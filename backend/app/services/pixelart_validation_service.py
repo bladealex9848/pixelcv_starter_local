@@ -172,7 +172,7 @@ class PixelArtValidationService:
         upper_portion = grid[:8, :]  # Primeras 8 filas
         # Buscar agrupación de píxeles no negros
         non_regions = PixelArtValidationService._find_colored_regions(upper_portion)
-        return len(non_regions) > 0
+        return non_regions > 0
 
     @staticmethod
     def _has_rectangle_and_triangle(grid: np.ndarray) -> bool:
