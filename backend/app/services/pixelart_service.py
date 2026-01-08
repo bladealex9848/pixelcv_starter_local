@@ -246,6 +246,48 @@ English:"""
         return prompt_en_final
 
     @staticmethod
+    def _base64_to_pixel_array(base64_data: str, target_size: int = 32) -> list:
+        """
+        Convierte una imagen en formato base64 a un array de píxeles hex.
+        """
+        if not PIL_AVAILABLE:
+            print("[PixelLab] PIL no disponible, no se puede convertir base64")
+            return ["#000000"] * (target_size * target_size)
+
+        try:
+            import base64
+            from PIL import Image
+            from io import BytesIO
+
+            # Decodificar base64
+            image_data = base64.b64decode(base64_data)
+
+            # Abrir imagen con PIL
+            img = Image.open(BytesIO(image_data))
+
+            # Convertir a RGB si es necesario
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            # Redimensionar usando NEAREST (nearest neighbor) para mantener el look pixelado
+            if img.size != (target_size, target_size):
+                img = img.resize((target_size, target_size), resample=Image.NEAREST)
+
+            # Convertir a array de hex
+            pixels = []
+            for y in range(target_size):
+                for x in range(target_size):
+                    r, g, b = img.getpixel((x, y))
+                    pixels.append(f"#{r:02x}{g:02x}{b:02x}")
+
+            print(f"[PixelLab] Imagen base64 convertida a {target_size}x{target_size} píxeles")
+            return pixels
+
+        except Exception as e:
+            print(f"[PixelLab] Error convirtiendo base64: {e}")
+            return ["#000000"] * (target_size * target_size)
+
+    @staticmethod
     def _image_url_to_pixel_array(image_url: str, target_size: int = 32) -> list:
         """
         Descarga una imagen desde una URL y la convierte a un array de píxeles hex.
@@ -289,7 +331,7 @@ English:"""
     @staticmethod
     def generate_with_pixellab(prompt: str) -> dict:
         """
-        Genera pixelart usando PixelLab API.
+        Genera pixelart usando PixelLab API (endpoint generate-image-pixflux).
         Retorna dict con 'pixels' (array hex) y 'provider' (string).
         """
         api_key = os.getenv("PIXELLAB_API_KEY")
@@ -306,86 +348,98 @@ English:"""
         print(f"[PixelLab] Generando con PixelLab API: {prompt}")
 
         try:
-            # Primero traducir/optmizar el prompt
+            # Primero traducir/optmizar el prompt a inglés
             optimized_prompt = PixelArtService._optimize_prompt(prompt)
 
-            # NOTA: PixelLab API parece ser ficticia o tiene endpoints diferentes.
-            # Implementación genérica para API REST de generación de imágenes
-            with httpx.Client(timeout=60.0) as client:
-                # Intento de endpoint genérico para generación de pixel art
-                # Esto puede requerir ajustes según la API real de PixelLab
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
+            # Usar el endpoint correcto según documentación oficial
+            endpoint = f"{api_url}/generate-image-pixflux"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
 
-                payload = {
-                    "prompt": optimized_prompt,
-                    "style": "pixelart",
+            # Payload según formato de PixelLab API
+            payload = {
+                "description": optimized_prompt,
+                "image_size": {
                     "width": 32,
-                    "height": 32,
-                    "format": "png"
+                    "height": 32
                 }
+            }
 
-                # Intentar diferentes endpoints posibles
-                endpoints = [
-                    f"{api_url}/generate",
-                    f"{api_url}/text-to-image",
-                    f"{api_url}/pixelart/generate"
-                ]
+            print(f"[PixelLab] Enviando request a: {endpoint}")
+            print(f"[PixelLab] Payload: {payload}")
 
-                response = None
-                for endpoint in endpoints:
-                    try:
-                        print(f"[PixelLab] Intentando endpoint: {endpoint}")
-                        response = client.post(endpoint, json=payload, headers=headers)
-                        if response.status_code == 200:
-                            print(f"[PixelLab] Éxito con endpoint: {endpoint}")
-                            break
-                    except Exception as e:
-                        print(f"[PixelLab] Endpoint {endpoint} falló: {e}")
-                        continue
+            with httpx.Client(timeout=60.0) as client:
+                response = client.post(endpoint, json=payload, headers=headers)
 
-                if response and response.status_code == 200:
+                print(f"[PixelLab] Status code: {response.status_code}")
+
+                if response.status_code == 200:
                     result = response.json()
+                    print(f"[PixelLab] Response recibida (estructura: {list(result.keys())})")
 
-                    # Extraer URL de imagen de la respuesta
-                    # La estructura puede variar según la API
-                    image_url = None
-                    if "image_url" in result:
+                    # PixelLab API devuelve la imagen en base64
+                    # Estructura esperada: {'usage': {...}, 'image': {'type': 'base64', 'base64': '...'}}
+                    pixels = None
+                    image_source = None
+
+                    # Caso 1: Formato base64 (PixelLab API estándar)
+                    if "image" in result and isinstance(result["image"], dict):
+                        image_data = result["image"]
+                        if image_data.get("type") == "base64" and "base64" in image_data:
+                            print(f"[PixelLab] Imagen en formato base64 detectada")
+                            base64_str = image_data["base64"]
+                            pixels = PixelArtService._base64_to_pixel_array(base64_str, target_size=32)
+                            image_source = "pixellab_base64"
+
+                    # Caso 2: URL de imagen (fallback por si cambia el formato)
+                    elif "image_url" in result:
                         image_url = result["image_url"]
+                        print(f"[PixelLab] Imagen en formato URL: {image_url}")
+                        pixels = PixelArtService._image_url_to_pixel_array(image_url, target_size=32)
+                        image_source = "pixellab_url"
+
                     elif "url" in result:
                         image_url = result["url"]
-                    elif "data" in result and isinstance(result["data"], dict):
-                        image_url = result["data"].get("url") or result["data"].get("image_url")
-                    elif "images" in result and len(result["images"]) > 0:
-                        image_url = result["images"][0].get("url") if isinstance(result["images"][0], dict) else result["images"][0]
-
-                    if image_url:
-                        print(f"[PixelLab] Imagen generada: {image_url}")
-                        # Convertir imagen a array de píxeles
+                        print(f"[PixelLab] Imagen en formato URL: {image_url}")
                         pixels = PixelArtService._image_url_to_pixel_array(image_url, target_size=32)
+                        image_source = "pixellab_url"
 
+                    # Verificar que se obtuvieron píxeles válidos
+                    if pixels and len(pixels) > 0:
                         # Verificar que no sea todo negro
                         non_black = sum(1 for p in pixels if p != "#000000")
                         if non_black > 50:
+                            print(f"[PixelLab] ✅ Imagen generada exitosamente ({non_black} píxeles coloreados)")
                             return {
                                 "pixels": pixels,
                                 "provider": "pixellab",
-                                "image_url": image_url
+                                "source": image_source
                             }
                         else:
-                            print(f"[PixelLab] Imagen demasiado vacía ({non_black} píxeles), usando fallback")
+                            print(f"[PixelLab] ⚠️ Imagen demasiado vacía ({non_black} píxeles), usando fallback")
                             return None
                     else:
-                        print(f"[PixelLab] No se encontró URL de imagen en respuesta: {result}")
+                        print(f"[PixelLab] ❌ No se pudo extraer imagen de la respuesta")
+                        print(f"[PixelLab] Estructura de respuesta: {result}")
                         return None
+                elif response.status_code == 401:
+                    print(f"[PixelLab] Error 401: API key inválida o no autorizada")
+                    return None
+                elif response.status_code == 403:
+                    print(f"[PixelLab] Error 403: Acceso prohibido, verificar permisos")
+                    return None
+                elif response.status_code == 429:
+                    print(f"[PixelLab] Error 429: Rate limit excedido")
+                    return None
                 else:
-                    print(f"[PixelLab] Todos los endpoints fallaron, usando fallback")
-                    if response:
-                        print(f"[PixelLab] Último estado: {response.status_code}")
+                    print(f"[PixelLab] Error {response.status_code}: {response.text}")
                     return None
 
+        except httpx.TimeoutException:
+            print(f"[PixelLab] Timeout, usando fallback")
+            return None
         except Exception as e:
             print(f"[PixelLab] Excepción: {e}, usando fallback")
             return None
