@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface OffRoad4x4Props {
@@ -18,336 +19,473 @@ interface Vehicle {
   vy: number;
   angle: number;
   speed: number;
-  maxSpeed: number;
-  acceleration: number;
-  friction: number;
 }
 
-interface GameState {
-  vehicle: Vehicle;
-  checkpoints: Position[];
-  currentCheckpoint: number;
-  gameOver: boolean;
-  crashed: boolean;
-  timeElapsed: number;
-  distanceTraveled: number;
-  completed: boolean;
+interface Checkpoint {
+  x: number;
+  y: number;
+  reached: boolean;
 }
 
-// Tipo para movimientos de entrenamiento
 interface TrainingMove {
   position: Position;
   velocity: { vx: number; vy: number };
+  angle: number;
+  speed: number;
   timestamp: number;
-  terrain_state: number[][];
-  checkpoint_reached: number;
+  event_type?: string;
 }
 
+// Configuración del juego
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 const GRID_WIDTH = 40;
 const GRID_HEIGHT = 30;
 const CELL_SIZE = 20;
 const CHECKPOINT_COUNT = 5;
+const CHECKPOINT_RADIUS = 25;
+
+// Tipos de terreno
+enum TerrainType {
+  GRASS = 0,      // Normal
+  DIRT = 1,       // Normal
+  ROCK = 2,       // Colisión
+  WATER = 3,      // Ralentiza
+  SAND = 4,       // Derrape
+}
+
+// Colores del terreno
+const TERRAIN_COLORS: Record<number, string> = {
+  [TerrainType.GRASS]: '#2d5a27',      // Verde oscuro
+  [TerrainType.DIRT]: '#5c4033',      // Marrón
+  [TerrainType.ROCK]: '#6b7280',      // Gris
+  [TerrainType.WATER]: '#1e40af',    // Azul
+  [TerrainType.SAND]: '#d97706',     // Amarillo
+};
+
+// Fricción por tipo de terreno
+const TERRAIN_FRICTION: Record<number, number> = {
+  [TerrainType.GRASS]: 0.98,
+  [TerrainType.DIRT]: 0.97,
+  [TerrainType.WATER]: 0.85,  // Ralentiza más
+  [TerrainType.SAND]: 0.92,   // Derrape
+  [TerrainType.ROCK]: 0.95,
+};
+
+// Parámetros de física
+const MAX_SPEED = 6;
+const ACCELERATION = 0.25;
+const TURN_RATE = 0.06;
 
 export default function OffRoad4x4({ isAuthenticated, onGameEnd }: OffRoad4x4Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
   const gameStartTimeRef = useRef<number>(0);
+  const gameEventsRef = useRef<TrainingMove[]>([]);
 
   // Estados del juego
-  const [gameState, setGameState] = useState<GameState>('menu' as any);
   const [gameStatus, setGameStatus] = useState<'menu' | 'playing' | 'paused' | 'ended'>('menu');
+  const [terrain, setTerrain] = useState<number[][]>([]);
+  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+  const [vehicle, setVehicle] = useState<Vehicle>({ x: 0, y: 0, vx: 0, vy: 0, angle: 0, speed: 0 });
+  const [currentCheckpoint, setCurrentCheckpoint] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [score, setScore] = useState(0);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [touchControls, setTouchControls] = useState({ throttle: 0, steering: 0 });
 
-  // NUEVO: Recolectar movimientos para entrenamiento
-  const movesRef = useRef<TrainingMove[]>([]);
+  // Generar terreno PERSISTENTE (solo una vez)
+  const generateTerrain = useCallback((): number[][] => {
+    const newTerrain: number[][] = [];
 
-  // Generar terreno aleatorio
-  const generateTerrain = (): number[][] => {
-    const terrain: number[][] = [];
-
-    // 0 = camino fácil, 1 = terreno normal, 2 = obstáculo, 3 = checkpoint
     for (let y = 0; y < GRID_HEIGHT; y++) {
-      terrain[y] = [];
+      newTerrain[y] = [];
       for (let x = 0; x < GRID_WIDTH; x++) {
         // Bordes como obstáculos
         if (x === 0 || x === GRID_WIDTH - 1 || y === 0 || y === GRID_HEIGHT - 1) {
-          terrain[y][x] = 2; // Obstáculo
+          newTerrain[y][x] = TerrainType.ROCK;
         } else {
-          // Generar terreno aleatorio
           const rand = Math.random();
-          if (rand < 0.3) {
-            terrain[y][x] = 0; // Camino fácil
+          if (rand < 0.4) {
+            newTerrain[y][x] = TerrainType.GRASS;
           } else if (rand < 0.7) {
-            terrain[y][x] = 1; // Terreno normal
+            newTerrain[y][x] = TerrainType.DIRT;
+          } else if (rand < 0.85) {
+            newTerrain[y][x] = TerrainType.SAND;
+          } else if (rand < 0.95) {
+            newTerrain[y][x] = TerrainType.WATER;
           } else {
-            terrain[y][x] = 2; // Obstáculo
+            newTerrain[y][x] = TerrainType.ROCK;
           }
         }
       }
     }
 
-    return terrain;
-  };
-
-  // Generar checkpoints
-  const generateCheckpoints = (): Position[] => {
-    const checkpoints: Position[] = [];
-    const usedPositions = new Set<string>();
-
-    // Punto de inicio
-    const startPos = { x: 2, y: 2 };
-    checkpoints.push(startPos);
-    usedPositions.add(`${startPos.x},${startPos.y}`);
-
-    // Generar checkpoints en posiciones aleatorias
-    for (let i = 1; i < CHECKPOINT_COUNT; i++) {
-      let pos: Position;
-      do {
-        pos = {
-          x: Math.floor(Math.random() * (GRID_WIDTH - 4)) + 2,
-          y: Math.floor(Math.random() * (GRID_HEIGHT - 4)) + 2
-        };
-      } while (usedPositions.has(`${pos.x},${pos.y}`));
-
-      checkpoints.push(pos);
-      usedPositions.add(`${pos.x},${pos.y}`);
-    }
-
-    return checkpoints;
-  };
-
-  // Crear nuevo juego
-  const startNewGame = () => {
-    const terrain = generateTerrain();
-    const checkpoints = generateCheckpoints();
-
-    setGameState({
-      vehicle: {
-        x: checkpoints[0].x * CELL_SIZE + CELL_SIZE / 2,
-        y: checkpoints[0].y * CELL_SIZE + CELL_SIZE / 2,
-        vx: 0,
-        vy: 0,
-        angle: 0,
-        speed: 0,
-        maxSpeed: 5,
-        acceleration: 0.3,
-        friction: 0.95
-      },
-      checkpoints,
-      currentCheckpoint: 1,
-      gameOver: false,
-      crashed: false,
-      timeElapsed: 0,
-      distanceTraveled: 0,
-      completed: false
-    });
-
-    setGameStatus('playing');
-    movesRef.current = [];
-    gameStartTimeRef.current = Date.now();
-  };
-
-  // Verificar colisión con obstáculos
-  const checkCollision = (x: number, y: number, terrain: number[][]): boolean => {
-    const cellX = Math.floor(x / CELL_SIZE);
-    const cellY = Math.floor(y / CELL_SIZE);
-
-    if (cellX < 0 || cellX >= GRID_WIDTH || cellY < 0 || cellY >= GRID_HEIGHT) {
-      return true;
-    }
-
-    return terrain[cellY][cellX] === 2;
-  };
-
-  // Verificar checkpoint alcanzado
-  const checkCheckpoint = (vehicle: Vehicle, checkpoints: Position[], currentCheckpoint: number): number => {
-    const cellX = Math.floor(vehicle.x / CELL_SIZE);
-    const cellY = Math.floor(vehicle.y / CELL_SIZE);
-
-    if (currentCheckpoint < checkpoints.length) {
-      const checkpoint = checkpoints[currentCheckpoint];
-      const distance = Math.sqrt(
-        Math.pow(cellX - checkpoint.x, 2) + Math.pow(cellY - checkpoint.y, 2)
-      );
-
-      if (distance < 2) {
-        return currentCheckpoint + 1;
-      }
-    }
-
-    return currentCheckpoint;
-  };
-
-  // IA: calcular mejor dirección
-  const getAIDirection = useCallback((state: GameState): { throttle: number; turn: number } => {
-    const { vehicle, checkpoints, currentCheckpoint } = state;
-
-    // Si no hay más checkpoints, detenerse
-    if (currentCheckpoint >= checkpoints.length) {
-      return { throttle: 0, turn: 0 };
-    }
-
-    const target = checkpoints[currentCheckpoint];
-    const targetX = target.x * CELL_SIZE + CELL_SIZE / 2;
-    const targetY = target.y * CELL_SIZE + CELL_SIZE / 2;
-
-    // Calcular ángulo hacia el checkpoint
-    const dx = targetX - vehicle.x;
-    const dy = targetY - vehicle.y;
-    const targetAngle = Math.atan2(dy, dx);
-
-    // Calcular diferencia de ángulo
-    let angleDiff = targetAngle - vehicle.angle;
-    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-    // A* Pathfinding simple: verificar obstáculos adelante
-    const lookAhead = 3;
-    const checkX = vehicle.x + Math.cos(vehicle.angle) * lookAhead * CELL_SIZE;
-    const checkY = vehicle.y + Math.sin(vehicle.angle) * lookAhead * CELL_SIZE;
-
-    // Recolectar movimiento de IA
-    movesRef.current.push({
-      position: { x: Math.floor(vehicle.x / CELL_SIZE), y: Math.floor(vehicle.y / CELL_SIZE) },
-      velocity: { vx: vehicle.vx, vy: vehicle.vy },
-      timestamp: Date.now() - gameStartTimeRef.current,
-      terrain_state: generateTerrain(), // Simplified for now
-      checkpoint_reached: currentCheckpoint
-    });
-
-    // Verificar si hay obstáculo adelante
-    const terrain = generateTerrain();
-    if (checkCollision(checkX, checkY, terrain)) {
-      // Obstáculo adelante - girar
-      return {
-        throttle: 0.5,
-        turn: angleDiff > 0 ? -1 : 1
-      };
-    }
-
-    // Normal - dirigir hacia el checkpoint
-    return {
-      throttle: 1.0,
-      turn: Math.max(-1, Math.min(1, angleDiff * 2))
-    };
+    return newTerrain;
   }, []);
 
+  // Generar checkpoints que eviten obstáculos
+  const generateCheckpoints = useCallback((currentTerrain: number[][]): Checkpoint[] => {
+    const newCheckpoints: Checkpoint[] = [];
+
+    // Primer checkpoint cerca del inicio
+    newCheckpoints.push({
+      x: 3 * CELL_SIZE + CELL_SIZE / 2,
+      y: 3 * CELL_SIZE + CELL_SIZE / 2,
+      reached: false
+    });
+
+    // Generar el resto
+    for (let i = 1; i < CHECKPOINT_COUNT; i++) {
+      let attempts = 0;
+      let valid = false;
+      let pos: Position;
+
+      while (!valid && attempts < 100) {
+        pos = {
+          x: Math.floor(Math.random() * (GRID_WIDTH - 6)) + 3,
+          y: Math.floor(Math.random() * (GRID_HEIGHT - 6)) + 3
+        };
+
+        // Verificar que no es roca y está lejos del anterior
+        const terrain = currentTerrain[pos.y][pos.x];
+        const prevCheckpoint = newCheckpoints[i - 1];
+        const distance = Math.sqrt(
+          Math.pow(pos.x - prevCheckpoint.x / CELL_SIZE, 2) +
+          Math.pow(pos.y - prevCheckpoint.y / CELL_SIZE, 2)
+        );
+
+        if (terrain !== TerrainType.ROCK && distance > 5) {
+          valid = true;
+        }
+        attempts++;
+      }
+
+      newCheckpoints.push({
+        x: (pos!.x * CELL_SIZE) + CELL_SIZE / 2,
+        y: (pos!.y * CELL_SIZE) + CELL_SIZE / 2,
+        reached: false
+      });
+    }
+
+    return newCheckpoints;
+  }, []);
+
+  // Iniciar nuevo juego
+  const startNewGame = useCallback(() => {
+    const newTerrain = generateTerrain();
+    const newCheckpoints = generateCheckpoints(newTerrain);
+    const firstCheckpoint = newCheckpoints[0];
+
+    setTerrain(newTerrain);
+    setCheckpoints(newCheckpoints);
+    setVehicle({
+      x: firstCheckpoint.x,
+      y: firstCheckpoint.y,
+      vx: 0,
+      vy: 0,
+      angle: 0,
+      speed: 0
+    });
+    setCurrentCheckpoint(1);
+
+    // Tiempo según dificultad
+    const initialTime = difficulty === 'easy' ? 90 : difficulty === 'medium' ? 60 : 45;
+    setTimeLeft(initialTime);
+    setScore(0);
+
+    gameEventsRef.current = [];
+    gameStartTimeRef.current = Date.now();
+    setGameStatus('playing');
+  }, [difficulty, generateTerrain, generateCheckpoints]);
+
   // Actualizar física del vehículo
-  const updateVehicle = useCallback(() => {
-    setGameState(prev => {
-      if (prev.gameOver || gameStatus !== 'playing') return prev;
+  const update = useCallback(() => {
+    if (gameStatus !== 'playing') return;
 
-      const newState = { ...prev };
-      const vehicle = { ...newState.vehicle };
+    setVehicle(prev => {
+      const newVehicle = { ...prev };
 
-      // Obtener input del usuario o IA
+      // Input de teclado
       let throttle = 0;
-      let turn = 0;
+      let steering = 0;
 
-      if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) {
-        throttle = 1;
-      } else if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) {
-        throttle = -0.5;
-      }
+      if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) throttle = 1;
+      else if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) throttle = -0.5;
 
-      if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) {
-        turn = -1;
-      } else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) {
-        turn = 1;
-      } else {
-        // IA controla el vehículo
-        const aiInput = getAIDirection(newState);
-        throttle = aiInput.throttle;
-        turn = aiInput.turn;
-      }
+      if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) steering = -1;
+      else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) steering = 1;
 
-      // Aplicar aceleración
-      vehicle.speed += throttle * vehicle.acceleration;
-      vehicle.speed = Math.max(-vehicle.maxSpeed / 2, Math.min(vehicle.maxSpeed, vehicle.speed));
+      // Input de touch (mobile)
+      if (touchControls.throttle !== 0) throttle = touchControls.throttle;
+      if (touchControls.steering !== 0) steering = touchControls.steering;
 
-      // Aplicar fricción
-      vehicle.speed *= vehicle.friction;
+      // Obtener tipo de terreno actual
+      const cellX = Math.floor(newVehicle.x / CELL_SIZE);
+      const cellY = Math.floor(newVehicle.y / CELL_SIZE);
+      const terrainType = terrain[cellY]?.[cellX] ?? TerrainType.ROCK;
 
-      // Girar el vehículo
-      vehicle.angle += turn * 0.05 * (vehicle.speed / vehicle.maxSpeed);
-
-      // Actualizar posición
-      vehicle.x += Math.cos(vehicle.angle) * vehicle.speed;
-      vehicle.y += Math.sin(vehicle.angle) * vehicle.speed;
-
-      // Verificar colisiones
-      const terrain = generateTerrain();
-      if (checkCollision(vehicle.x, vehicle.y, terrain)) {
+      // Colisión con rocas
+      if (terrainType === TerrainType.ROCK) {
         const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        setGameStatus('ended');
+        const finalScore = calculateScore(false, currentCheckpoint, 0);
 
-        onGameEnd(newState.distanceTraveled, false, 0, gameTime, {
+        setGameStatus('ended');
+        setScore(finalScore);
+
+        onGameEnd(finalScore, false, 0, gameTime, {
           training_data: {
-            game_id: '4x4_offroad',
-            moves_sequence: movesRef.current,
-            final_terrain: terrain,
-            checkpoints_reached: newState.currentCheckpoint,
+            game_id: 'offroad_4x4',
+            moves_sequence: gameEventsRef.current,
+            final_position: { x: cellX, y: cellY },
+            checkpoints_reached: currentCheckpoint,
             player_won: false
           }
         });
 
-        return {
-          ...newState,
-          vehicle,
-          gameOver: true,
-          crashed: true
-        };
+        return prev;
       }
 
-      // Verificar checkpoints
-      const newCheckpoint = checkCheckpoint(vehicle, newState.checkpoints, newState.currentCheckpoint);
+      // Física arcade
+      const friction = TERRAIN_FRICTION[terrainType] ?? 0.98;
 
-      // Actualizar distancia
-      const distance = Math.sqrt(vehicle.vx * vehicle.vx + vehicle.vy * vehicle.vy);
-      newState.distanceTraveled += distance;
+      newVehicle.speed += throttle * ACCELERATION;
+      newVehicle.speed *= friction;
+      newVehicle.speed = Math.max(-MAX_SPEED / 2, Math.min(MAX_SPEED, newVehicle.speed));
 
-      // Actualizar tiempo
-      newState.timeElapsed = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+      // Giro (solo si hay velocidad)
+      if (Math.abs(newVehicle.speed) > 0.1) {
+        const turnFactor = newVehicle.speed / MAX_SPEED;
+        newVehicle.angle += steering * TURN_RATE * turnFactor;
+      }
 
-      // Verificar completado
-      if (newCheckpoint >= newState.checkpoints.length) {
-        const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        setGameStatus('ended');
+      // Actualizar posición
+      newVehicle.vx = Math.cos(newVehicle.angle) * newVehicle.speed;
+      newVehicle.vy = Math.sin(newVehicle.angle) * newVehicle.speed;
+      newVehicle.x += newVehicle.vx;
+      newVehicle.y += newVehicle.vy;
 
-        onGameEnd(newState.distanceTraveled, true, 0, gameTime, {
-          training_data: {
-            game_id: '4x4_offroad',
-            moves_sequence: movesRef.current,
-            final_terrain: terrain,
-            checkpoints_reached: newState.checkpoints.length,
-            player_won: true,
-            completion_time: gameTime
-          }
+      // Mantener dentro de los límites
+      newVehicle.x = Math.max(CELL_SIZE, Math.min(CANVAS_WIDTH - CELL_SIZE, newVehicle.x));
+      newVehicle.y = Math.max(CELL_SIZE, Math.min(CANVAS_HEIGHT - CELL_SIZE, newVehicle.y));
+
+      // Registrar movimiento para training data
+      if (gameEventsRef.current.length < 5000) {
+        gameEventsRef.current.push({
+          position: { x: cellX, y: cellY },
+          velocity: { vx: newVehicle.vx, vy: newVehicle.vy },
+          angle: newVehicle.angle,
+          speed: newVehicle.speed,
+          timestamp: Date.now() - gameStartTimeRef.current,
+          event_type: 'move'
         });
-
-        return {
-          ...newState,
-          vehicle,
-          gameOver: true,
-          completed: true,
-          currentCheckpoint: newCheckpoint
-        };
       }
 
-      return {
-        ...newState,
-        vehicle,
-        currentCheckpoint: newCheckpoint
-      };
-    });
-  }, [gameStatus, onGameEnd, getAIDirection]);
+      // Verificar checkpoint
+      const targetCheckpoint = checkpoints[currentCheckpoint];
+      if (targetCheckpoint) {
+        const dx = newVehicle.x - targetCheckpoint.x;
+        const dy = newVehicle.y - targetCheckpoint.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-  // Manejar teclas
+        if (distance < CHECKPOINT_RADIUS) {
+          // Checkpoint alcanzado
+          const newCheckpoint = currentCheckpoint + 1;
+
+          if (newCheckpoint >= checkpoints.length) {
+            // ¡Ganó!
+            const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+            const finalScore = calculateScore(true, checkpoints.length, timeLeft);
+
+            setGameStatus('ended');
+            setScore(finalScore);
+
+            onGameEnd(finalScore, true, 0, gameTime, {
+              training_data: {
+                game_id: 'offroad_4x4',
+                moves_sequence: gameEventsRef.current,
+                final_position: { x: cellX, y: cellY },
+                checkpoints_reached: checkpoints.length,
+                player_won: true,
+                completion_time: gameTime
+              }
+            });
+
+            return prev;
+          } else {
+            setCurrentCheckpoint(newCheckpoint);
+            setTimeLeft(prev => prev + 10); // +10 segundos por checkpoint
+          }
+        }
+      }
+
+      return newVehicle;
+    });
+  }, [gameStatus, terrain, checkpoints, currentCheckpoint, timeLeft, touchControls, onGameEnd]);
+
+  // Actualizar tiempo
+  useEffect(() => {
+    if (gameStatus !== 'playing') return;
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Se acabó el tiempo
+          const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+          const finalScore = calculateScore(false, currentCheckpoint, 0);
+
+          setGameStatus('ended');
+          setScore(finalScore);
+
+          onGameEnd(finalScore, false, 0, gameTime, {
+            training_data: {
+              game_id: 'offroad_4x4',
+              moves_sequence: gameEventsRef.current,
+              final_position: { x: Math.floor(vehicle.x / CELL_SIZE), y: Math.floor(vehicle.y / CELL_SIZE) },
+              checkpoints_reached: currentCheckpoint,
+              player_won: false,
+              time_out: true
+            }
+          });
+
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameStatus, currentCheckpoint, vehicle, onGameEnd]);
+
+  // Renderizar canvas
+  const render = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fondo
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Renderizar terreno
+    terrain.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        ctx.fillStyle = TERRAIN_COLORS[cell] ?? '#0a0a0a';
+        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      });
+    });
+
+    // Renderizar checkpoints
+    checkpoints.forEach((cp, i) => {
+      const isCurrent = i === currentCheckpoint;
+      const isReached = i < currentCheckpoint;
+
+      if (!isReached) {
+        // Glow para checkpoint actual
+        if (isCurrent) {
+          ctx.shadowColor = '#f97316';
+          ctx.shadowBlur = 20;
+        }
+
+        ctx.fillStyle = isCurrent ? '#f97316' : '#444';
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, CHECKPOINT_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        // Número
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((i + 1).toString(), cp.x, cp.y);
+      } else {
+        // Checkpoint alcanzado - pequeño indicador
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Renderizar vehículo
+    ctx.save();
+    ctx.translate(vehicle.x, vehicle.y);
+    ctx.rotate(vehicle.angle);
+
+    // Cuerpo del vehículo con glow
+    ctx.shadowColor = '#f97316';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = '#f97316';
+
+    // Forma de camioneta 4x4
+    ctx.beginPath();
+    ctx.moveTo(18, 0);      // Frente
+    ctx.lineTo(-12, -12);   // Izquierda
+    ctx.lineTo(-12, 12);    // Derecha
+    ctx.closePath();
+    ctx.fill();
+
+    // Cabina
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-8, -6, 12, 12);
+
+    ctx.restore();
+    ctx.shadowBlur = 0;
+
+    // Renderizar HUD
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(10, 10, 200, 70);
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, 200, 70);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Checkpoint: ${currentCheckpoint}/${checkpoints.length}`, 20, 32);
+    ctx.fillText(`Tiempo: ${timeLeft}s`, 20, 52);
+    ctx.fillText(`Puntos: ${score}`, 20, 72);
+  }, [terrain, checkpoints, currentCheckpoint, vehicle, timeLeft, score]);
+
+  // Game loop
+  useEffect(() => {
+    if (gameStatus !== 'playing') return;
+
+    const loop = () => {
+      update();
+      render();
+      animationFrameRef.current = requestAnimationFrame(loop);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(loop);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gameStatus, update, render]);
+
+  // Manejar teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') {
+        if (gameStatus === 'playing') setGameStatus('paused');
+        else if (gameStatus === 'paused') setGameStatus('playing');
+        return;
+      }
+
       keysRef.current.add(e.code);
+
+      // Prevenir scroll con flechas
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -361,211 +499,182 @@ export default function OffRoad4x4({ isAuthenticated, onGameEnd }: OffRoad4x4Pro
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [gameStatus]);
 
-  // Bucle del juego
-  useEffect(() => {
-    if (gameStatus === 'playing' && !gameState.gameOver) {
-      const gameLoop = () => {
-        updateVehicle();
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-      };
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
+  // Calcular puntuación
+  const calculateScore = (won: boolean, checkpointsReached: number, timeLeft: number): number => {
+    let finalScore = 5; // Base
 
-      return () => {
-        if (gameLoopRef.current) {
-          cancelAnimationFrame(gameLoopRef.current);
-        }
-      };
-    }
-  }, [gameStatus, gameState.gameOver, updateVehicle]);
-
-  // Renderizar
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Limpiar canvas
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Dibujar terreno
-    const terrain = generateTerrain();
-    for (let y = 0; y < GRID_HEIGHT; y++) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        const cell = terrain[y][x];
-        let color;
-
-        switch (cell) {
-          case 0:
-            color = '#4ade80'; // Verde claro - camino fácil
-            break;
-          case 1:
-            color = '#22c55e'; // Verde - terreno normal
-            break;
-          case 2:
-            color = '#7c2d12'; // Marrón oscuro - obstáculo
-            break;
-          default:
-            color = '#1a1a1a';
-        }
-
-        ctx.fillStyle = color;
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
+    if (won) {
+      finalScore += 50; // Victoria
+      finalScore += timeLeft; // Bonus por tiempo
+    } else {
+      finalScore += 10; // Participación
+      finalScore += checkpointsReached * 5; // Por checkpoint
     }
 
-    // Dibujar checkpoints
-    gameState.checkpoints.forEach((checkpoint, index) => {
-      if (index < gameState.currentCheckpoint) {
-        ctx.fillStyle = '#fbbf24'; // Dorado - alcanzado
-      } else if (index === gameState.currentCheckpoint) {
-        ctx.fillStyle = '#f59e0b'; // Amarillo - actual
-      } else {
-        ctx.fillStyle = '#6b7280'; // Gris - futuro
-      }
+    return finalScore;
+  };
 
-      ctx.fillRect(
-        checkpoint.x * CELL_SIZE + 2,
-        checkpoint.y * CELL_SIZE + 2,
-        CELL_SIZE - 4,
-        CELL_SIZE - 4
-      );
+  // Manejadores de touch para móvil
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
 
-      // Número del checkpoint
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(
-        index.toString(),
-        checkpoint.x * CELL_SIZE + CELL_SIZE / 2,
-        checkpoint.y * CELL_SIZE + CELL_SIZE / 2
-      );
+    const dx = touch.clientX - rect.left - centerX;
+    const dy = touch.clientY - rect.top - centerY;
+
+    // Joystick virtual: arriba = acelerar, abajo = frenar, izquierda/derecha = girar
+    const maxDist = 50;
+    const clampedX = Math.max(-maxDist, Math.min(maxDist, dx));
+    const clampedY = Math.max(-maxDist, Math.min(maxDist, dy));
+
+    setTouchControls({
+      throttle: -clampedY / maxDist, // Arriba (negativo) = acelerar
+      steering: clampedX / maxDist
     });
+  };
 
-    // Dibujar vehículo
-    ctx.save();
-    ctx.translate(gameState.vehicle.x, gameState.vehicle.y);
-    ctx.rotate(gameState.vehicle.angle);
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
 
-    // Cuerpo del vehículo
-    ctx.fillStyle = '#dc2626';
-    ctx.fillRect(-10, -15, 20, 30);
+    const dx = touch.clientX - rect.left - centerX;
+    const dy = touch.clientY - rect.top - centerY;
 
-    // Cabina
-    ctx.fillStyle = '#991b1b';
-    ctx.fillRect(-8, -10, 16, 15);
+    const maxDist = 50;
+    const clampedX = Math.max(-maxDist, Math.min(maxDist, dx));
+    const clampedY = Math.max(-maxDist, Math.min(maxDist, dy));
 
-    ctx.restore();
+    setTouchControls({
+      throttle: -clampedY / maxDist,
+      steering: clampedX / maxDist
+    });
+  };
 
-    // Dibujar UI
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Checkpoint: ${gameState.currentCheckpoint}/${gameState.checkpoints.length}`, 10, 25);
-    ctx.fillText(`Tiempo: ${gameState.timeElapsed}s`, 10, 45);
-    ctx.fillText(`Distancia: ${Math.floor(gameState.distanceTraveled)}`, 10, 65);
-
-    if (gameState.crashed) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 48px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('¡CRASH!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-    }
-  }, [gameState]);
+  const handleTouchEnd = () => {
+    setTouchControls({ throttle: 0, steering: 0 });
+  };
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Game Status */}
+      {/* Menú principal */}
       {gameStatus === 'menu' && (
-        <div className="text-center space-y-4">
-          <p className="text-orange-400 text-2xl">4x4 Off-Road</p>
-          <p className="text-gray-400 text-sm">Completa el circuito evitando obstáculos</p>
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-black italic text-orange-500 uppercase">4x4 Off-Road</h1>
+          <p className="text-gray-400">Conduce por el terreno accidentado y alcanza todos los checkpoints</p>
+
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={() => setDifficulty('easy')}
+              className={`px-4 py-2 font-bold transition-all ${difficulty === 'easy' ? 'bg-green-600' : 'bg-gray-700'}`}
+            >
+              Fácil (90s)
+            </button>
+            <button
+              onClick={() => setDifficulty('medium')}
+              className={`px-4 py-2 font-bold transition-all ${difficulty === 'medium' ? 'bg-yellow-600' : 'bg-gray-700'}`}
+            >
+              Medio (60s)
+            </button>
+            <button
+              onClick={() => setDifficulty('hard')}
+              className={`px-4 py-2 font-bold transition-all ${difficulty === 'hard' ? 'bg-red-600' : 'bg-gray-700'}`}
+            >
+              Difícil (45s)
+            </button>
+          </div>
+
           <button
             onClick={startNewGame}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 transition-colors"
+            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 py-3 uppercase transition-all"
             style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
           >
             Comenzar
           </button>
+
+          <div className="flex items-center justify-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4" style={{ backgroundColor: TERRAIN_COLORS[TerrainType.GRASS] }}></div>
+              <span className="text-gray-500">Hierba</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4" style={{ backgroundColor: TERRAIN_COLORS[TerrainType.DIRT] }}></div>
+              <span className="text-gray-500">Tierra</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4" style={{ backgroundColor: TERRAIN_COLORS[TerrainType.SAND] }}></div>
+              <span className="text-gray-500">Arena (derrapa)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4" style={{ backgroundColor: TERRAIN_COLORS[TerrainType.WATER] }}></div>
+              <span className="text-gray-500">Agua (lento)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4" style={{ backgroundColor: TERRAIN_COLORS[TerrainType.ROCK] }}></div>
+              <span className="text-gray-500">Roca (¡peligro!)</span>
+            </div>
+          </div>
+
+          <p className="text-gray-600 text-xs">
+            Controles: Flechas o WASD | Mobile: Toca y arrastra | P: Pausa
+          </p>
         </div>
       )}
 
-      {gameStatus === 'playing' && (
-        <div className="text-center space-y-2">
-          <p className="text-orange-400">
-            Checkpoint: {gameState.currentCheckpoint}/{gameState.checkpoints.length}
-          </p>
-          <p className="text-gray-500 text-xs">Tiempo: {gameState.timeElapsed}s</p>
-          <div className="flex items-center justify-center gap-2">
-            <div className="flex items-center gap-1 bg-purple-900/30 border border-purple-500/50 px-2 py-0.5 rounded-sm">
-              <span className="text-purple-400 text-[10px]">🤖 Pathfinding AI</span>
-            </div>
+      {/* Pausa */}
+      {gameStatus === 'paused' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-yellow-400 mb-4">PAUSA</p>
+            <button
+              onClick={() => setGameStatus('playing')}
+              className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2"
+            >
+              Continuar
+            </button>
           </div>
         </div>
       )}
 
+      {/* Fin del juego */}
       {gameStatus === 'ended' && (
-        <div className="text-center space-y-4">
-          <p className={gameState.completed ? 'text-green-400 text-xl' : 'text-red-400 text-xl'}>
-            {gameState.completed ? '¡COMPLETADO!' : '¡CRASH!'}
-          </p>
-          <p className="text-gray-400 text-sm">
-            Tiempo: {gameState.timeElapsed}s | Distancia: {Math.floor(gameState.distanceTraveled)}
-          </p>
-          <button
-            onClick={startNewGame}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 transition-colors"
-          >
-            Intentar de nuevo
-          </button>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+          <div className="text-center space-y-4">
+            <p className={score > 50 ? 'text-4xl font-black text-green-400' : 'text-4xl font-black text-red-400'}>
+              {score > 50 ? '¡COMPLETADO!' : 'CRASH O TIEMPO AGOTADO'}
+            </p>
+            <p className="text-gray-300">Puntuación: {score}</p>
+            <p className="text-gray-400 text-sm">
+              Checkpoints: {currentCheckpoint}/{checkpoints.length}
+            </p>
+            <button
+              onClick={startNewGame}
+              className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2"
+            >
+              Jugar de nuevo
+            </button>
+          </div>
         </div>
       )}
 
       {/* Canvas */}
       {gameStatus !== 'menu' && (
-        <div className="bg-black border-2 border-orange-900 p-4 rounded-lg">
+        <div className="bg-black border-2 border-orange-900 rounded-lg overflow-hidden relative">
           <canvas
             ref={canvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className="block"
+            className="block max-w-full h-auto"
+            style={{ imageRendering: 'pixelated' }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
-        </div>
-      )}
-
-      {/* Instructions */}
-      {gameStatus === 'menu' && (
-        <div className="text-center space-y-2">
-          <p className="text-gray-500 text-xs text-center max-w-md">
-            Usa las flechas o WASD para conducir. Llega a todos los checkpoints evitando obstáculos.
-            ¡El 4x4 con IA te ayudará a encontrar el mejor camino!
-          </p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500"></div>
-              <span className="text-gray-400 text-xs">Camino fácil</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-600"></div>
-              <span className="text-gray-400 text-xs">Terreno normal</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-amber-500"></div>
-              <span className="text-gray-400 text-xs">Checkpoint</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-700"></div>
-              <span className="text-gray-400 text-xs">Obstáculo</span>
-            </div>
-          </div>
         </div>
       )}
     </div>
