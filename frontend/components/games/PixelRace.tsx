@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import PixelArtSprite from './PixelArtSprite';
+import { SPRITES_MAP, CAR_SPRITES, TREE_SPRITES, FINISH_SPRITE } from './PixelRaceSprites';
 
 interface PixelRaceProps {
   isAuthenticated: boolean;
@@ -8,20 +10,23 @@ interface PixelRaceProps {
 }
 
 // ============================================================================
-// ASSETS (reemplazados con CSS/colors ya que no tenemos imágenes PNG)
+// ASSETS - Pixel Art Sprites
 // ============================================================================
 
 const ASSETS = {
   COLOR: {
-    TAR: ["#959298", "#9c9a9d"],
-    RUMBLE: ["#959298", "#f5f2f6"],
-    GRASS: ["#eedccd", "#e6d4c5"],
+    TAR: ["#404040", "#2a2a2a"], // Carretera oscura pixel art
+    RUMBLE: ["#ff6600", "#ffffff"], // Franjas naranjas/blancas
+    GRASS: ["#6b8e23", "#7fb237"], // Césped verde pixel art
   },
   IMAGE: {
-    TREE: { src: "", width: 132, height: 192 }, // Se dibujará con CSS
-    HERO: { src: "", width: 110, height: 56 },
-    CAR: { src: "", width: 50, height: 36 },
-    FINISH: { src: "", width: 339, height: 180, offset: -0.5 },
+    TREE: { ...SPRITES_MAP['tree'], sprite: SPRITES_MAP['tree'] },
+    SMALL_TREE: { ...SPRITES_MAP['small_tree'], sprite: SPRITES_MAP['small_tree'] },
+    HERO: { ...CAR_SPRITES[0], sprite: CAR_SPRITES[0] },
+    CAR: { ...CAR_SPRITES[1], sprite: CAR_SPRITES[1] },
+    CAR2: { ...CAR_SPRITES[2], sprite: CAR_SPRITES[2] },
+    CAR3: { ...CAR_SPRITES[3], sprite: CAR_SPRITES[3] },
+    FINISH: { ...FINISH_SPRITE, sprite: FINISH_SPRITE },
     SKY: { src: "" },
   }
 };
@@ -98,37 +103,54 @@ class Line {
     let obj = layer instanceof HTMLElement ? layer : this.elements[(layer as number) + 6];
     if (!obj) return;
 
-    // Si es un coche enemigo, dibujar con CSS
-    if (sprite === ASSETS.IMAGE.CAR) {
-      obj.style.background = '#ef4444';
+    // Si es un coche enemigo, dibujar con CSS mejorado
+    if (sprite === ASSETS.IMAGE.CAR || sprite === ASSETS.IMAGE.CAR2 || sprite === ASSETS.IMAGE.CAR3) {
+      const isCar1 = sprite === ASSETS.IMAGE.CAR;
+      const isCar2 = sprite === ASSETS.IMAGE.CAR2;
+      const isCar3 = sprite === ASSETS.IMAGE.CAR3;
+
+      // Colores según el tipo de coche
+      const carColors = {
+        car1: { body: '#0066cc', window: '#87ceeb' }, // Azul
+        car2: { body: '#00cc66', window: '#87ceeb' }, // Verde
+        car3: { body: '#ffcc00', window: '#87ceeb' }, // Amarillo
+      };
+
+      const color = isCar1 ? carColors.car1 : isCar2 ? carColors.car2 : carColors.car3;
+
+      obj.style.background = `linear-gradient(90deg, ${color.body} 0%, ${color.body} 70%, ${color.window} 70%, ${color.window} 100%)`;
       obj.style.width = destW + 'px';
       obj.style.height = destH + 'px';
       obj.style.left = destX + 'px';
       obj.style.top = destY + 'px';
       obj.style.zIndex = depth.toString();
+      obj.style.clipPath = 'polygon(10% 0, 90% 0, 100% 40%, 100% 100%, 0 100%, 0 40%)';
+      obj.style.boxShadow = `0 0 ${destW * 0.1}px rgba(0, 0, 0, 0.5)`;
       return;
     }
 
-    // Si es un árbol, dibujar con CSS
-    if (sprite === ASSETS.IMAGE.TREE) {
-      obj.style.background = '#1a5c3a';
-      obj.style.borderRadius = '50%';
+    // Si es un árbol, dibujar con CSS mejorado
+    if (sprite === ASSETS.IMAGE.TREE || sprite === ASSETS.IMAGE.SMALL_TREE) {
+      obj.style.background = 'radial-gradient(circle at 50% 30%, #32cd32 0%, #228b22 50%, #006400 100%)';
       obj.style.width = destW + 'px';
       obj.style.height = destH + 'px';
       obj.style.left = destX + 'px';
       obj.style.top = destY + 'px';
       obj.style.zIndex = depth.toString();
+      obj.style.borderRadius = '50%';
+      obj.style.boxShadow = `0 ${destH * 0.3}px ${destW * 0.2}px rgba(0, 0, 0, 0.3)`;
       return;
     }
 
     // Meta de llegada
     if (sprite === ASSETS.IMAGE.FINISH) {
-      obj.style.background = '#fbbf24';
+      obj.style.background = 'repeating-linear-gradient(45deg, #fff 0, #fff 10px, #000 10px, #000 20px)';
       obj.style.width = destW + 'px';
       obj.style.height = destH + 'px';
       obj.style.left = destX + 'px';
       obj.style.top = destY + 'px';
       obj.style.zIndex = depth.toString();
+      obj.style.border = `2px solid #333`;
       return;
     }
   }
@@ -578,10 +600,11 @@ export default function PixelRace({ isAuthenticated, onGameEnd }: PixelRaceProps
     hero.style.position = "absolute";
     hero.style.top = height - 80 + "px";
     hero.style.left = (halfWidth - ASSETS.IMAGE.HERO.width / 2) + "px";
-    hero.style.background = "#f97316";
+    hero.style.background = "linear-gradient(90deg, #ff4500 0%, #ff4500 70%, #87ceeb 70%, #87ceeb 100%)";
     hero.style.width = ASSETS.IMAGE.HERO.width + "px";
     hero.style.height = ASSETS.IMAGE.HERO.height + "px";
     hero.style.clipPath = "polygon(10% 0, 90% 0, 100% 40%, 100% 100%, 0 100%, 0 40%)";
+    hero.style.boxShadow = "0 0 20px rgba(255, 69, 0, 0.5)";
 
     cloud.style.position = "absolute";
     cloud.style.left = "0";
@@ -600,13 +623,13 @@ export default function PixelRace({ isAuthenticated, onGameEnd }: PixelRaceProps
     // Generate map
     mapRef.current = genMap();
 
-    // Create cars
+    // Create cars with different types
     carsRef.current.push(new Car(0, ASSETS.IMAGE.CAR, LANE.C, road));
-    carsRef.current.push(new Car(10, ASSETS.IMAGE.CAR, LANE.B, road));
-    carsRef.current.push(new Car(20, ASSETS.IMAGE.CAR, LANE.C, road));
+    carsRef.current.push(new Car(10, ASSETS.IMAGE.CAR2, LANE.B, road));
+    carsRef.current.push(new Car(20, ASSETS.IMAGE.CAR3, LANE.C, road));
     carsRef.current.push(new Car(35, ASSETS.IMAGE.CAR, LANE.C, road));
-    carsRef.current.push(new Car(50, ASSETS.IMAGE.CAR, LANE.A, road));
-    carsRef.current.push(new Car(60, ASSETS.IMAGE.CAR, LANE.B, road));
+    carsRef.current.push(new Car(50, ASSETS.IMAGE.CAR2, LANE.A, road));
+    carsRef.current.push(new Car(60, ASSETS.IMAGE.CAR3, LANE.B, road));
     carsRef.current.push(new Car(70, ASSETS.IMAGE.CAR, LANE.A, road));
 
     // Create lines
@@ -731,34 +754,82 @@ export default function PixelRace({ isAuthenticated, onGameEnd }: PixelRaceProps
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
         }
+        .topUI {
+          background: rgba(0, 0, 0, 0.7);
+          padding: 8px 16px;
+          border: 2px solid #ff6600;
+          border-radius: 4px;
+          text-shadow: 0 0 10px rgba(255, 102, 0, 0.8);
+          box-shadow: 0 0 20px rgba(255, 102, 0, 0.3);
+          font-weight: bold;
+          letter-spacing: 2px;
+        }
+        .pixel-title {
+          font-family: 'Courier New', monospace;
+          text-shadow:
+            3px 3px 0 #000,
+            -3px -3px 0 #000,
+            3px -3px 0 #000,
+            -3px 3px 0 #000;
+          filter: drop-shadow(0 0 10px rgba(255, 102, 0, 0.8));
+        }
+        .pixel-button {
+          font-family: 'Courier New', monospace;
+          background: linear-gradient(135deg, #ff6600, #ff8533);
+          border: 3px solid #fff;
+          box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+          text-shadow: 2px 2px 0 #000;
+        }
+        .pixel-panel {
+          background: rgba(26, 26, 46, 0.95);
+          border: 4px solid #ff6600;
+          box-shadow:
+            inset 0 0 20px rgba(255, 102, 0, 0.2),
+            0 0 30px rgba(255, 102, 0, 0.3);
+        }
       `}</style>
 
-      <div ref={gameRef} className="relative bg-[#1a1a2e] rounded-lg overflow-hidden">
+      <div ref={gameRef} className="relative bg-[#1a1a2e] rounded-lg overflow-hidden border-4 border-orange-500">
         <div ref={roadRef}>
           <div ref={cloudRef}></div>
           <div ref={heroRef}></div>
         </div>
 
-        <div ref={hudRef} className="absolute top-4 left-4 right-4 flex justify-between text-white font-mono text-sm">
-          <span ref={timeRef} className="topUI">0</span>
-          <span ref={scoreRef} className="topUI">0</span>
-          <span ref={lapRef} className="topUI">0'00"000</span>
-          <span ref={tachoRef} className="absolute bottom-4 right-4 text-xl text-orange-400">0</span>
+        <div ref={hudRef} className="absolute top-4 left-4 right-4 flex justify-between gap-4">
+          <span ref={timeRef} className="topUI">TIME: 0</span>
+          <span ref={scoreRef} className="topUI">SCORE: 0</span>
+          <span ref={lapRef} className="topUI">LAP: 0'00"000</span>
+          <span ref={tachoRef} className="pixel-button px-6 py-2">0 KM/H</span>
         </div>
 
-        <div ref={homeRef} className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <h1 className="text-6xl font-black italic text-orange-400 mb-4">DASH</h1>
-          <p ref={textRef} className="blink text-2xl mb-4">INSERT COIN</p>
-          <div ref={highscoreRef}></div>
+        <div ref={homeRef} className="absolute inset-0 flex flex-col items-center justify-center pixel-panel">
+          <h1 className="pixel-title text-8xl font-black italic text-orange-400 mb-6">PIXEL RACE</h1>
+          <p ref={textRef} className="blink pixel-button px-8 py-4 text-2xl mb-8">INSERT COIN</p>
+          <div ref={highscoreRef} className="pixel-panel p-6 rounded-lg"></div>
         </div>
       </div>
 
       {/* Controls info */}
-      <div className="text-center text-gray-400 text-xs space-y-1">
-        <p><strong className="text-orange-400">C</strong> - Start</p>
-        <p><strong className="text-orange-400">↑↓</strong> - Accelerate/Brake</p>
-        <p><strong className="text-orange-400">←→</strong> - Steer</p>
-        <p><strong className="text-orange-400">ESC</strong> - Reset</p>
+      <div className="pixel-panel p-6 rounded-lg max-w-2xl">
+        <h3 className="text-orange-400 font-bold mb-4 text-center">CONTROLES</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="pixel-button px-3 py-1 font-bold">C</span>
+            <span className="text-gray-300">Iniciar Juego</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="pixel-button px-3 py-1 font-bold">↑↓</span>
+            <span className="text-gray-300">Acelerar/Frenar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="pixel-button px-3 py-1 font-bold">←→</span>
+            <span className="text-gray-300">Girar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="pixel-button px-3 py-1 font-bold">ESC</span>
+            <span className="text-gray-300">Reset</span>
+          </div>
+        </div>
       </div>
     </div>
   );
