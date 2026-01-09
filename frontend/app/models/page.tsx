@@ -544,7 +544,7 @@ export default function ModelsPage() {
               <li><strong>improve-bullets:</strong> Prueba de generación JSON válido para mejorar bullets de CV</li>
               <li><strong>review-cv:</strong> Prueba de generación de análisis en Markdown profesional en español</li>
               <li><strong>Consistencia:</strong> 3 intentos por modelo para medir estabilidad</li>
-              <li><strong>Servidor:</strong> ollama.alexanderoviedofadul.dev (remoto)</li>
+              <li><strong>Servidor:</strong> Servidor remoto Ollama (interno)</li>
             </ul>
           </div>
         </section>
@@ -571,10 +571,10 @@ export default function ModelsPage() {
           {/* Arcade Style Message */}
           <div className="inline-block bg-gray-900/50 border border-gray-800 px-6 py-3 rounded-sm">
             <p className="text-xs text-gray-500 font-mono tracking-wider">
-              <span className="text-cyan-400">$</span> ollama benchmark --models=4 --tests=3
+              <span className="text-cyan-400">$</span> Benchmarks ejecutados con Ollama
             </p>
             <p className="text-[10px] text-gray-600 mt-1">
-              Server: ollama.alexanderoviedofadul.dev
+              Modelos evaluados: Llama 3.1, Qwen 2.5, Mistral, Gemma 2
             </p>
           </div>
 
