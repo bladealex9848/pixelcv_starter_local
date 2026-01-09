@@ -1,6 +1,9 @@
 // Sprites de Pixel Race - Arrays de 32x32 para renderizado
 // Cada sprite es un array de 1024 colores (32x32 grid)
 
+// Importar sprites generados con pygame
+import { TREE_SPRITES_DETAILED } from './tree_sprites_generated';
+
 export type Sprite = {
   id: string;
   name: string;
@@ -242,72 +245,14 @@ export const createEnemyCar3Sprite = (): Sprite => {
   };
 };
 
-// Sprite: Árbol grande
+// Sprite: Árbol grande (Pine) - generado con pygame
 export const createTreeSprite = (): Sprite => {
-  const pixels = createEmptySprite();
-
-  // Copa del árbol
-  for (let y = 8; y < 18; y++) {
-    for (let x = 10; x < 22; x++) {
-      const dist = Math.sqrt((x - 16) ** 2 + (y - 13) ** 2);
-      if (dist < 7) {
-        if (dist < 4) {
-          setPixel(pixels, x, y, COLORS.TREE_LEAVES);
-        } else {
-          setPixel(pixels, x, y, COLORS.TREE_LEAVES_DARK);
-        }
-      }
-    }
-  }
-
-  // Tronco
-  for (let y = 18; y < 25; y++) {
-    for (let x = 14; x < 18; x++) {
-      setPixel(pixels, x, y, COLORS.TREE_TRUNK);
-    }
-  }
-
-  return {
-    id: 'tree',
-    name: 'Árbol',
-    pixels,
-    width: 32,
-    height: 32,
-  };
+  return TREE_SPRITES_DETAILED.pine;
 };
 
-// Sprite: Árbol pequeño
+// Sprite: Árbol pequeño (Oak) - generado con pygame
 export const createSmallTreeSprite = (): Sprite => {
-  const pixels = createEmptySprite();
-
-  // Copa del árbol (más pequeña)
-  for (let y = 12; y < 20; y++) {
-    for (let x = 12; x < 20; x++) {
-      const dist = Math.sqrt((x - 16) ** 2 + (y - 16) ** 2);
-      if (dist < 4) {
-        if (dist < 2) {
-          setPixel(pixels, x, y, COLORS.TREE_LEAVES);
-        } else {
-          setPixel(pixels, x, y, COLORS.TREE_LEAVES_LIGHT);
-        }
-      }
-    }
-  }
-
-  // Tronco
-  for (let y = 20; y < 25; y++) {
-    for (let x = 15; x < 17; x++) {
-      setPixel(pixels, x, y, COLORS.TREE_TRUNK);
-    }
-  }
-
-  return {
-    id: 'small_tree',
-    name: 'Árbol Pequeño',
-    pixels,
-    width: 32,
-    height: 32,
-  };
+  return TREE_SPRITES_DETAILED.oak;
 };
 
 // Sprite: Meta (checkered flag)

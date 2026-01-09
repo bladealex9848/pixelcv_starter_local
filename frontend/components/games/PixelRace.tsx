@@ -485,9 +485,9 @@ export default function PixelRace({ isAuthenticated, onGameEnd }: PixelRaceProps
       // Clear assets
       l.clearSprites();
 
-      // First draw section assets
-      if (n % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, -2, width);
-      if ((n + 5) % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, 1.3, width);
+      // First draw section assets (árboles fuera de la carretera)
+      if (n % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, -3.5, width);
+      if ((n + 5) % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.SMALL_TREE, 3.5, width);
 
       if (l.special) l.drawSprite(level, 0, l.special, l.special.offset || 0, width);
 
