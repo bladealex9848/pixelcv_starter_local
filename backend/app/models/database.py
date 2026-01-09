@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Modelos de base de datos SQLite para PixelCV - Sistema de Comunidad y Gamificación"""
+"""Modelos de base de datos para PixelCV - Sistema de Comunidad y Gamificación
+Soporta SQLite (desarrollo) y MariaDB/MySQL (producción)
+"""
 from sqlalchemy import create_engine, Column, String, Integer, Text, Boolean, DateTime, Float, ForeignKey, JSON, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -7,7 +9,22 @@ from datetime import datetime
 import os
 
 DATABASE_URL = os.getenv("PIXELCV_DB_URL", "sqlite:///./pixelcv.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+# Configuración condicional según el tipo de base de datos
+if DATABASE_URL.startswith("sqlite"):
+    # SQLite: requiere check_same_thread=False para FastAPI async
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # MariaDB/MySQL: configuración de pool de conexiones para producción
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,      # Verifica conexión antes de usarla
+        pool_recycle=3600,       # Recicla conexiones cada hora
+        pool_size=10,            # Conexiones permanentes en el pool
+        max_overflow=20,         # Conexiones adicionales bajo demanda
+        echo=False               # No loguear queries SQL (cambiar a True para debug)
+    )
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -15,13 +32,13 @@ Base = declarative_base()
 class User(Base):
     """Usuario de la plataforma"""
     __tablename__ = "users"
-    
-    id = Column(String, primary_key=True)
-    username = Column(String, unique=True, nullable=False, index=True)
-    email = Column(String, unique=True, nullable=False, index=True)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
-    avatar_url = Column(String, default="")
+
+    id = Column(String(36), primary_key=True)  # UUID
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(200))
+    avatar_url = Column(Text, default="")  # Puede contener base64 largo
     bio = Column(Text)
     is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
@@ -40,14 +57,14 @@ class User(Base):
 class UserProfile(Base):
     """Perfil extendido del usuario con estadísticas gamificadas"""
     __tablename__ = "user_profiles"
-    
-    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
-    
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True)
+
     # Estadísticas
     total_points = Column(Integer, default=0)
     level = Column(Integer, default=1)
     experience = Column(Integer, default=0)
-    rank_title = Column(String, default="Novato")  # Novato, Aprendiz, Maestro, Leyenda
+    rank_title = Column(String(50), default="Novato")  # Novato, Aprendiz, Maestro, Leyenda
     
     # Contadores
     cvs_created = Column(Integer, default=0)
@@ -61,7 +78,7 @@ class UserProfile(Base):
     badges = Column(JSON, default=list)  # ["early_adopter", "top_creator", "social_butterfly", etc.]
     
     # Configuración
-    theme_preference = Column(String, default="classic")
+    theme_preference = Column(String(50), default="classic")
     notifications_enabled = Column(Boolean, default=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -75,13 +92,13 @@ class UserProfile(Base):
 class CV(Base):
     """CV creado por un usuario"""
     __tablename__ = "cvs"
-    
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    
+
+    id = Column(String(36), primary_key=True)  # UUID
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+
     # Contenido del CV
-    name = Column(String, nullable=False)  # Nombre del propietario del CV
-    slug = Column(String, unique=True, nullable=False, index=True)  # URL-friendly
+    name = Column(String(200), nullable=False)  # Nombre del propietario del CV
+    slug = Column(String(200), unique=True, nullable=False, index=True)  # URL-friendly
     yaml_content = Column(Text, nullable=False)  # Contenido YAML completo
     json_content = Column(Text)  # Contenido JSON para fácil acceso
     
@@ -100,9 +117,9 @@ class CV(Base):
     share_count = Column(Integer, default=0)  # Contador de veces compartido
     
     # Archivos generados
-    pdf_path = Column(String)
-    png_path = Column(String)
-    html_path = Column(String)
+    pdf_path = Column(String(500))
+    png_path = Column(String(500))
+    html_path = Column(String(500))
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -117,15 +134,15 @@ class CV(Base):
 class PointHistory(Base):
     """Historial de puntos ganados por un usuario"""
     __tablename__ = "point_history"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    user_profile_id = Column(String, ForeignKey("user_profiles.user_id"), nullable=False)
-    
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_profile_id = Column(String(36), ForeignKey("user_profiles.user_id"), nullable=False)
+
     points = Column(Integer, nullable=False)  # Positivo para ganar, negativo para perder
-    action = Column(String, nullable=False)  # cv_created, cv_published, visit_received, comment_posted, etc.
+    action = Column(String(100), nullable=False)  # cv_created, cv_published, visit_received, etc.
     description = Column(Text)
-    related_cv_id = Column(String, ForeignKey("cvs.id"))
+    related_cv_id = Column(String(36), ForeignKey("cvs.id"))
     
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -136,13 +153,13 @@ class PointHistory(Base):
 class Visit(Base):
     """Registro de visitas a un CV (para gamificación)"""
     __tablename__ = "visits"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    cv_id = Column(String, ForeignKey("cvs.id"), nullable=False)
-    visitor_id = Column(String, ForeignKey("users.id"))  # Null si es visitante anónimo
-    visitor_ip = Column(String)  # Para evitar spam de visitas del mismo usuario
-    visitor_user_agent = Column(String)
-    referrer = Column(String)  # De dónde vino la visita
+    cv_id = Column(String(36), ForeignKey("cvs.id"), nullable=False)
+    visitor_id = Column(String(36), ForeignKey("users.id"))  # Null si es visitante anónimo
+    visitor_ip = Column(String(45))  # IPv6 máximo 45 chars
+    visitor_user_agent = Column(String(500))
+    referrer = Column(String(500))  # De dónde vino la visita
     
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -159,13 +176,13 @@ class Visit(Base):
 class Comment(Base):
     """Comentarios en CVs"""
     __tablename__ = "comments"
-    
-    id = Column(String, primary_key=True)
-    cv_id = Column(String, ForeignKey("cvs.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    
+
+    id = Column(String(36), primary_key=True)  # UUID
+    cv_id = Column(String(36), ForeignKey("cvs.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+
     content = Column(Text, nullable=False)
-    parent_id = Column(String, ForeignKey("comments.id"))  # Para respuestas anidadas
+    parent_id = Column(String(36), ForeignKey("comments.id"))  # Para respuestas anidadas
     
     is_edited = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -179,10 +196,10 @@ class Comment(Base):
 class Like(Base):
     """Likes/Megusta en CVs"""
     __tablename__ = "likes"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    cv_id = Column(String, ForeignKey("cvs.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    cv_id = Column(String(36), ForeignKey("cvs.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -201,8 +218,8 @@ class GameSession(Base):
     __tablename__ = "game_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Null para demo mode
-    game_id = Column(String, nullable=False)  # pong, tictactoe, memory, snake, etc.
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=True)  # Null para demo mode
+    game_id = Column(String(50), nullable=False)  # pong, tictactoe, memory, snake, etc.
 
     # Resultados del juego
     score = Column(Integer, default=0)
@@ -233,9 +250,9 @@ class PixelArt(Base):
     """Creaciones de Pixel Art de la comunidad"""
     __tablename__ = "pixel_art"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    title = Column(String, nullable=False)
+    id = Column(String(36), primary_key=True)  # UUID
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    title = Column(String(200), nullable=False)
     description = Column(Text)
     
     # Representación del arte (Matriz de colores o JSON)
@@ -265,10 +282,10 @@ class PixelArt(Base):
 class PixelArtComment(Base):
     """Comentarios en piezas de Pixel Art"""
     __tablename__ = "pixel_art_comments"
-    
-    id = Column(String, primary_key=True)
-    pixel_art_id = Column(String, ForeignKey("pixel_art.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+
+    id = Column(String(36), primary_key=True)  # UUID
+    pixel_art_id = Column(String(36), ForeignKey("pixel_art.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -278,10 +295,10 @@ class PixelArtComment(Base):
 class PixelArtLike(Base):
     """Likes en piezas de Pixel Art"""
     __tablename__ = "pixel_art_likes"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    pixel_art_id = Column(String, ForeignKey("pixel_art.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    pixel_art_id = Column(String(36), ForeignKey("pixel_art.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     __table_args__ = (
@@ -294,8 +311,8 @@ class GameAIParameters(Base):
     __tablename__ = "game_ai_parameters"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(String, nullable=False)  # pong, tictactoe, spaceinvaders, etc.
-    difficulty = Column(String, nullable=False)  # easy, medium, hard, expert
+    game_id = Column(String(50), nullable=False)  # pong, tictactoe, spaceinvaders, etc.
+    difficulty = Column(String(20), nullable=False)  # easy, medium, hard, expert
 
     # Parámetros serializados como JSON (estructura flexible por juego)
     # Pong: {base_error: 15.0, reaction_delay_chance: 0.05, max_bounces: 2}
@@ -329,7 +346,7 @@ class GameTrainingData(Base):
     session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
 
     # Identificación del juego
-    game_id = Column(String, nullable=False)  # pong, tictactoe, etc.
+    game_id = Column(String(50), nullable=False)  # pong, tictactoe, etc.
 
     # Datos del juego (formato optimizado para análisis)
     # Pong: [{ball_x, ball_y, ball_vx, ball_vy, paddle_y, timestamp}, ...]
@@ -369,15 +386,15 @@ class AIParameterHistory(Base):
     __tablename__ = "ai_parameter_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(String, nullable=False)
-    difficulty = Column(String, nullable=False)
+    game_id = Column(String(50), nullable=False)
+    difficulty = Column(String(20), nullable=False)
 
     # Parámetros archivados (snapshot completo)
     parameters_snapshot = Column(JSON, nullable=False)
     version = Column(Integer, nullable=False)
 
     # Información de cambio
-    change_reason = Column(String)  # "ai_trained", "manual_adjustment", "rollback"
+    change_reason = Column(String(100))  # "ai_trained", "manual_adjustment", "rollback"
     previous_version = Column(Integer)  # Versión anterior (para rollback)
 
     # Métricas antes del cambio (para comparar rendimiento)

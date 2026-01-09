@@ -17,6 +17,7 @@ dependencies = [
   "email-validator",
   "pillow",
   "rendercv[full]>=1.0.0",
+  "pymysql>=1.1.2",
 ]
 
 [tool.uv]
