@@ -7,586 +7,759 @@ interface PixelRaceProps {
   onGameEnd: (score: number, won: boolean, moves: number, timeSeconds: number, gameData: any) => void;
 }
 
-interface Enemy {
-  z: number;
-  lane: number;
-  speed: number;
-  color: string;
-}
+// ============================================================================
+// ASSETS (reemplazados con CSS/colors ya que no tenemos imágenes PNG)
+// ============================================================================
 
-interface TrainingMove {
-  timestamp: number;
-  player_x: number;
-  player_speed: number;
-  player_lane: number;
-  event_type?: 'lane_change' | 'accelerate' | 'decelerate' | 'collision' | 'checkpoint' | 'lap_complete';
-}
-
-// Constantes del juego
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 500;
-const ROAD_WIDTH = 2000;
-const SEGMENT_LENGTH = 200;
-const CAMERA_DEPTH = 0.84;
-const LANES = [-0.7, 0, 0.7]; // Izquierda, Centro, Derecha
-const MAX_SPEED = 120;
-const ACCELERATION = 30;
-const BRAKING = -50;
-const DECELERATION = -15;
-const ENEMY_SPEED = 25;
-
-// Colores estilo retro PixelCV
-const COLORS = {
-  sky: ['#1a1a2e', '#16213e'],
-  grass: ['#1a5c3a', '#0f4c3a'],
-  road: ['#3a3a3a', '#4a4a4a'],
-  rumble: ['#cc0000', '#ffffff'],
-  player: '#f97316',
-  playerGlow: 'rgba(249, 115, 22, 0.5)',
-  hud: 'rgba(0, 0, 0, 0.8)',
-  hudBorder: '#f97316'
+const ASSETS = {
+  COLOR: {
+    TAR: ["#959298", "#9c9a9d"],
+    RUMBLE: ["#959298", "#f5f2f6"],
+    GRASS: ["#eedccd", "#e6d4c5"],
+  },
+  IMAGE: {
+    TREE: { src: "", width: 132, height: 192 }, // Se dibujará con CSS
+    HERO: { src: "", width: 110, height: 56 },
+    CAR: { src: "", width: 50, height: 36 },
+    FINISH: { src: "", width: 339, height: 180, offset: -0.5 },
+    SKY: { src: "" },
+  }
 };
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+const timestamp = () => new Date().getTime();
+const accelerate = (v: number, accel: number, dt: number) => v + accel * dt;
+const isCollide = (x1: number, w1: number, x2: number, w2: number) => (x1 - x2) ** 2 <= (w2 + w1) ** 2;
+
+function getRand(min: number, max: number) {
+  return (Math.random() * (max - min) + min) | 0;
+}
+
+function randomProperty(obj: any) {
+  let keys = Object.keys(obj);
+  return obj[keys[(keys.length * Math.random()) << 0]];
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
+
+function pad(value: number, numZeros: number, char: number | string = 0): string {
+  let n = Math.abs(value);
+  let zeros = Math.max(0, numZeros - Math.floor(n).toString().length);
+  let zeroString = Math.pow(10, zeros)
+    .toString()
+    .substr(1)
+    .replace("0", char.toString());
+  return zeroString + n;
+}
+
+// ============================================================================
+// CLASSES
+// ============================================================================
+
+class Line {
+  x = 0;
+  y = 0;
+  z = 0;
+  X = 0;
+  Y = 0;
+  W = 0;
+  curve = 0;
+  scale = 0;
+  elements: HTMLElement[] = [];
+  special: any = null;
+
+  project(camX: number, camY: number, camZ: number, halfWidth: number, height: number, roadW: number) {
+    this.scale = 0.2 / (this.z - camZ);
+    this.X = (1 + this.scale * (this.x - camX)) * halfWidth;
+    this.Y = Math.ceil(((1 - this.scale * (this.y - camY)) * height) / 2);
+    this.W = this.scale * roadW * halfWidth;
+  }
+
+  clearSprites() {
+    for (let e of this.elements) {
+      if (e) e.style.background = "transparent";
+    }
+  }
+
+  drawSprite(depth: number, layer: number | HTMLElement, sprite: any, offset: number, containerWidth: number) {
+    let destX = this.X + this.scale * (containerWidth / 2) * offset;
+    let destY = this.Y + 4;
+    let destW = (sprite.width * this.W) / 265;
+    let destH = (sprite.height * this.W) / 265;
+
+    destX += destW * offset;
+    destY += destH * -1;
+
+    let obj = layer instanceof HTMLElement ? layer : this.elements[(layer as number) + 6];
+    if (!obj) return;
+
+    // Si es un coche enemigo, dibujar con CSS
+    if (sprite === ASSETS.IMAGE.CAR) {
+      obj.style.background = '#ef4444';
+      obj.style.width = destW + 'px';
+      obj.style.height = destH + 'px';
+      obj.style.left = destX + 'px';
+      obj.style.top = destY + 'px';
+      obj.style.zIndex = depth.toString();
+      return;
+    }
+
+    // Si es un árbol, dibujar con CSS
+    if (sprite === ASSETS.IMAGE.TREE) {
+      obj.style.background = '#1a5c3a';
+      obj.style.borderRadius = '50%';
+      obj.style.width = destW + 'px';
+      obj.style.height = destH + 'px';
+      obj.style.left = destX + 'px';
+      obj.style.top = destY + 'px';
+      obj.style.zIndex = depth.toString();
+      return;
+    }
+
+    // Meta de llegada
+    if (sprite === ASSETS.IMAGE.FINISH) {
+      obj.style.background = '#fbbf24';
+      obj.style.width = destW + 'px';
+      obj.style.height = destH + 'px';
+      obj.style.left = destX + 'px';
+      obj.style.top = destY + 'px';
+      obj.style.zIndex = depth.toString();
+      return;
+    }
+  }
+}
+
+class Car {
+  pos: number;
+  type: any;
+  lane: number;
+  element: HTMLElement;
+
+  constructor(pos: number, type: any, lane: number, road: HTMLElement) {
+    this.pos = pos;
+    this.type = type;
+    this.lane = lane;
+
+    const element = document.createElement("div");
+    element.style.position = "absolute";
+    element.style.background = "#ef4444";
+    road.appendChild(element);
+    this.element = element;
+  }
+}
+
+// ============================================================================
+// COMPONENTE PRINCIPAL
+// ============================================================================
+
 export default function PixelRace({ isAuthenticated, onGameEnd }: PixelRaceProps) {
-  // Estados del juego
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'ended'>('menu');
-  const [speed, setSpeed] = useState(0);
-  const [distance, setDistance] = useState(0);
-  const [lapTime, setLapTime] = useState(0);
-  const [lap, setLap] = useState(1);
-  const [position, setPosition] = useState(3);
+  // Container refs
+  const gameRef = useRef<HTMLDivElement>(null);
+  const roadRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const cloudRef = useRef<HTMLDivElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
+  const homeRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const highscoreRef = useRef<HTMLDivElement>(null);
+  const timeRef = useRef<HTMLSpanElement>(null);
+  const scoreRef = useRef<HTMLSpanElement>(null);
+  const lapRef = useRef<HTMLSpanElement>(null);
+  const tachoRef = useRef<HTMLSpanElement>(null);
 
-  // Refs para el estado del juego
+  // Game state refs
+  const linesRef = useRef<Line[]>([]);
+  const carsRef = useRef<Car[]>([]);
+  const inGameRef = useRef(false);
+  const startRef = useRef(0);
   const playerXRef = useRef(0);
-  const playerZRef = useRef(0);
-  const playerSpeedRef = useRef(0);
-  const playerLaneRef = useRef(1); // 0=izq, 1=centro, 2=der
-  const keysRef = useRef<Record<string, boolean>>({});
-  const animationFrameRef = useRef<number | undefined>(undefined);
+  const speedRef = useRef(0);
+  const scoreValRef = useRef(0);
+  const posRef = useRef(0);
+  const cloudOffsetRef = useRef(0);
+  const sectionProgRef = useRef(0);
+  const mapIndexRef = useRef(0);
+  const countDownRef = useRef(0);
+  const highscoresRef = useRef<string[]>([]);
 
-  // Training data
-  const gameEventsRef = useRef<TrainingMove[]>([]);
-  const gameStartTimeRef = useRef<number>(0);
-  const lastLapTimeRef = useRef<number>(0);
+  const thenRef = useRef(timestamp());
 
-  // Enemigos
-  const [enemies, setEnemies] = useState<Enemy[]>([
-    { z: 500, lane: 0, speed: ENEMY_SPEED, color: '#ef4444' },
-    { z: 1000, lane: 2, speed: ENEMY_SPEED, color: '#22c55e' },
-    { z: 1500, lane: 1, speed: ENEMY_SPEED, color: '#3b82f6' },
-  ]);
+  // Constants
+  const width = 800;
+  const halfWidth = width / 2;
+  const height = 500;
+  const roadW = 4000;
+  const segL = 200;
+  const H = 1500;
+  const N = 70;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const maxSpeed = 200;
+  const accel = 38;
+  const breaking = -80;
+  const decel = -40;
+  const maxOffSpeed = 40;
+  const offDecel = -70;
+  const enemy_speed = 8;
+  const hitSpeed = 20;
 
-  // Proyección 3D pseudo-matemática
-  const project = useCallback((worldX: number, worldY: number, worldZ: number) => {
-    const cameraZ = playerZRef.current;
-    const scale = CAMERA_DEPTH / (worldZ - cameraZ);
-    const screenX = (CANVAS_WIDTH / 2) + (scale * worldX * CANVAS_WIDTH / 2);
-    const screenY = (CANVAS_HEIGHT / 2) - (scale * worldY * CANVAS_HEIGHT / 2);
-    const screenW = scale * ROAD_WIDTH * CANVAS_WIDTH / 2;
-    return { screenX, screenY, screenW, scale };
+  const LANE = { A: -2.3, B: -0.5, C: 1.2 };
+  const mapLength = 15000;
+  const targetFrameRate = 1000 / 25;
+
+  // UI State
+  const [gameStarted, setGameStarted] = useState(false);
+
+  // ============================================================================
+  // MAP GENERATION
+  // ============================================================================
+
+  const genMap = useCallback(() => {
+    let map: any[] = [];
+    let i = 0;
+
+    for (; i < mapLength; i += getRand(0, 50)) {
+      let section = {
+        from: i,
+        to: (i = i + getRand(300, 600)),
+      };
+
+      let randHeight = getRand(-5, 5);
+      let randCurve = getRand(5, 30) * (Math.random() >= 0.5 ? 1 : -1);
+      let randInterval = getRand(20, 40);
+
+      if (Math.random() > 0.9)
+        Object.assign(section, {
+          curve: () => randCurve,
+          height: () => randHeight,
+        });
+      else if (Math.random() > 0.8)
+        Object.assign(section, {
+          curve: () => 0,
+          height: (i: number) => Math.sin(i / randInterval) * 1000,
+        });
+      else if (Math.random() > 0.8)
+        Object.assign(section, {
+          curve: () => 0,
+          height: () => randHeight,
+        });
+      else
+        Object.assign(section, {
+          curve: () => randCurve,
+          height: () => 0,
+        });
+
+      map.push(section);
+    }
+
+    map.push({
+      from: i,
+      to: i + N,
+      curve: () => 0,
+      height: () => 0,
+      special: ASSETS.IMAGE.FINISH,
+    });
+    map.push({ from: Infinity });
+    return map;
   }, []);
 
-  // Actualizar física del juego
-  const update = useCallback((deltaTime: number) => {
-    if (gameState !== 'playing') return;
+  const mapRef = useRef<any[]>([]);
 
-    const keys = keysRef.current;
+  // ============================================================================
+  // DRAW FUNCTIONS
+  // ============================================================================
 
-    // Aceleración / Freno
-    if (keys['ArrowUp'] || keys['w']) {
-      playerSpeedRef.current = Math.min(MAX_SPEED, playerSpeedRef.current + ACCELERATION * deltaTime);
-    } else if (keys['ArrowDown'] || keys['s']) {
-      playerSpeedRef.current = Math.max(0, playerSpeedRef.current + BRAKING * deltaTime);
+  const drawQuad = useCallback((
+    element: HTMLElement,
+    layer: number,
+    color: string,
+    x1: number,
+    y1: number,
+    w1: number,
+    x2: number,
+    y2: number,
+    w2: number
+  ) => {
+    element.style.zIndex = layer.toString();
+    element.style.background = color;
+    element.style.position = "absolute";
+    element.style.top = y2 + "px";
+    element.style.left = (x1 - w1 / 2 - w1) + "px";
+    element.style.width = (w1 * 3) + "px";
+    element.style.height = (y1 - y2) + "px";
+
+    let leftOffset = w1 + x2 - x1 + Math.abs(w2 / 2 - w1 / 2);
+    element.style.clipPath = `polygon(${leftOffset}px 0, ${leftOffset + w2}px 0, 66.66% 100%, 33.33% 100%)`;
+  }, []);
+
+  // ============================================================================
+  // GAME LOOP
+  // ============================================================================
+
+  const update = useCallback((step: number) => {
+    if (!roadRef.current || !heroRef.current || !cloudRef.current || !textRef.current ||
+        !timeRef.current || !scoreRef.current || !lapRef.current || !tachoRef.current ||
+        !homeRef.current || !hudRef.current || !highscoreRef.current) return;
+
+    const hero = heroRef.current;
+    const cloud = cloudRef.current;
+    const text = textRef.current;
+    const time = timeRef.current;
+    const score = scoreRef.current;
+    const lap = lapRef.current;
+    const tacho = tachoRef.current;
+    const home = homeRef.current;
+    const hud = hudRef.current;
+    const highscore = highscoreRef.current;
+
+    const lines = linesRef.current;
+    const cars = carsRef.current;
+    const map = mapRef.current;
+
+    // Prepare this iteration
+    posRef.current += speedRef.current;
+    while (posRef.current >= N * segL) posRef.current -= N * segL;
+    while (posRef.current < 0) posRef.current += N * segL;
+
+    var startPos = (posRef.current / segL) | 0;
+    let endPos = (startPos + N - 1) % N;
+
+    scoreValRef.current += speedRef.current * step;
+    countDownRef.current -= step;
+
+    // Left / right position
+    playerXRef.current -= (lines[startPos].curve / 5000) * step * speedRef.current;
+
+    const keys = (window as any).KEYS || {};
+
+    if (keys.ArrowRight) {
+      hero.style.backgroundPosition = "-220px 0";
+      playerXRef.current += 0.007 * step * speedRef.current;
+    } else if (keys.ArrowLeft) {
+      hero.style.backgroundPosition = "0 0";
+      playerXRef.current -= 0.007 * step * speedRef.current;
     } else {
-      playerSpeedRef.current = Math.max(0, playerSpeedRef.current + DECELERATION * deltaTime);
+      hero.style.backgroundPosition = "-110px 0";
     }
 
-    // Movimiento lateral (cambio de carril suave)
-    const targetLaneX = LANES[playerLaneRef.current];
-    const dx = targetLaneX - playerXRef.current;
-    playerXRef.current += dx * 5 * deltaTime;
+    playerXRef.current = clamp(playerXRef.current, -3, 3);
 
-    // Mover hacia adelante
-    const moveAmount = playerSpeedRef.current * deltaTime * 10;
-    playerZRef.current += moveAmount;
-    setDistance(playerZRef.current);
-    setSpeed(Math.floor(playerSpeedRef.current));
+    // Speed
+    if (inGameRef.current && keys.ArrowUp)
+      speedRef.current = accelerate(speedRef.current, accel, step);
+    else if (keys.ArrowDown)
+      speedRef.current = accelerate(speedRef.current, breaking, step);
+    else
+      speedRef.current = accelerate(speedRef.current, decel, step);
 
-    // Actualizar tiempo
-    const currentTime = Date.now();
-    setLapTime(currentTime - gameStartTimeRef.current);
-
-    // Detectar colisiones con enemigos
-    const playerLane = playerLaneRef.current;
-    enemies.forEach(enemy => {
-      // Calcular posición relativa del enemigo
-      const relZ = ((enemy.z - playerZRef.current) % 6000 + 6000) % 6000;
-
-      // Si el enemigo está cerca y en el mismo carril
-      if (relZ < 100 && relZ > 0 && Math.abs(playerXRef.current - LANES[enemy.lane]) < 0.3) {
-        // Colisión - reducir velocidad drásticamente
-        playerSpeedRef.current = Math.min(playerSpeedRef.current, 15);
-
-        // Registrar evento de colisión
-        if (gameEventsRef.current.length < 5000) {
-          const lastEvent = gameEventsRef.current[gameEventsRef.current.length - 1];
-          if (!lastEvent || lastEvent.event_type !== 'collision' || currentTime - lastEvent.timestamp > 1000) {
-            gameEventsRef.current.push({
-              timestamp: currentTime - gameStartTimeRef.current,
-              player_x: playerXRef.current,
-              player_speed: playerSpeedRef.current,
-              player_lane: playerLaneRef.current,
-              event_type: 'collision'
-            });
-          }
-        }
-      }
-    });
-
-    // Actualizar enemigos
-    setEnemies(prevEnemies => {
-      return prevEnemies.map(enemy => {
-        let newZ = enemy.z + ENEMY_SPEED * deltaTime * 10;
-
-        // Cambio aleatorio de carril
-        if (Math.random() < 0.002) {
-          const newLane = Math.floor(Math.random() * 3);
-          if (newLane !== enemy.lane) {
-            // Registrar evento de entrenamiento cuando el enemigo cambia de carril
-            if (gameEventsRef.current.length < 5000) {
-              gameEventsRef.current.push({
-                timestamp: currentTime - gameStartTimeRef.current,
-                player_x: playerXRef.current,
-                player_speed: playerSpeedRef.current,
-                player_lane: playerLaneRef.current,
-                event_type: 'lane_change'
-              });
-            }
-            return { ...enemy, lane: newLane };
-          }
-        }
-
-        // Respawn si se queda muy atrás
-        const relZ = ((newZ - playerZRef.current) % 6000 + 6000) % 6000;
-        if (relZ < 100 && playerSpeedRef.current < 50) {
-          newZ = playerZRef.current + 2000;
-        }
-
-        return { ...enemy, z: newZ };
-      });
-    });
-
-    // Calcular posición en carrera (basado en distancia)
-    const totalDistance = playerZRef.current;
-    const avgEnemyDistance = enemies.reduce((sum, e) => sum + e.z, 0) / enemies.length;
-    const pos = Math.max(1, Math.min(4, Math.floor(4 - (playerZRef.current - avgEnemyDistance) / 1000) + 3));
-    setPosition(pos);
-
-  }, [gameState, enemies, setEnemies, setPosition]);
-
-  // Renderizar el juego
-  const render = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Limpiar canvas con gradiente de cielo
-    const skyGradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT / 2);
-    skyGradient.addColorStop(0, COLORS.sky[0]);
-    skyGradient.addColorStop(1, COLORS.sky[1]);
-    ctx.fillStyle = skyGradient;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Dibujar horizonte (pasto)
-    ctx.fillStyle = COLORS.grass[0];
-    ctx.fillRect(0, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT / 2);
-
-    // Función auxiliar para dibujar trapezoide (definida ANTES de drawSegment)
-    const drawTrapezoid = (ctx: CanvasRenderingContext2D, x1: number, y1: number, w1: number, x2: number, y2: number, w2: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x1 - w1 / 2, y1);
-      ctx.lineTo(x1 + w1 / 2, y1);
-      ctx.lineTo(x2 + w2 / 2, y2);
-      ctx.lineTo(x2 - w2 / 2, y2);
-      ctx.closePath();
-      ctx.fill();
-    };
-
-    // Dibujar segmentos de carretera (efecto 3D pseudo)
-    const drawSegment = (z: number, isEven: boolean) => {
-      const worldX = playerXRef.current * ROAD_WIDTH;
-      const { screenX, screenY, screenW } = project(-worldX, 0, z);
-
-      if (screenY > CANVAS_HEIGHT) return null;
-
-      const nextZ = z + SEGMENT_LENGTH;
-      const { screenX: nextScreenX, screenY: nextScreenY, screenW: nextScreenW } = project(-worldX, 0, nextZ);
-
-      const h = Math.max(1, nextScreenY - screenY);
-
-      // Pasto a los lados
-      ctx.fillStyle = isEven ? COLORS.grass[1] : COLORS.grass[0];
-      ctx.fillRect(0, screenY, CANVAS_WIDTH, h);
-
-      // Bordillo (rumble strip)
-      const rumbleW1 = screenW * 1.15;
-      const rumbleW2 = nextScreenW * 1.15;
-      ctx.fillStyle = isEven ? COLORS.rumble[0] : COLORS.rumble[1];
-      drawTrapezoid(ctx, screenX - rumbleW1, screenY, rumbleW1 * 2, nextScreenX - rumbleW2, nextScreenY, rumbleW2 * 2);
-
-      // Carretera
-      ctx.fillStyle = isEven ? COLORS.road[1] : COLORS.road[0];
-      drawTrapezoid(ctx, screenX - screenW, screenY, screenW * 2, nextScreenX - nextScreenW, nextScreenY, nextScreenW * 2);
-
-      // Líneas de carril (carriles)
-      if (!isEven) {
-        ctx.fillStyle = '#ffffff';
-        // Línea izquierda
-        drawTrapezoid(ctx, screenX - screenW * 0.33, screenY, screenW * 0.05, nextScreenX - nextScreenW * 0.33, nextScreenY, nextScreenW * 0.05);
-        // Línea derecha
-        drawTrapezoid(ctx, screenX + screenW * 0.28, screenY, screenW * 0.05, nextScreenX + nextScreenW * 0.28, nextScreenY, nextScreenW * 0.05);
-      }
-
-      return { screenX, screenY, screenW, nextScreenY };
-    };
-
-    // Dibujar carretera desde cerca hasta lejos
-    const startSegment = Math.floor(playerZRef.current / SEGMENT_LENGTH);
-    for (let i = 25; i >= 0; i--) {
-      const segZ = (startSegment + i) * SEGMENT_LENGTH;
-      const isEven = segZ % (SEGMENT_LENGTH * 2) === 0;
-      drawSegment(segZ, isEven);
+    if (Math.abs(playerXRef.current) > 0.55 && speedRef.current >= maxOffSpeed) {
+      speedRef.current = accelerate(speedRef.current, offDecel, step);
     }
 
-    // Dibujar enemigos (de atrás hacia adelante para correcto z-ordering)
-    const sortedEnemies = [...enemies].sort((a, b) => {
-      const relA = ((a.z - playerZRef.current) % 6000 + 6000) % 6000;
-      const relB = ((b.z - playerZRef.current) % 6000 + 6000) % 6000;
-      return relB - relA;
-    });
+    speedRef.current = clamp(speedRef.current, 0, maxSpeed);
 
-    sortedEnemies.forEach(enemy => {
-      const relZ = ((enemy.z - playerZRef.current) % 6000 + 6000) % 6000;
-      if (relZ > 50 && relZ < 2000) {
-        const enemyScreenX = CANVAS_WIDTH / 2 + (LANES[enemy.lane] - playerXRef.current) * 200;
-        const scale = 500 / relZ;
-        const enemyW = 40 * scale;
-        const enemyH = 25 * scale;
-        const enemyY = CANVAS_HEIGHT / 2 + 100 - relZ * 0.3;
+    // Update map
+    let current = map[mapIndexRef.current];
+    let use = current.from < scoreValRef.current && current.to > scoreValRef.current;
+    if (use) sectionProgRef.current += speedRef.current * step;
+    lines[endPos].curve = use ? current.curve(sectionProgRef.current) : 0;
+    lines[endPos].y = use ? current.height(sectionProgRef.current) : 0;
+    lines[endPos].special = null;
 
-        // Sombra del enemigo
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(enemyScreenX + 3, enemyY + 3, enemyW / 2, enemyH / 3, 0, 0, Math.PI * 2);
-        ctx.fill();
+    if (current.to <= scoreValRef.current) {
+      mapIndexRef.current++;
+      sectionProgRef.current = 0;
+      lines[endPos].special = map[mapIndexRef.current].special;
+    }
 
-        // Cuerpo del enemigo
-        ctx.fillStyle = enemy.color;
-        ctx.fillRect(enemyScreenX - enemyW / 2, enemyY - enemyH / 2, enemyW, enemyH);
+    // Win / lose + UI
+    if (!inGameRef.current) {
+      speedRef.current = accelerate(speedRef.current, breaking, step);
+      speedRef.current = clamp(speedRef.current, 0, maxSpeed);
+    } else if (countDownRef.current <= 0 || lines[startPos].special) {
+      tacho.style.display = "none";
 
-        // Detalles del enemigo
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fillRect(enemyScreenX - enemyW / 3, enemyY - enemyH / 3, enemyW / 2.5, enemyH / 1.5);
-      }
-    });
+      home.style.display = "block";
+      roadRef.current.style.opacity = "0.4";
+      text.innerText = "INSERT COIN";
 
-    // Dibujar coche del jugador
-    const playerScreenX = CANVAS_WIDTH / 2;
-    const playerScreenY = CANVAS_HEIGHT - 80;
-    const playerW = 50;
-    const playerH = 30;
+      highscoresRef.current.push(lap.innerText);
+      highscoresRef.current.sort();
+      updateHighscore();
 
-    // Sombra del jugador
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.beginPath();
-    ctx.ellipse(playerScreenX + 3, playerScreenY + 3, playerW / 2, playerH / 3, 0, 0, Math.PI * 2);
-    ctx.fill();
+      inGameRef.current = false;
 
-    // Brillo/glow del jugador
-    ctx.shadowColor = COLORS.playerGlow;
-    ctx.shadowBlur = 15;
+      // Call game end callback
+      onGameEnd(
+        Math.floor(scoreValRef.current / 100),
+        countDownRef.current > 0,
+        0,
+        Math.floor((timestamp() - startRef.current) / 1000),
+        {
+          distance: Math.floor(scoreValRef.current),
+          time: lap.innerText,
+          highscores: highscoresRef.current
+        }
+      );
+    } else {
+      time.innerText = pad(countDownRef.current | 0, 3);
+      score.innerText = pad(scoreValRef.current | 0, 8);
+      tacho.innerText = (speedRef.current | 0).toString();
 
-    // Cuerpo del jugador
-    ctx.fillStyle = COLORS.player;
-    ctx.fillRect(playerScreenX - playerW / 2, playerScreenY - playerH / 2, playerW, playerH);
+      let cT = new Date(timestamp() - startRef.current);
+      lap.innerText = `${cT.getMinutes()}'${pad(cT.getSeconds(), 2)}"${pad(cT.getMilliseconds(), 3)}`;
+    }
 
-    // Parabrisas
-    ctx.fillStyle = 'rgba(254, 215, 170, 0.8)';
-    ctx.fillRect(playerScreenX - 15, playerScreenY - 10, 12, 20);
-    ctx.fillRect(playerScreenX + 3, playerScreenY - 10, 12, 20);
+    // Draw cloud
+    cloud.style.backgroundPosition = `${(cloudOffsetRef.current -= lines[startPos].curve * step * speedRef.current * 0.13) | 0}px 0`;
 
-    ctx.shadowBlur = 0;
+    // Other cars
+    for (let car of cars) {
+      car.pos = (car.pos + enemy_speed * step) % N;
 
-    // Ruedas
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(playerScreenX - 26, playerScreenY - 12, 5, 10);
-    ctx.fillRect(playerScreenX + 21, playerScreenY - 12, 5, 10);
-    ctx.fillRect(playerScreenX - 26, playerScreenY + 2, 5, 10);
-    ctx.fillRect(playerScreenX + 21, playerScreenY + 2, 5, 10);
-
-    // Renderizar HUD
-    // Panel del HUD
-    ctx.fillStyle = COLORS.hud;
-    ctx.strokeStyle = COLORS.hudBorder;
-    ctx.lineWidth = 2;
-    ctx.fillRect(15, 15, 160, 90);
-    ctx.strokeRect(15, 15, 160, 90);
-
-    // Velocidad
-    ctx.fillStyle = COLORS.player;
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`SPEED: ${speed}`, 25, 45);
-
-    // Tiempo
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '14px monospace';
-    const minutes = Math.floor(lapTime / 60000);
-    const seconds = Math.floor((lapTime % 60000) / 1000);
-    const ms = lapTime % 1000;
-    ctx.fillText(`TIME: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`, 25, 70);
-
-    // Posición
-    ctx.fillText(`POS: ${position}/4`, 25, 95);
-
-    // Indicadores de carril
-    const laneIndicatorY = CANVAS_HEIGHT - 30;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(CANVAS_WIDTH / 2 - 50, laneIndicatorY - 15, 100, 30);
-
-    [-1, 0, 1].forEach((offset, i) => {
-      const isActive = playerLaneRef.current === i;
-      ctx.fillStyle = isActive ? COLORS.player : '#333';
-      ctx.fillRect(CANVAS_WIDTH / 2 - 40 + offset * 35, laneIndicatorY - 10, 30, 20);
-    });
-
-  }, [project, enemies, speed, lapTime, lap, position, setDistance, setPosition]);
-
-  // Game loop
-  useEffect(() => {
-    let lastTime = Date.now();
-
-    const loop = () => {
-      const currentTime = Date.now();
-      const deltaTime = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
-
-      update(deltaTime);
-      render();
-      animationFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(loop);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [update, render]);
-
-  // Manejo de teclado
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keysRef.current[e.key] = true;
-
-      if (e.key === ' ' && gameState === 'menu') {
-        setGameState('playing');
-        gameStartTimeRef.current = Date.now();
-        lastLapTimeRef.current = Date.now();
-        gameEventsRef.current = [];
-        playerZRef.current = 0;
-        playerSpeedRef.current = 0;
-        playerXRef.current = 0;
-        playerLaneRef.current = 1;
+      // Respawn
+      if ((car.pos | 0) === endPos) {
+        if (speedRef.current < 30) car.pos = startPos;
+        else car.pos = endPos - 2;
+        car.lane = randomProperty(LANE);
       }
 
-      if ((e.key === 'p' || e.key === 'P') && (gameState === 'playing' || gameState === 'paused')) {
-        setGameState(gameState === 'playing' ? 'paused' : 'playing');
+      // Collision
+      const offsetRatio = 5;
+      if (
+        (car.pos | 0) === startPos &&
+        isCollide(playerXRef.current * offsetRatio + LANE.B, 0.5, car.lane, 0.5)
+      ) {
+        speedRef.current = Math.min(hitSpeed, speedRef.current);
       }
+    }
 
-      if (e.key === 'Escape' && gameState === 'playing') {
-        endGame(false);
-      }
+    // Draw road
+    let maxy = height;
+    let camH = H + lines[startPos].y;
+    let x = 0;
+    let dx = 0;
 
-      // Cambio de carril con A/D o flechas laterales
-      if ((e.key === 'ArrowLeft' || e.key === 'a') && gameState === 'playing') {
-        if (playerLaneRef.current > 0) {
-          playerLaneRef.current--;
+    for (let n = startPos; n < startPos + N; n++) {
+      let l = lines[n % N];
+      let level = N * 2 - n;
 
-          // Registrar evento de entrenamiento
-          if (gameEventsRef.current.length < 5000) {
-            gameEventsRef.current.push({
-              timestamp: Date.now() - gameStartTimeRef.current,
-              player_x: playerXRef.current,
-              player_speed: playerSpeedRef.current,
-              player_lane: playerLaneRef.current,
-              event_type: 'lane_change'
-            });
+      // Update view
+      l.project(
+        playerXRef.current * roadW - x,
+        camH,
+        startPos * segL - (n >= N ? N * segL : 0),
+        halfWidth,
+        height,
+        roadW
+      );
+      x += dx;
+      dx += l.curve;
+
+      // Clear assets
+      l.clearSprites();
+
+      // First draw section assets
+      if (n % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, -2, width);
+      if ((n + 5) % 10 === 0) l.drawSprite(level, 0, ASSETS.IMAGE.TREE, 1.3, width);
+
+      if (l.special) l.drawSprite(level, 0, l.special, l.special.offset || 0, width);
+
+      for (let car of cars)
+        if ((car.pos | 0) === n % N)
+          l.drawSprite(level, car.element, car.type, car.lane, width);
+
+      // Update road
+      if (l.Y >= maxy) continue;
+      maxy = l.Y;
+
+      let even = ((n / 2) | 0) % 2;
+      let grass = ASSETS.COLOR.GRASS[even * 1];
+      let rumble = ASSETS.COLOR.RUMBLE[even * 1];
+      let tar = ASSETS.COLOR.TAR[even * 1];
+
+      let p = lines[(n - 1) % N];
+
+      for (let i = 0; i < 6; i++) {
+        if (l.elements[i]) {
+          if (i === 0) {
+            drawQuad(l.elements[i], level, grass, width / 4, p.Y, halfWidth + 2, width / 4, l.Y, halfWidth);
+          } else if (i === 1) {
+            drawQuad(l.elements[i], level, grass, (width / 4) * 3, p.Y, halfWidth + 2, (width / 4) * 3, l.Y, halfWidth);
+          } else if (i === 2) {
+            drawQuad(l.elements[i], level, rumble, p.X, p.Y, p.W * 1.15, l.X, l.Y, l.W * 1.15);
+          } else if (i === 3) {
+            drawQuad(l.elements[i], level, tar, p.X, p.Y, p.W, l.X, l.Y, l.W);
+          } else if (i === 4 && !even) {
+            drawQuad(l.elements[i], level, ASSETS.COLOR.RUMBLE[1], p.X, p.Y, p.W * 0.4, l.X, l.Y, l.W * 0.4);
+          } else if (i === 5 && !even) {
+            drawQuad(l.elements[i], level, tar, p.X, p.Y, p.W * 0.35, l.X, l.Y, l.W * 0.35);
           }
         }
       }
+    }
+  }, [drawQuad, onGameEnd]);
 
-      if ((e.key === 'ArrowRight' || e.key === 'd') && gameState === 'playing') {
-        if (playerLaneRef.current < 2) {
-          playerLaneRef.current++;
+  const updateHighscore = useCallback(() => {
+    if (!highscoreRef.current) return;
+    const highscore = highscoreRef.current;
+    const highscores = highscoresRef.current;
 
-          // Registrar evento de entrenamiento
-          if (gameEventsRef.current.length < 5000) {
-            gameEventsRef.current.push({
-              timestamp: Date.now() - gameStartTimeRef.current,
-              player_x: playerXRef.current,
-              player_speed: playerSpeedRef.current,
-              player_lane: playerLaneRef.current,
-              event_type: 'lane_change'
-            });
-          }
-        }
+    let hN = Math.min(12, highscores.length);
+    for (let i = 0; i < hN; i++) {
+      if (highscore.children[i]) {
+        highscore.children[i].innerHTML = `${pad(i + 1, 2, "&nbsp;")}. ${highscores[i]}`;
+      }
+    }
+  }, []);
+
+  // ============================================================================
+  // RESET
+  // ============================================================================
+
+  const reset = useCallback(() => {
+    inGameRef.current = false;
+
+    startRef.current = timestamp();
+    countDownRef.current = mapRef.current[mapRef.current.length - 2].to / 130 + 10;
+
+    playerXRef.current = 0;
+    speedRef.current = 0;
+    scoreValRef.current = 0;
+
+    posRef.current = 0;
+    cloudOffsetRef.current = 0;
+    sectionProgRef.current = 0;
+    mapIndexRef.current = 0;
+
+    const lines = linesRef.current;
+    for (let line of lines) line.curve = line.y = 0;
+
+    if (textRef.current) {
+      textRef.current.innerText = "INSERT COIN";
+      textRef.current.classList.add("blink");
+    }
+
+    if (roadRef.current) roadRef.current.style.opacity = "0.4";
+    if (hudRef.current) hudRef.current.style.display = "none";
+    if (homeRef.current) homeRef.current.style.display = "block";
+    if (tachoRef.current) tachoRef.current.style.display = "block";
+  }, []);
+
+  // ============================================================================
+  // INIT
+  // ============================================================================
+
+  useEffect(() => {
+    if (!gameRef.current || !roadRef.current || !heroRef.current || !cloudRef.current ||
+        !hudRef.current || !homeRef.current || !textRef.current || !highscoreRef.current ||
+        !timeRef.current || !scoreRef.current || !lapRef.current || !tachoRef.current) return;
+
+    const game = gameRef.current;
+    const road = roadRef.current;
+    const hero = heroRef.current;
+    const cloud = cloudRef.current;
+    const hud = hudRef.current;
+    const home = homeRef.current;
+    const text = textRef.current;
+    const highscore = highscoreRef.current;
+    const time = timeRef.current;
+    const score = scoreRef.current;
+    const lap = lapRef.current;
+    const tacho = tachoRef.current;
+
+    game.style.width = width + "px";
+    game.style.height = height + "px";
+
+    hero.style.position = "absolute";
+    hero.style.top = height - 80 + "px";
+    hero.style.left = (halfWidth - ASSETS.IMAGE.HERO.width / 2) + "px";
+    hero.style.background = "#f97316";
+    hero.style.width = ASSETS.IMAGE.HERO.width + "px";
+    hero.style.height = ASSETS.IMAGE.HERO.height + "px";
+    hero.style.clipPath = "polygon(10% 0, 90% 0, 100% 40%, 100% 100%, 0 100%, 0 40%)";
+
+    cloud.style.position = "absolute";
+    cloud.style.left = "0";
+    cloud.style.top = "0";
+    cloud.style.width = "100%";
+    cloud.style.height = "50%";
+    cloud.style.background = "linear-gradient(#e6d4c5, #eedccd)";
+    cloud.style.backgroundSize = "200px 100%";
+    cloud.style.opacity = "0.3";
+
+    road.style.position = "relative";
+    road.style.width = "100%";
+    road.style.height = "100%";
+    road.style.overflow = "hidden";
+
+    // Generate map
+    mapRef.current = genMap();
+
+    // Create cars
+    carsRef.current.push(new Car(0, ASSETS.IMAGE.CAR, LANE.C, road));
+    carsRef.current.push(new Car(10, ASSETS.IMAGE.CAR, LANE.B, road));
+    carsRef.current.push(new Car(20, ASSETS.IMAGE.CAR, LANE.C, road));
+    carsRef.current.push(new Car(35, ASSETS.IMAGE.CAR, LANE.C, road));
+    carsRef.current.push(new Car(50, ASSETS.IMAGE.CAR, LANE.A, road));
+    carsRef.current.push(new Car(60, ASSETS.IMAGE.CAR, LANE.B, road));
+    carsRef.current.push(new Car(70, ASSETS.IMAGE.CAR, LANE.A, road));
+
+    // Create lines
+    for (let i = 0; i < N; i++) {
+      var line = new Line();
+      line.z = i * segL + 270;
+
+      for (let j = 0; j < 6 + 2; j++) {
+        var element = document.createElement("div");
+        element.style.position = "absolute";
+        road.appendChild(element);
+        line.elements.push(element);
       }
 
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+      linesRef.current.push(line);
+    }
+
+    // Create highscore elements
+    for (let i = 0; i < 12; i++) {
+      var element = document.createElement("p");
+      element.style.color = "#f97316";
+      element.style.fontSize = "12px";
+      element.style.fontFamily = "monospace";
+      element.style.margin = "2px";
+      highscore.appendChild(element);
+    }
+    updateHighscore();
+
+    reset();
+
+    setGameStarted(true);
+
+    // Key handlers
+    const keyUpdate = (e: KeyboardEvent) => {
+      if (!(window as any).KEYS) (window as any).KEYS = {};
+      (window as any).KEYS[e.code] = e.type === "keydown";
+
+      // Start game with C
+      if (e.type === "keyup" && e.code === "KeyC" && !inGameRef.current) {
+        e.preventDefault();
+
+        // Countdown sequence
+        const startCountdown = async () => {
+          if (textRef.current) {
+            textRef.current.classList.remove("blink");
+            textRef.current.innerText = "3";
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          if (textRef.current) textRef.current.innerText = "2";
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          if (textRef.current) textRef.current.innerText = "1";
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          reset();
+
+          if (homeRef.current) homeRef.current.style.display = "none";
+          if (roadRef.current) roadRef.current.style.opacity = "1";
+          if (heroRef.current) heroRef.current.style.display = "block";
+          if (hudRef.current) hudRef.current.style.display = "block";
+
+          inGameRef.current = true;
+          startRef.current = timestamp();
+        };
+
+        startCountdown();
+
+        return;
+      }
+
+      // Reset with Escape
+      if (e.type === "keyup" && e.code === "Escape") {
+        e.preventDefault();
+        reset();
+        return;
+      }
+
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
         e.preventDefault();
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keysRef.current[e.key] = false;
+    window.addEventListener("keydown", keyUpdate);
+    window.addEventListener("keyup", keyUpdate);
+
+    // START GAME LOOP
+    const loop = () => {
+      requestAnimationFrame(loop);
+
+      let now = timestamp();
+      let delta = now - thenRef.current;
+
+      if (delta > targetFrameRate) {
+        thenRef.current = now - (delta % targetFrameRate);
+        update(delta / 1000);
+      }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    loop();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", keyUpdate);
+      window.removeEventListener("keyup", keyUpdate);
     };
-  }, [gameState]);
+  }, [genMap, update, updateHighscore, reset]);
 
-  // Finalizar juego
-  const endGame = useCallback((won: boolean) => {
-    setGameState('ended');
-    const gameTime = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-
-    const score = 5 + (won ? 50 : 10) + Math.floor(distance / 100);
-
-    onGameEnd(score, won, Math.floor(distance / 100), gameTime, {
-      distance: Math.floor(distance),
-      laps: lap,
-      final_position: position,
-      training_data: {
-        game_id: 'pixel_race',
-        moves_sequence: gameEventsRef.current,
-        final_board_state: {
-          distance: Math.floor(distance),
-          time: lapTime,
-          position: position
-        },
-        critical_moments: gameEventsRef.current.filter(e => e.event_type),
-        player_won: won
-      }
-    });
-  }, [distance, lap, lapTime, position, onGameEnd]);
-
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    const millis = ms % 1000;
-    return `${minutes}'${seconds.toString().padStart(2, '0')}"${millis.toString().padStart(3, '0')}`;
-  };
+  // ============================================================================
+  // STYLES
+  // ============================================================================
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Menu Screen */}
-      {gameState === 'menu' && (
-        <div className="text-center space-y-4">
-          <p className="text-orange-400 text-2xl font-black italic uppercase">Pixel Race</p>
-          <p className="text-gray-400 text-sm">Carreras 3D Retro</p>
-          <div className="space-y-2 text-xs text-gray-500">
-            <p>Controles:</p>
-            <p>↑/W - Acelerar | ↓/S - Frenar</p>
-            <p>←/A - Carril izq | →/D - Carril der</p>
-            <p>P - Pausa | ESC - Salir</p>
-          </div>
-          <button
-            onClick={() => {
-              setGameState('playing');
-              gameStartTimeRef.current = Date.now();
-              lastLapTimeRef.current = Date.now();
-              gameEventsRef.current = [];
-              playerZRef.current = 0;
-              playerSpeedRef.current = 0;
-              playerXRef.current = 0;
-              playerLaneRef.current = 1;
-            }}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 py-3 transition-colors uppercase text-sm"
-          >
-            Iniciar Carrera
-          </button>
-        </div>
-      )}
+      <style jsx>{`
+        .blink {
+          animation: blink 1s infinite;
+        }
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
 
-      {/* Canvas - Only show when not in menu */}
-      {gameState !== 'menu' && (
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          className="border-2 border-orange-900 max-w-full h-auto"
-          style={{ imageRendering: 'pixelated' }}
-        />
-      )}
-
-      {/* Paused Overlay */}
-      {gameState === 'paused' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-          <div className="text-center">
-            <p className="text-yellow-400 text-2xl font-bold mb-4">PAUSA</p>
-            <p className="text-gray-400 text-sm">Presiona P para continuar</p>
-            <button
-              onClick={() => endGame(false)}
-              className="mt-4 bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 transition-colors"
-            >
-              Rendirse
-            </button>
-          </div>
+      <div ref={gameRef} className="relative bg-[#1a1a2e] rounded-lg overflow-hidden">
+        <div ref={roadRef}>
+          <div ref={cloudRef}></div>
+          <div ref={heroRef}></div>
         </div>
-      )}
 
-      {/* Game Ended Overlay */}
-      {gameState === 'ended' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="text-center space-y-4 bg-gray-900 p-8 border-2 border-orange-500 rounded-lg">
-            <p className="text-orange-400 text-2xl font-bold">¡CARRERA COMPLETADA!</p>
-            <div className="text-gray-400 text-sm space-y-1">
-              <p>Distancia: {Math.floor(distance)}m</p>
-              <p>Tiempo: {formatTime(lapTime)}</p>
-              <p>Posición final: {position}/4</p>
-              <p className="text-orange-300 mt-2">Puntos: 5 (base) + 10 (participación) + {Math.floor(distance / 100)} (distancia)</p>
-            </div>
-            <button
-              onClick={() => {
-                setGameState('menu');
-                playerZRef.current = 0;
-                playerSpeedRef.current = 0;
-                playerXRef.current = 0;
-                playerLaneRef.current = 1;
-                setDistance(0);
-                setSpeed(0);
-                setLapTime(0);
-                setLap(1);
-                setPosition(3);
-              }}
-              className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 transition-colors"
-            >
-              Nueva Carrera
-            </button>
-          </div>
+        <div ref={hudRef} className="absolute top-4 left-4 right-4 flex justify-between text-white font-mono text-sm">
+          <span ref={timeRef} className="topUI">0</span>
+          <span ref={scoreRef} className="topUI">0</span>
+          <span ref={lapRef} className="topUI">0'00"000</span>
+          <span ref={tachoRef} className="absolute bottom-4 right-4 text-xl text-orange-400">0</span>
         </div>
-      )}
+
+        <div ref={homeRef} className="absolute inset-0 flex flex-col items-center justify-center text-white">
+          <h1 className="text-6xl font-black italic text-orange-400 mb-4">DASH</h1>
+          <p ref={textRef} className="blink text-2xl mb-4">INSERT COIN</p>
+          <div ref={highscoreRef}></div>
+        </div>
+      </div>
+
+      {/* Controls info */}
+      <div className="text-center text-gray-400 text-xs space-y-1">
+        <p><strong className="text-orange-400">C</strong> - Start</p>
+        <p><strong className="text-orange-400">↑↓</strong> - Accelerate/Brake</p>
+        <p><strong className="text-orange-400">←→</strong> - Steer</p>
+        <p><strong className="text-orange-400">ESC</strong> - Reset</p>
+      </div>
     </div>
   );
 }

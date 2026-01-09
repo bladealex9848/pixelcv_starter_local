@@ -1,41 +1,43 @@
-# Pixel Race - Nuevo Juego de Carreras 3D Retro
+# Pixel Race - Juego de Carreras 3D Retro (Réplica race_car)
 
 **Fecha**: 2026-01-09
 **Estado**: Completado y funcional
 **Categoría**: Arcade / Racing
+**Basado en**: `docs/game-repositories/gamezone/Games/race_car`
 
 ---
 
 ## Resumen
 
-Se ha implementado un nuevo juego de carreras 3D pseudo-matemático llamado **Pixel Race**, inspirado en el juego clásico `race_car` de GameZone, adaptado al ecosistema PixelCV con estética retro y gamificación integrada.
+Se ha implementado **Pixel Race**, una réplica exacta del juego clásico `race_car` de GameZone, adaptado al ecosistema PixelCV. El juego utiliza renderizado pseudo-3D basado en DOM con elementos HTML y CSS clip-path para crear trapezoides que simulan profundidad.
 
 ---
 
 ## Características del Juego
 
 ### Mecánicas Principales
-- **Renderizado 3D pseudo-matemático**: Proyección perspectiva sin usar Canvas 3D, solo matemática pura
-- **3 carriles**: Izquierda, centro y derecha con cambio de carril suave
-- **3 coches enemigos**: Cambian de carril aleatoriamente y actúan como obstáculos móviles
-- **Sistema de colisiones**: Chocar con un enemigo reduce drásticamente la velocidad
+- **Renderizado 3D pseudo-matemático**: Proyección perspectiva usando elementos DOM con clip-path
+- **Carretera infinita**: Generación procedimental de mapas con curvas y colinas
+- **7 coches enemigos**: Cambian de carril aleatoriamente (LANE.A=-2.3, LANE.B=-0.5, LANE.C=1.2)
+- **Sistema de colisiones**: Chocar con un enemigo reduce drásticamente la velocidad a 20
 - **Física arcade**: Aceleración, frenado y desaceleración gradual
+- **Meta de llegada**: Línea de meta con "FINISH" al completar el mapa
 
 ### Controles
 | Tecla | Acción |
 |-------|--------|
-| ↑ / W | Acelerar |
-| ↓ / S | Frenar |
-| ← / A | Carril izquierdo |
-| → / D | Carril derecho |
-| P | Pausa |
-| ESC | Salir / Rendirse |
+| C | Iniciar juego (con cuenta regresiva 3-2-1) |
+| ↑ | Acelerar |
+| ↓ | Frenar |
+| ← → | Girar izquierda/derecha |
+| ESC | Resetear juego |
 
 ### HUD (Head-Up Display)
-- **SPEED**: Velocidad actual (0-120 km/h)
-- **TIME**: Tiempo transcurrido en formato MM:SS
-- **POS**: Posición en la carrera (1-4)
-- **Indicador de carril**: Muestra visualmente el carril actual
+- **Tiempo superior izquierdo**: Cuenta regresiva para llegar a la meta
+- **Puntuación superior central**: Distancia recorrida
+- **Tiempo de vuelta**: Formato MM'SS"mmm (minutos, segundos, milisegundos)
+- **Velocímetro**: Esquina inferior derecha
+- **Highscore**: Mejores tiempos registrados
 
 ---
 
@@ -45,47 +47,98 @@ Se ha implementado un nuevo juego de carreras 3D pseudo-matemático llamado **Pi
 
 #### Constantes del Juego
 ```typescript
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 500;
-const ROAD_WIDTH = 2000;
-const SEGMENT_LENGTH = 200;
-const CAMERA_DEPTH = 0.84;
-const LANES = [-0.7, 0, 0.7]; // Izquierda, Centro, Derecha
-const MAX_SPEED = 120;
-const ACCELERATION = 30;
-const BRAKING = -50;
-const DECELERATION = -15;
-const ENEMY_SPEED = 25;
+const width = 800;
+const halfWidth = width / 2;
+const height = 500;
+const roadW = 4000;
+const segL = 200;
+const H = 1500;
+const N = 70;
+const maxSpeed = 200;
+const accel = 38;
+const breaking = -80;
+const decel = -40;
+const enemy_speed = 8;
+const hitSpeed = 20;
 ```
 
-#### Proyección 3D
-El núcleo del renderizado es la función `project()` que transforma coordenadas 3D a 2D:
+#### Clases: Line y Car
 
+**Line Class** - Representa un segmento de la carretera:
 ```typescript
-const project = (worldX: number, worldY: number, worldZ: number) => {
-  const cameraZ = playerZRef.current;
-  const scale = CAMERA_DEPTH / (worldZ - cameraZ);
-  const screenX = (CANVAS_WIDTH / 2) + (scale * worldX * CANVAS_WIDTH / 2);
-  const screenY = (CANVAS_HEIGHT / 2) - (scale * worldY * CANVAS_HEIGHT / 2);
-  const screenW = scale * ROAD_WIDTH * CANVAS_WIDTH / 2;
-  return { screenX, screenY, screenW, scale };
+class Line {
+  x = 0; y = 0; z = 0;      // Coordenadas 3D del mundo
+  X = 0; Y = 0; W = 0;      // Coordenadas 2D proyectadas
+  curve = 0; scale = 0;     // Curvatura y escala
+  elements: HTMLElement[] = []; // Elementos DOM para renderizar
+  special: any = null;       // Sprite especial (meta, árbol, etc.)
+
+  project(camX, camY, camZ, halfWidth, height, roadW) {
+    this.scale = 0.2 / (this.z - camZ);
+    this.X = (1 + this.scale * (this.x - camX)) * halfWidth;
+    this.Y = Math.ceil(((1 - this.scale * (this.y - camY)) * height) / 2);
+    this.W = this.scale * roadW * halfWidth;
+  }
+}
+```
+
+**Car Class** - Representa un coche enemigo:
+```typescript
+class Car {
+  pos: number;       // Posición en la carretera
+  type: any;         // Tipo de sprite
+  lane: number;      // Carril actual (LANE.A, LANE.B, LANE.C)
+  element: HTMLElement; // Elemento DOM
+}
+```
+
+#### Generación Procedimental de Mapas
+```typescript
+const genMap = () => {
+  let map: any[] = [];
+  let i = 0;
+
+  // Generar secciones aleatorias hasta mapLength
+  for (; i < mapLength; i += getRand(0, 50)) {
+    let section = { from: i, to: (i = i + getRand(300, 600)) };
+    let randHeight = getRand(-5, 5);
+    let randCurve = getRand(5, 30) * (Math.random() >= 0.5 ? 1 : -1);
+
+    // Asignar curva y altura según probabilidad
+    if (Math.random() > 0.9)
+      Object.assign(section, { curve: () => randCurve, height: () => randHeight });
+    else if (Math.random() > 0.8)
+      Object.assign(section, { curve: () => 0, height: (i) => Math.sin(i / randInterval) * 1000 });
+    // ... más variaciones
+
+    map.push(section);
+  }
+
+  // Sección final con meta
+  map.push({ from: i, to: i + N, curve: () => 0, height: () => 0, special: ASSETS.IMAGE.FINISH });
+  return map;
 };
 ```
 
-#### Dibujo de Trapezoides
-Para dibujar la carretera en perspectiva, se usa una función auxiliar:
-
+#### Función drawQuad - Renderizado de Trapezoides
 ```typescript
-const drawTrapezoid = (ctx: CanvasRenderingContext2D, x1: number, y1: number, w1: number, x2: number, y2: number, w2: number) => {
-  ctx.beginPath();
-  ctx.moveTo(x1 - w1 / 2, y1);
-  ctx.lineTo(x1 + w1 / 2, y1);
-  ctx.lineTo(x2 + w2 / 2, y2);
-  ctx.lineTo(x2 - w2 / 2, y2);
-  ctx.closePath();
-  ctx.fill();
+const drawQuad = (element: HTMLElement, layer: number, color: string,
+  x1: number, y1: number, w1: number, x2: number, y2: number, w2: number) => {
+
+  element.style.zIndex = layer.toString();
+  element.style.background = color;
+  element.style.position = "absolute";
+  element.style.top = y2 + "px";
+  element.style.left = (x1 - w1 / 2 - w1) + "px";
+  element.style.width = (w1 * 3) + "px";
+  element.style.height = (y1 - y2) + "px";
+
+  let leftOffset = w1 + x2 - x1 + Math.abs(w2 / 2 - w1 / 2);
+  element.style.clipPath = `polygon(${leftOffset}px 0, ${leftOffset + w2}px 0, 66.66% 100%, 33.33% 100%)`;
 };
 ```
+
+**Insight**: El `clip-path` es clave para crear el efecto 3D. El polígono define 4 puntos que forman un trapecio, simularndo la perspectiva de la carretera.
 
 ---
 
@@ -93,31 +146,25 @@ const drawTrapezoid = (ctx: CanvasRenderingContext2D, x1: number, y1: number, w1
 
 ### Cálculo de Puntos
 ```typescript
-const score = 5 + (won ? 50 : 10) + Math.floor(distance / 100);
+onGameEnd(
+  Math.floor(scoreValRef.current / 100),  // Puntos basados en distancia
+  countDownRef.current > 0,                // Victoria si llegó antes del tiempo
+  0,                                       // Moves (no usado en este juego)
+  Math.floor((timestamp() - startRef.current) / 1000), // Tiempo en segundos
+  { distance: scoreValRef.current, time: lap.innerText, highscores: highscoresRef.current }
+);
 ```
-
-- **Base**: 5 puntos por jugar
-- **Participación**: 10 puntos adicionales
-- **Distancia**: 1 punto por cada 100 metros recorridos
-- **Victoria**: 50 puntos bonus (cuando se implemente)
 
 ### Training Data
-El juego recolecta datos para entrenamiento de IA:
-
+Aunque el juego original no recolectaba datos, la integración con PixelCV permite:
 ```typescript
-interface TrainingMove {
-  timestamp: number;
-  player_x: number;
-  player_speed: number;
-  player_lane: number;
-  event_type?: 'lane_change' | 'accelerate' | 'decelerate' | 'collision' | 'checkpoint' | 'lap_complete';
+// Datos enviados al backend
+gameData: {
+  distance: number,
+  time: string,
+  highscores: string[]
 }
 ```
-
-Eventos registrados:
-- Cambios de carril (manual y enemigos)
-- Colisiones
-- Timestamps para análisis de patrones
 
 ---
 
@@ -144,7 +191,6 @@ Eventos registrados:
 ```typescript
 const PixelRace = dynamic(() => import('../../../components/games/PixelRace'), { ssr: false });
 
-// GAMES_CONFIG
 pixel_race: {
   name: 'Pixel Race',
   icon: '🏎️',
@@ -154,19 +200,20 @@ pixel_race: {
 
 ---
 
-## Comparación con Juego de Referencia
+## Comparación con Juego Original
 
 ### race_car (GameZone) vs Pixel Race (PixelCV)
 
 | Característica | race_car | Pixel Race |
 |----------------|----------|------------|
-| Tecnología | JS vanilla + DOM | React + Canvas |
-| Renderizado | Proyección matemática | Proyección matemática |
-| Controles | Flechas | Flechas + WASD + Mobile (futuro) |
-| Enemigos | Cambian de carril aleatorio | Cambian de carril aleatorio |
-| Gráficos | PNG externos | Canvas dibujado programáticamente |
-| Paleta | Original | Estilo PixelCV (naranja/teal) |
+| Tecnología | JS vanilla + DOM | React + DOM (refs) |
+| Renderizado | Proyección matemática + clip-path | Proyección matemática + clip-path |
+| Controles | Flechas + C | Flechas + C + ESC |
+| Enemigos | 7 coches que cambian de carril | 7 coches que cambian de carril |
+| Gráficos | PNG externos | CSS (colores sólidos) |
+| Paleta | Original | Estilo PixelCV (naranja) |
 | Gamificación | No | Sí (puntos, training data) |
+| Highscore | Sí | Sí (integrado con sistema) |
 
 ---
 
@@ -176,9 +223,9 @@ pixel_race: {
 |----------------|------------|------------|
 | Estado | Under Construction | Funcional |
 | Perspectiva | Top-down 2D | Pseudo-3D |
-| Terreno | Cuadrícula con tipos | Carretera infinita |
-| Objetivo | Checkpoints | Distancia / Carrera |
-| Enemigos | No | 3 oponentes |
+| Terreno | Cuadrícula con tipos | Carretera infinita procedimental |
+| Objetivo | Checkpoints | Llegar a la meta |
+| Enemigos | No | 7 oponentes |
 | Colisiones | Terreno (rocas) | Coches enemigos |
 
 ---
@@ -191,46 +238,54 @@ pixel_race: {
 
 ---
 
-## Próximas Mejoras Planeadas
-
-1. **Sistema de vueltas**: Meta de vuelta y vuelta completa
-2. **Carrera completa**: 3 vueltas para ganar
-3. **Poderes temporales**: Turbo, escudo, misiles
-4. **Más enemigos**: Aumentar dificultad progresivamente
-5. **Controles táctiles**: Joystick virtual para móvil
-6. **Multijugador**: Carreras contra otros jugadores
-7. **Leaderboard**: Ranking de mejores tiempos
-
----
-
 ## Archivos Modificados
 
 ### Frontend
-- `frontend/components/games/PixelRace.tsx` (CREADO)
-- `frontend/app/games/[game]/page.tsx` (modificado)
-- `frontend/app/games/page.tsx` (modificado - soporte under_construction, categorías Racing/Platformer)
+- `frontend/components/games/PixelRace.tsx` (REESCRITO COMPLETAMENTE)
+  - Réplica exacta del juego race_car
+  - Adaptado a React con hooks y refs
+  - Renderizado DOM-based con clip-path
 
 ### Backend
-- `backend/app/services/gamification_service.py` (modificado)
+- `backend/app/services/gamification_service.py` (previamente modificado)
+  - Registro del juego pixel_race
 
 ---
 
 ## Notas de Desarrollo
 
-### Problemas Resueltos
-1. **Error `this.drawTrapezoid`**: Las funciones auxiliares deben definirse DENTRO del callback, no como métodos de clase
-2. **Duplicación de código**: La función `drawTrapezoid` estaba duplicada, se eliminó la redundancia
-3. **Orden de definición**: `drawTrapezoid` debe definirse ANTES de `drawSegment` que lo usa
+### Problemas Resueltos TypeScript
+
+1. **Number.prototype.clamp**: TypeScript no permite extender prototypes nativos
+   - **Solución**: Crear función helper `clamp(value, min, max)`
+
+2. **Number.prototype.pad**: Mismo problema con prototype
+   - **Solución**: Crear función helper `pad(value, numZeros, char)`
+
+3. **setTimeout().then()**: setTimeout retorna Timeout, no Promise
+   - **Solución**: Usar async/await con `new Promise(resolve => setTimeout(resolve, 1000))`
+
+4. **KEYS undefined**: Referencia a variable no declarada
+   - **Solución**: Usar `(window as any).KEYS`
+
+5. **drawQuad tipo HTMLDivElement**: Los elementos son HTMLElement
+   - **Solución**: Cambiar tipo a `HTMLElement`
+
+6. **tacho.innerText**: Espera string, se asignaba number
+   - **Solución**: Convertir a string con `.toString()`
 
 ### Lecciones Aprendidas
-- En React functional components, NO usar `this` para funciones auxiliares
-- Las funciones dentro de `useCallback` pueden acceder a variables del scope
-- El orden de definición de funciones importa en JavaScript
+- React requiere que las funciones auxiliares sean definidas como funciones standalone, no como extensiones de prototype
+- Para adaptar JS vanilla a React: usar refs para variables globales y elementos DOM
+- El clip-path CSS es poderoso para crear formas trapezoidales sin Canvas
+- async/await es más limpio que encadenar promises para secuencias temporales
 
 ---
 
 ## Referencias
 
 - **Juego original**: `docs/game-repositories/gamezone/Games/race_car/`
-- **Documentación Canvas 2D**: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API
+  - `script.js`: Lógica del juego original
+  - `index.html`: Estructura HTML original
 - **Proyección 3D**: Técnicas de rendering pseudo-3D usadas en juegos retro como OutRun
+- **CSS clip-path**: https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path
