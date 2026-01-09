@@ -35,6 +35,51 @@ const ASSETS = {
 // HELPER FUNCTIONS
 // ============================================================================
 
+const renderSpriteAsPixels = (
+  container: HTMLDivElement,
+  sprite: any,
+  destW: number,
+  destH: number
+) => {
+  // Limpiar contenedor
+  container.innerHTML = '';
+
+  // Configurar grid
+  container.style.display = 'grid';
+  container.style.gridTemplateColumns = `repeat(32, 1fr)`;
+  container.style.gridTemplateRows = `repeat(32, 1fr)`;
+  container.style.width = '100%';
+  container.style.height = '100%';
+  container.style.position = 'absolute';
+  container.style.top = '0';
+  container.style.left = '0';
+
+  // Renderizar cada píxel
+  const pixelSizeX = destW / 32;
+  const pixelSizeY = destH / 32;
+
+  for (let i = 0; i < 1024; i++) {
+    const color = sprite.pixels[i];
+
+    // Saltar píxeles transparentes
+    if (color === '#00000000') continue;
+
+    const row = Math.floor(i / 32);
+    const col = i % 32;
+
+    const pixel = document.createElement('div');
+    pixel.style.position = 'absolute';
+    pixel.style.width = `${pixelSizeX}px`;
+    pixel.style.height = `${pixelSizeY}px`;
+    pixel.style.left = `${col * pixelSizeX}px`;
+    pixel.style.top = `${row * pixelSizeY}px`;
+    pixel.style.backgroundColor = color;
+    pixel.style.zIndex = '1';
+
+    container.appendChild(pixel);
+  }
+};
+
 const timestamp = () => new Date().getTime();
 const accelerate = (v: number, accel: number, dt: number) => v + accel * dt;
 const isCollide = (x1: number, w1: number, x2: number, w2: number) => (x1 - x2) ** 2 <= (w2 + w1) ** 2;
@@ -87,7 +132,15 @@ class Line {
 
   clearSprites() {
     for (let e of this.elements) {
-      if (e) e.style.background = "transparent";
+      if (e) {
+        // Limpiar background
+        e.style.background = "transparent";
+        // Limpiar contenedor de píxeles de árboles
+        const pixelContainer = e.querySelector('.tree-pixels');
+        if (pixelContainer) {
+          pixelContainer.innerHTML = '';
+        }
+      }
     }
   }
 
@@ -129,16 +182,31 @@ class Line {
       return;
     }
 
-    // Si es un árbol, dibujar con CSS mejorado
+    // Si es un árbol, dibujar con sprite real
     if (sprite === ASSETS.IMAGE.TREE || sprite === ASSETS.IMAGE.SMALL_TREE) {
-      obj.style.background = 'radial-gradient(circle at 50% 30%, #32cd32 0%, #228b22 50%, #006400 100%)';
+      // Obtener el sprite real
+      const treeSprite = sprite === ASSETS.IMAGE.TREE
+        ? SPRITES_MAP['tree']
+        : SPRITES_MAP['small_tree'];
+
+      // Crear/limpiar contenedor de píxeles
+      let pixelContainer = obj.querySelector('.tree-pixels') as HTMLDivElement;
+      if (!pixelContainer) {
+        pixelContainer = document.createElement('div');
+        pixelContainer.className = 'tree-pixels';
+        obj.appendChild(pixelContainer);
+      }
+
+      // Configurar contenedor
       obj.style.width = destW + 'px';
       obj.style.height = destH + 'px';
       obj.style.left = destX + 'px';
       obj.style.top = destY + 'px';
       obj.style.zIndex = depth.toString();
-      obj.style.borderRadius = '50%';
-      obj.style.boxShadow = `0 ${destH * 0.3}px ${destW * 0.2}px rgba(0, 0, 0, 0.3)`;
+      obj.style.position = 'absolute';
+
+      // Renderizar sprite
+      renderSpriteAsPixels(pixelContainer, treeSprite, destW, destH);
       return;
     }
 
