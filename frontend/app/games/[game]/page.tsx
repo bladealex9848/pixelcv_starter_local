@@ -23,15 +23,16 @@ const TetrisGame = dynamic(() => import('../../../components/games/TetrisGame'),
 const SpaceInvaders = dynamic(() => import('../../../components/games/SpaceInvaders'), { ssr: false });
 const PrinceOfPersia = dynamic(() => import('../../../components/games/PrinceOfPersia'), { ssr: false });
 const RTSGame = dynamic(() => import('../../../components/games/RTSGame'), { ssr: false });
+const PixelRace = dynamic(() => import('../../../components/games/PixelRace'), { ssr: false });
 
-const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any }> = {
+const GAMES_CONFIG: Record<string, { name: string; icon: string; underConstruction?: boolean; component: any }> = {
   pong: { name: 'Pong', icon: '🏓', component: PongGame },
   tictactoe: { name: 'Tic Tac Toe', icon: '⭕', component: TicTacToe },
   chinese_checkers: { name: 'Damas Chinas', icon: '🎯', component: ChineseCheckers },
   domino: { name: 'Domino', icon: '🁠', component: DominoGame },
   chess: { name: 'Ajedrez', icon: '♔', component: ChessGame },
   tron: { name: 'Tron', icon: '⚡', component: TronGame },
-  offroad4x4: { name: '4x4 Off-Road', icon: '🚙', component: OffRoad4x4 },
+  offroad4x4: { name: '4x4 Off-Road', icon: '🚙', underConstruction: true, component: OffRoad4x4 },
   pacman: { name: 'Pac-Man', icon: '👾', component: PacManGame },
   memory: { name: 'Memory Match', icon: '🃏', component: MemoryMatch },
   snake: { name: 'Snake', icon: '🐍', component: SnakeGame },
@@ -41,6 +42,7 @@ const GAMES_CONFIG: Record<string, { name: string; icon: string; component: any 
   spaceinvaders: { name: 'Space Invaders', icon: '👾', component: SpaceInvaders },
   princeofpersia: { name: 'Príncipe de Persia', icon: '👑', component: PrinceOfPersia },
   rts: { name: 'RTS Strategy', icon: '⚔️', component: RTSGame },
+  pixel_race: { name: 'Pixel Race', icon: '🏎️', component: PixelRace },
 };
 
 export default function GamePage() {
@@ -158,9 +160,17 @@ export default function GamePage() {
               <span className="hidden sm:inline">Volver</span>
             </button>
 
-            <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-red-600 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)] uppercase">
-              {gameConfig.icon} {gameConfig.name}
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-red-600 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)] uppercase">
+                {gameConfig.icon} {gameConfig.name}
+              </h1>
+
+              {gameConfig.underConstruction && (
+                <div className="flex items-center gap-1 bg-yellow-900/30 border border-yellow-500/50 px-2 py-1 rounded-sm animate-pulse">
+                  <span className="text-yellow-400 text-xs font-bold">🚧 UNDER CONSTRUCTION</span>
+                </div>
+              )}
+            </div>
 
             {!isAuthenticated && (
               <div className="bg-gray-900/50 border border-gray-700 px-3 py-2 rounded-sm">

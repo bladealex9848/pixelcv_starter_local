@@ -85,7 +85,7 @@ export default function OffRoad4x4({ isAuthenticated, onGameEnd }: OffRoad4x4Pro
   const gameEventsRef = useRef<TrainingMove[]>([]);
 
   // Estados del juego
-  const [gameStatus, setGameStatus] = useState<'menu' | 'playing' | 'paused' | 'ended'>('menu');
+  const [gameStatus, setGameStatus] = useState<'construction' | 'menu' | 'playing' | 'paused' | 'ended'>('construction');
   const [terrain, setTerrain] = useState<number[][]>([]);
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [vehicle, setVehicle] = useState<Vehicle>({ x: 0, y: 0, vx: 0, vy: 0, angle: 0, speed: 0 });
@@ -562,6 +562,90 @@ export default function OffRoad4x4({ isAuthenticated, onGameEnd }: OffRoad4x4Pro
 
   return (
     <div className="flex flex-col items-center gap-6">
+      {/* Pantalla de Under Construction */}
+      {gameStatus === 'construction' && (
+        <div className="text-center space-y-6 p-8 bg-orange-900/10 border-2 border-orange-500/30 rounded-lg max-w-2xl">
+          {/* Icono y título */}
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="text-6xl">🚙</div>
+            <div className="text-5xl animate-pulse">🚧</div>
+          </div>
+
+          <h2 className="text-3xl font-black text-orange-400 uppercase tracking-widest italic">
+            4x4 Off-Road
+          </h2>
+
+          {/* Badge de construcción */}
+          <div className="flex items-center justify-center gap-2 bg-yellow-900/30 border border-yellow-500/50 px-4 py-2 rounded-sm">
+            <span className="text-2xl animate-pulse">🚧</span>
+            <span className="text-yellow-400 font-bold uppercase text-sm">Under Construction</span>
+          </div>
+
+          {/* Mensaje principal */}
+          <p className="text-gray-400 text-sm max-w-md mx-auto">
+            Este juego de conducción off-road está siendo mejorado para ofrecerte una experiencia más realista y divertida.
+          </p>
+
+          {/* Lista de mejoras */}
+          <div className="text-left bg-black/30 p-4 rounded border border-orange-900/30 space-y-3">
+            <p className="text-orange-400 text-xs font-bold uppercase flex items-center gap-2">
+              <span>🔧</span> Mejoras en desarrollo
+            </p>
+            <ul className="text-gray-400 text-xs space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-green-400">✓</span>
+                <span><strong>Física realista:</strong> Sistema de suspensión y transmisión 4x4 auténtica</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">⏳</span>
+                <span><strong>Terreno procedimental:</strong> Generación infinita de paisajes variados</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">⏳</span>
+                <span><strong>Clima dinámico:</strong> Lluvia, barro, niebla que afectan la conducción</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">⏳</span>
+                <span><strong>Múltiples vehículos:</strong> Camionetas, buggies y ATVs con características únicas</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">⏳</span>
+                <span><strong>Modos de juego:</strong> Carrera contrarreloj, libre y desafíos</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400">✓</span>
+                <span><strong>Mejores gráficos:</strong> Efectos de partículas, sombras dinámicas y lighting</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400">✓</span>
+                <span><strong>Controles mejorados:</strong> Soporte para gamepad y controles táctiles optimizados</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Info adicional */}
+          <div className="text-[10px] text-gray-500 space-y-1">
+            <p>Estamos reconstruyendo el juego desde cero para ofrecer una experiencia de calidad.</p>
+            <p>Mientras tanto, puedes probar <strong className="text-orange-400">Pixel Race</strong> para vivir la emoción de las carreras 3D retro.</p>
+          </div>
+
+          {/* Link a Pixel Race */}
+          <a
+            href="/games/pixel_race"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold px-6 py-3 transition-all uppercase text-sm"
+            style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
+          >
+            <span>🏎️</span>
+            <span>Jugar Pixel Race</span>
+          </a>
+
+          {/* Fecha estimada */}
+          <div className="bg-gray-900/50 px-3 py-2 rounded-sm inline-block">
+            <span className="text-gray-400 text-xs font-mono">Estimado: Q1 2026</span>
+          </div>
+        </div>
+      )}
+
       {/* Menú principal */}
       {gameStatus === 'menu' && (
         <div className="text-center space-y-6">

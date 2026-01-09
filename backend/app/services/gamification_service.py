@@ -830,7 +830,8 @@ class GamificationService:
                 'icon': '🚙',
                 'category': 'Racing',
                 'has_ai': True,
-                'multiplayer': False
+                'multiplayer': False,
+                'under_construction': True
             },
             {
                 'id': 'pacman',
@@ -910,6 +911,15 @@ class GamificationService:
                 'description': 'Construye tu base, recolecta recursos y conquista territorios',
                 'icon': '⚔️',
                 'category': 'Strategy',
+                'has_ai': True,
+                'multiplayer': False
+            },
+            {
+                'id': 'pixel_race',
+                'name': 'Pixel Race',
+                'description': 'Carreras 3D retro - ¡Supera a tus oponentes!',
+                'icon': '🏎️',
+                'category': 'Racing',
                 'has_ai': True,
                 'multiplayer': False
             },

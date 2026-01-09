@@ -10,6 +10,7 @@ interface Game {
   category: string;
   has_ai: boolean;
   multiplayer: boolean;
+  under_construction?: boolean;
 }
 
 export default function GamesPage() {
@@ -44,7 +45,10 @@ export default function GamesPage() {
     switch (category) {
       case 'Arcade': return 'bg-orange-500/20 border-orange-500 text-orange-400';
       case 'Puzzle': return 'bg-red-500/20 border-red-500 text-red-400';
-      case 'Estrategia': return 'bg-yellow-500/20 border-yellow-500 text-yellow-400';
+      case 'Estrategia':
+      case 'Strategy': return 'bg-yellow-500/20 border-yellow-500 text-yellow-400';
+      case 'Racing': return 'bg-blue-500/20 border-blue-500 text-blue-400';
+      case 'Platformer': return 'bg-green-500/20 border-green-500 text-green-400';
       default: return 'bg-gray-500/20 border-gray-500 text-gray-400';
     }
   };
@@ -187,7 +191,7 @@ export default function GamesPage() {
               className="group min-h-[380px] relative"
             >
               {/* AI Badge - Animated Corner Label */}
-              {game.has_ai && (
+              {game.has_ai && !game.under_construction && (
                 <div className="absolute -top-2 -right-2 z-20 animate-pulse-glow">
                   <div className="relative">
                     <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-purple-400 rounded-sm shadow-[0_0_15px_rgba(168,85,247,0.6)] transform rotate-3 hover:rotate-0 transition-transform duration-300">
@@ -196,6 +200,20 @@ export default function GamesPage() {
                     {/* Sparkle effects */}
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-sparkle"></div>
                     <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-pink-400 rounded-full animate-sparkle-delayed"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Under Construction Badge */}
+              {game.under_construction && (
+                <div className="absolute -top-2 -right-2 z-20">
+                  <div className="relative">
+                    <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 border-2 border-yellow-400 rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.6)] transform rotate-3 hover:rotate-0 transition-transform duration-300 animate-pulse">
+                      🚧 UNDER CONSTRUCTION
+                    </div>
+                    {/* Sparkle effects */}
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-sparkle"></div>
+                    <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-orange-400 rounded-full animate-sparkle-delayed"></div>
                   </div>
                 </div>
               )}
