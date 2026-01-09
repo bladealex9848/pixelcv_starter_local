@@ -115,12 +115,83 @@ Usuario: bladealex
 - CV público: https://pixelcv.alexanderoviedofadul.dev/cv/alexander-oviedo-fadul-1526c884
 ```
 
-## Backup
+## Backup Automatizado del Servidor
 
-El archivo SQLite original se preservó en:
+### Sistema de Backup Empresarial
+
+PixelCV (`pixelcv_db`) está **automáticamente incluido** en el sistema de backup del servidor de producción.
+
+| Parámetro | Valor |
+|-----------|-------|
+| **Script** | `/root/scripts/backup-databases-ftp-individual.sh` |
+| **Cron** | `0 2 * * *` (Diariamente a las 02:00 AM) |
+| **Directorio** | `/home/backup-db/databases/` |
+| **Retención** | 7 días (automático) |
+| **Compresión** | gzip (`.sql.gz`) |
+| **Symlink** | `latest_pixelcv_db.gz` |
+
+### Validación de Backup
+
+**Prueba ejecutada**: 2026-01-09 20:58 UTC
+
+```bash
+$ bash /root/scripts/backup-databases-ftp-individual.sh
+✅ Backup completado: pixelcv_db_20260109_205730.sql.gz (236 KB)
+```
+
+### Comandos Útiles
+
+```bash
+# Ver backups disponibles
+ls -la /home/backup-db/databases/pixelcv_db*.gz
+
+# Ver contenido del backup más reciente
+gunzip -c /home/backup-db/databases/latest_pixelcv_db.gz | less
+
+# Restaurar backup completo
+gunzip -c /home/backup-db/databases/latest_pixelcv_db.gz | mariadb -u root -p pixelcv_db
+
+# Ver logs del backup
+tail -50 /home/backup-db/logs/backup_individual_*.log
+```
+
+### Documentación del Backup
+
+- **Servidor**: `/root/docs/20-scripts-backup/pixelcv-mariadb-backup-2026-01-09.md`
+- **Proyecto**: `/root/pixelcv/docs/development/backup-inclusion-mariadb-2026-01-09.md`
+
+## Backup SQLite Original
+
+El archivo SQLite original se preservó como respaldo:
 ```
 /root/pixelcv/backend/pixelcv_backup_20260109_*.db
 ```
+
+## Pruebas End-to-End
+
+**Fecha**: 2026-01-09
+**Estado**: ✅ Completado exitosamente
+
+Se realizó una prueba completa del sistema desde el registro de un nuevo usuario hasta la creación y publicación de un CV:
+
+| Fase | Resultado |
+|------|-----------|
+| **Registro usuario** | ✅ Usuario `testuser2026` creado |
+| **Login** | ✅ Token JWT generado |
+| **Actualizar perfil** | ✅ Bio actualizada en MariaDB |
+| **Crear CV** | ✅ CV creado (+10 puntos) |
+| **Publicar CV** | ✅ CV publicado (+50 puntos) |
+| **Verificación API** | ✅ Endpoints respondiendo |
+| **MariaDB** | ✅ Datos persistidos correctamente |
+
+**Resultado final**:
+- **60 puntos** acumulados (10 crear + 50 publicar)
+- **Usuario en leaderboard**: Posición 3
+- **CV público**: https://pixelcv.alexanderoviedofadul.dev/cv/usuario-prueba-2026-e2ac1678
+
+**Documentación completa**: `/root/pixelcv/docs/development/e2e-test-mariadb-2026-01-09.md`
+
+---
 
 ## Notas Importantes
 
